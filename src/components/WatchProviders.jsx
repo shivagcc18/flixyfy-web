@@ -1,27 +1,39 @@
-import { useEffect, useState } from "react";
+import React from "react";
 
-export default function WatchProviders({ tmdbId }) {
-  const [providers, setProviders] = useState([]);
-  const [loaded, setLoaded] = useState(false);
+function cleanProviderName(provider) {
+  return (
+    provider?.provider ||
+    provider?.provider_name ||
+    provider?.name ||
+    provider?.provider_key ||
+    "Watch"
+  );
+}
 
-  useEffect(() => {
-    if (!tmdbId) return;
+function cleanProviderType(provider) {
+  return (
+    provider?.category ||
+    provider?.type ||
+    provider?.provider_type ||
+    provider?.raw_type ||
+    "available"
+  );
+}
 
-    fetch(`http://127.0.0.1:8000/api/indian/movies/${tmdbId}/watch`)
-      .then((res) => res.json())
-      .then((data) => {
-        setProviders(Array.isArray(data.providers) ? data.providers : []);
-        setLoaded(true);
-      })
-      .catch(() => {
-        setProviders([]);
-        setLoaded(true);
-      });
-  }, [tmdbId]);
+function getProviderUrl(provider) {
+  return (
+    provider?.final_url ||
+    provider?.fallback_search_url ||
+    provider?.homepage_url ||
+    provider?.deep_link ||
+    null
+  );
+}
 
-  if (!loaded) return <p>Loading watch options...</p>;
+export default function WatchProviders({ providers = [], ottAll = [] }) {
+  const list = Array.isArray(providers) && providers.length ? providers : ottAll;
 
-  if (!providers.length) {
+  if (!Array.isArray(list) || list.length === 0) {
     return (
       <div style={{ marginTop: "24px" }}>
         <h2>Where to Watch</h2>
@@ -35,23 +47,37 @@ export default function WatchProviders({ tmdbId }) {
       <h2>Where to Watch</h2>
 
       <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-        {providers.map((p) => (
-          <div
-            key={`${p.provider_name}-${p.provider_type}`}
-            style={{
-              background: "#111",
-              border: "1px solid #333",
-              borderRadius: "10px",
-              padding: "12px 16px",
-              minWidth: "140px",
-            }}
-          >
-            <strong>{p.provider_name}</strong>
-            <div style={{ fontSize: "13px", opacity: 0.75 }}>
-              {p.provider_type}
-            </div>
-          </div>
-        ))}
+        {list.map((provider, index) => {
+          const name = cleanProviderName(provider);
+          const type = cleanProviderType(provider);
+          const url = getProviderUrl(provider);
+
+          return (
+            <button
+              key={`${name}-${type}-${index}`}
+              type="button"
+              onClick={() => {
+                if (url) {
+                  window.open(url, "_blank", "noopener,noreferrer");
+                }
+              }}
+              style={{
+                cursor: url ? "pointer" : "default",
+                background: "#111",
+                color: "#fff",
+                border: "1px solid #333",
+                borderRadius: "10px",
+                padding: "12px 16px",
+                minWidth: "140px",
+                textAlign: "left",
+              }}
+              title={url || "No provider link available"}
+            >
+              <strong>{name}</strong>
+              <div style={{ fontSize: "13px", opacity: 0.75 }}>{type}</div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
