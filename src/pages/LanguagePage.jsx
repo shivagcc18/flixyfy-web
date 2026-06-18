@@ -3,12 +3,23 @@ import "./LanguagePage.css";
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  "https://flixyfy-api-production.up.railway.app";
+
 const TMDB_IMG = "https://image.tmdb.org/t/p/w500";
 
 function posterUrl(path) {
-  if (!path) return "";
-  return path.startsWith("http") ? path : `${TMDB_IMG}${path}`;
+  if (!path) return "/no-poster.png";
+  if (path.startsWith("http")) return path;
+  return `${TMDB_IMG}${path}`;
+}
+
+function moviePath(movie) {
+  if (movie.movie_url) return movie.movie_url;
+  if (movie.slug) return `/movie/${movie.slug}`;
+  return "/";
 }
 
 export default function LanguagePage() {
@@ -17,133 +28,86 @@ export default function LanguagePage() {
   const q = searchParams.get("q") || "";
 
   const [movies, setMovies] = useState([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  async function load() {
-    try {
-      setLoading(true);
+    async function load() {
+      try {
+        setLoading(true);
 
-      const url = q
-  ? `${API_BASE}/api/v3/search?q=${encodeURIComponent(q)}&language=${language}&limit=100`
-  : `${API_BASE}/api/language/${language}?limit=100`;
+        const url = q
+          ? `${API_BASE}/api/v3/search?q=${encodeURIComponent(q)}&language=${encodeURIComponent(language)}&limit=100`
+          : `${API_BASE}/api/v3/language/${encodeURIComponent(language)}?limit=100`;
 
-      const res = await fetch(url);
-      const data = await res.json();
+        const res = await fetch(url);
+        const data = await res.json();
 
-if (!res.ok) {
-  console.error(data);
-  throw new Error("API Error");
-}
+        if (!res.ok) {
+          console.error("Language API error:", data);
+          throw new Error("API Error");
+        }
 
-      console.log("LANGUAGE API URL:", url);
-      console.log("LANGUAGE API DATA:", data);
-
-      setMovies(data.movies || data.items || []);
-    } catch (err) {
-      console.error(err);
-      setMovies([]);
-    } finally {
-      setLoading(false);
+        const list = data.items || data.movies || [];
+        setMovies(list);
+        setTotal(data.total || data.count || list.length || 0);
+      } catch (err) {
+        console.error(err);
+        setMovies([]);
+        setTotal(0);
+      } finally {
+        setLoading(false);
+      }
     }
-  }
 
-  load();
-}, [language, q]);
-
-
-  if (loading) {
-    return (
-      <div style={{ background: "#111", color: "#fff", minHeight: "100vh", padding: 24 }}>
-        <SearchBar large language={language} />
-        Loading {language} movies...
-      </div>
-    );
-  }
+    load();
+  }, [language, q]);
 
   return (
-    <div style={{ background: "#111", color: "#fff", minHeight: "100vh", padding: 24 }}>
+    <div className="language-page">
       <SearchBar large language={language} />
 
-      <h1 style={{ color: "#fff", fontSize: 34, marginBottom: 8 }}>
-        {q ? `Search "${q}" in ${language?.toUpperCase()} Movies` : `${language?.toUpperCase()} Movies`}
+      <h1 className="language-title">
+        {q
+          ? `Search "${q}" in ${language?.toUpperCase()} Movies`
+          : `${language?.toUpperCase()} Movies`}
       </h1>
 
-      <p style={{ color: "#bbb", marginBottom: 28 }}>
-        Showing {movies.length} {language} movies from WATCHINDIA catalog.
+      <p className="language-subtitle">
+        {loading
+          ? `Loading ${language} movies...`
+          : `Showing ${movies.length} of ${total} ${language} movies from FLIXYFY catalog.`}
       </p>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))",
-          gap: 18,
-        }}
-      >
+      {!loading && movies.length === 0 && (
+        <p className="language-empty">No movies found.</p>
+      )}
+
+      <div className="language-grid">
         {movies.map((movie) => (
           <Link
             key={movie.tmdb_id}
-            to={movie.movie_url}
+            to={moviePath(movie)}
             className="language-movie-card"
-            style={{
-              textDecoration: "none",
-              color: "#fff",
-              border: "1px solid #2a2a2a",
-              borderRadius: 12,
-              overflow: "hidden",
-              background: "#181818",
-              display: "block",
-            }}
           >
-            {movie.poster_url ? (
-              <img
-                src={posterUrl(movie.poster_url)}
-                alt={movie.title}
-                style={{
-                  width: "100%",
-                  height: 270,
-                  objectFit: "cover",
-                  display: "block",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  height: 270,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#777",
-                  background: "#0f0f0f",
-                }}
-              >
-                No Poster
-              </div>
-            )}
+            <img
+              src={posterUrl(movie.poster_url)}
+              alt={movie.title}
+              className="language-poster"
+            />
 
-            <div style={{ padding: 12 }}>
-              <h3 style={{ color: "#fff", fontSize: 15, margin: "0 0 6px" }}>
-                {movie.title}
-              </h3>
+            <div className="language-card-body">
+              <h3>{movie.title}</h3>
 
-              <p style={{ color: "#aaa", margin: "0 0 6px", fontSize: 13 }}>
-                {movie.release_year} • ⭐ {movie.rating || "-"}
+              <p>
+                {movie.release_year || "-"} • ⭐{" "}
+                {movie.rating ? Number(movie.rating).toFixed(1) : "-"}
               </p>
 
-              <span
-                style={{
-                  display: "inline-block",
-                  marginTop: 4,
-                  padding: "5px 10px",
-                  borderRadius: 999,
-                  border: "1px solid #444",
-                  background: "#222",
-                  color: "#fff",
-                  fontSize: 12,
-                  fontWeight: 700,
-                }}
-              >
-                {movie.ott_primary ? `Watch on ${movie.ott_primary}` : "OTT unavailable"}
+              <span>
+                {movie.ott_primary
+                  ? `Watch on ${movie.ott_primary}`
+                  : "OTT unavailable"}
               </span>
             </div>
           </Link>

@@ -1,71 +1,93 @@
+.language-page {
+  background: #111;
+  color: #fff;
+  min-height: 100vh;
+  padding: 24px;
+  overflow-x: hidden;
+}
+
+.language-title {
+  color: #fff;
+  font-size: 34px;
+  margin: 32px 0 8px;
+}
+
+.language-subtitle {
+  color: #bbb;
+  margin-bottom: 28px;
+}
+
+.language-empty {
+  color: #aaa;
+}
+
+.language-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 18px;
+}
+
 .language-movie-card {
-  position: relative;
-  overflow: hidden;
+  text-decoration: none;
+  color: #fff;
+  border: 1px solid #2a2a2a;
   border-radius: 12px;
-  border: 1px solid transparent;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
-  cursor: pointer;
-}
-
-.language-movie-card:hover {
-  transform: translateY(-8px) scale(1.045);
-  border-color: #2f80ff !important;
-  box-shadow:
-    0 0 14px rgba(47, 128, 255, 1),
-    0 0 34px rgba(47, 128, 255, 0.9),
-    0 0 70px rgba(47, 128, 255, 0.65);
-}
-
-.language-movie-card::before {
-  content: "";
-  position: absolute;
-  inset: -3px;
-  border-radius: 14px;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    #2f80ff 80deg,
-    #ffffff 110deg,
-    #00d4ff 145deg,
-    transparent 220deg,
-    transparent 360deg
-  );
-  opacity: 0;
-  animation: blueSpin 1.2s linear infinite;
-  z-index: 1;
-  pointer-events: none;
-}
-
-.language-movie-card:hover::before {
-  opacity: 1;
-}
-
-.language-movie-card::after {
-  content: "";
-  position: absolute;
-  inset: 2px;
-  border-radius: 10px;
+  overflow: hidden;
   background: #181818;
-  z-index: 2;
-  pointer-events: none;
+  display: block;
 }
 
-.language-movie-card > * {
-  position: relative;
-  z-index: 3;
+.language-poster {
+  width: 100%;
+  height: 270px;
+  object-fit: cover;
+  display: block;
 }
 
-.language-movie-card img {
-  transition: transform 0.22s ease, filter 0.22s ease;
+.language-card-body {
+  padding: 12px;
 }
 
-.language-movie-card:hover img {
-  transform: scale(1.07);
-  filter: brightness(1.22) contrast(1.1);
+.language-card-body h3 {
+  color: #fff;
+  font-size: 15px;
+  margin: 0 0 6px;
 }
 
-@keyframes blueSpin {
-  to {
-    transform: rotate(360deg);
+.language-card-body p {
+  color: #aaa;
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.language-card-body span {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid #444;
+  background: #222;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .language-page {
+    padding: 14px;
+  }
+
+  .language-title {
+    font-size: 28px;
+    margin-top: 24px;
+  }
+
+  .language-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .language-poster {
+    height: 230px;
   }
 }
