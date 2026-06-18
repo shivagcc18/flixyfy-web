@@ -24,3 +24,20 @@ html {
 .row-scroll::-webkit-scrollbar {
   display: none;
 }
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  background: #141414;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+}
