@@ -1,0 +1,156 @@
+.movie-grid,
+.movie-row,
+.row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 12px 20px 24px;
+}
+
+.movie-card {
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
+    flex: 0 0 180px !important;
+    color: white;
+    cursor: pointer;
+}
+
+.movie-card-img {
+    width: 180px !important;
+    height: 270px !important;
+    max-width: 180px !important;
+    object-fit: cover !important;
+    display: block;
+    border-radius: 8px;
+    background: #222;
+}
+
+.movie-card-title {
+    font-size: 15px;
+    margin: 8px 0 4px;
+    line-height: 1.2;
+}
+
+.movie-card-meta {
+    font-size: 13px;
+    margin: 0;
+    opacity: 0.85;
+}
+
+.movie-card-ott {
+    margin-top: 8px;
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #202020;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    border: 1px solid #303030;
+}
+
+.ott-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #111;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.ott-badge-logo {
+    height: 18px;
+    max-width: 86px;
+    object-fit: contain;
+}
+
+.ott-badge-text {
+    display: inline-block;
+}
+.movie-card {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  cursor: pointer;
+}
+
+.movie-card:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 0 24px rgba(45, 212, 191, 0.35);
+}
+
+.movie-card-img {
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+
+.movie-card:hover .movie-card-img {
+  transform: scale(1.04);
+  filter: brightness(1.12);
+}
+.movie-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid transparent;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  cursor: pointer;
+}
+
+.movie-card:hover {
+  transform: translateY(-8px) scale(1.045);
+  border-color: #ff2bd6;
+  box-shadow:
+    0 0 12px rgba(255, 43, 214, 0.95),
+    0 0 28px rgba(255, 43, 214, 0.75),
+    0 0 55px rgba(255, 43, 214, 0.55);
+}
+
+.movie-card::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  padding: 2px;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    #ff2bd6,
+    #ffffff,
+    #ff2bd6,
+    transparent
+  );
+  opacity: 0;
+  animation: pinkSpin 1.4s linear infinite;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.movie-card:hover::before {
+  opacity: 1;
+}
+
+.movie-card-img {
+  transition: transform 0.22s ease, filter 0.22s ease;
+}
+
+.movie-card:hover .movie-card-img {
+  transform: scale(1.07);
+  filter: brightness(1.18) contrast(1.08);
+}
+
+@keyframes pinkSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.movie-card * {
+  position: relative;
+  z-index: 3;
+}

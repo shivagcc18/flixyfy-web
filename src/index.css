@@ -1,0 +1,26 @@
+body {
+  margin: 0;
+  background: #111;
+  font-family: Arial, sans-serif;
+}
+
+button:hover {
+  opacity: 0.85;
+  transform: scale(1.02);
+  transition: 0.2s;
+}
+
+/* smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* scroll cleanup */
+* {
+  box-sizing: border-box;
+}
+
+/* hide row scrollbar */
+.row-scroll::-webkit-scrollbar {
+  display: none;
+}

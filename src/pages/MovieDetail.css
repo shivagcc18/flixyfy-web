@@ -1,0 +1,33 @@
+.watch-providers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.watch-provider-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #111827;
+  color: #fff;
+  text-decoration: none;
+  transition: all .2s ease;
+}
+
+.watch-provider-card:hover {
+  background: #ec4899;
+  transform: translateY(-2px);
+}
+
+.provider-name {
+  font-weight: 600;
+}
+
+.provider-type {
+  font-size: 12px;
+  opacity: .8;
+  text-transform: capitalize;
+}

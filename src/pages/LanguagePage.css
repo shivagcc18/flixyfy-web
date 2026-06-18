@@ -1,0 +1,71 @@
+.language-movie-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  cursor: pointer;
+}
+
+.language-movie-card:hover {
+  transform: translateY(-8px) scale(1.045);
+  border-color: #2f80ff !important;
+  box-shadow:
+    0 0 14px rgba(47, 128, 255, 1),
+    0 0 34px rgba(47, 128, 255, 0.9),
+    0 0 70px rgba(47, 128, 255, 0.65);
+}
+
+.language-movie-card::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 14px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    #2f80ff 80deg,
+    #ffffff 110deg,
+    #00d4ff 145deg,
+    transparent 220deg,
+    transparent 360deg
+  );
+  opacity: 0;
+  animation: blueSpin 1.2s linear infinite;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.language-movie-card:hover::before {
+  opacity: 1;
+}
+
+.language-movie-card::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 10px;
+  background: #181818;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.language-movie-card > * {
+  position: relative;
+  z-index: 3;
+}
+
+.language-movie-card img {
+  transition: transform 0.22s ease, filter 0.22s ease;
+}
+
+.language-movie-card:hover img {
+  transform: scale(1.07);
+  filter: brightness(1.22) contrast(1.1);
+}
+
+@keyframes blueSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
