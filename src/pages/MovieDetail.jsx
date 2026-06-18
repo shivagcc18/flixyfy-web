@@ -17,6 +17,7 @@ function providerLogo(provider) {
     "prime-video": "/ott/prime-video.png",
     netflix: "/ott/netflix.png",
     jiohotstar: "/ott/jiohotstar.png",
+    hotstar: "/ott/jiohotstar.png",
     zee5: "/ott/zee5.png",
     sonyliv: "/ott/sonyliv.png",
     "sun-nxt": "/ott/sun-nxt.png",
@@ -30,12 +31,25 @@ function providerLogo(provider) {
   return logoMap[key] || null;
 }
 
+function getOttUrl(ott) {
+  return (
+    ott?.final_url ||
+    ott?.fallback_search_url ||
+    ott?.homepage_url ||
+    ott?.deep_link ||
+    null
+  );
+}
+
 export default function MovieDetail() {
   const { slug } = useParams();
   const [movie, setMovie] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    setMovie(null);
+    setError("");
+
     getMovie(slug)
       .then((data) => setMovie(data))
       .catch((err) => setError(err.message));
@@ -167,13 +181,17 @@ export default function MovieDetail() {
           >
             {movie.ott_all.map((ott, index) => {
               const logo = providerLogo(ott.provider);
+              const url = getOttUrl(ott);
 
               return (
                 <a
                   key={`${ott.provider_key || ott.provider}-${index}`}
-                  href={ott.deep_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={url || "#"}
+                  target={url ? "_blank" : undefined}
+                  rel={url ? "noopener noreferrer" : undefined}
+                  onClick={(e) => {
+                    if (!url) e.preventDefault();
+                  }}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -185,7 +203,7 @@ export default function MovieDetail() {
                     border: "1px solid #333",
                     textDecoration: "none",
                     color: "#fff",
-                    cursor: "pointer",
+                    cursor: url ? "pointer" : "not-allowed",
                   }}
                 >
                   {logo ? (
@@ -211,7 +229,7 @@ export default function MovieDetail() {
                         fontSize: "12px",
                       }}
                     >
-                      {ott.provider?.slice(0, 2)}
+                      {ott.provider?.slice(0, 2) || "OT"}
                     </span>
                   )}
 
