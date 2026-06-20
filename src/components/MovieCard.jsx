@@ -26,6 +26,7 @@ export default function MovieCard({ movie }) {
         alt={movie.title}
         loading="lazy"
         decoding="async"
+        draggable="false"
       />
 
       <h3 className="movie-card-title">{movie.title}</h3>
