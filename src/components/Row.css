@@ -14,6 +14,7 @@
 
 .movie-row {
   display: flex;
+  flex-wrap: nowrap;
   gap: 14px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -23,8 +24,27 @@
   scrollbar-width: thin;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x mandatory;
   touch-action: pan-x;
+  cursor: grab;
+  user-select: none;
+}
+
+.movie-row.is-dragging {
+  cursor: grabbing;
+  scroll-behavior: auto;
+}
+
+.movie-row::-webkit-scrollbar {
+  height: 8px;
+}
+
+.movie-row::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.movie-row::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 999px;
 }
 
 .movie-row .movie-card {
@@ -33,23 +53,25 @@
   min-width: 180px;
   max-width: 180px;
   contain: layout paint;
-  scroll-snap-align: start;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
-.movie-row .movie-card-img {
+.movie-row .movie-card-img,
+.movie-row img {
   width: 180px;
   height: 270px;
   min-height: 270px;
   max-height: 270px;
   object-fit: cover;
-  display: block;
-  border-radius: 10px;
-  background: #222;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 @media (max-width: 768px) {
   .movie-section {
-    margin: 28px 0;
+    margin: 26px 0;
   }
 
   .section-title {
@@ -59,20 +81,22 @@
 
   .movie-row {
     gap: 12px;
-    padding: 0 16px 18px;
+    padding: 0 16px 16px;
+    touch-action: pan-x;
   }
 
   .movie-row .movie-card {
-    flex: 0 0 150px;
-    width: 150px;
-    min-width: 150px;
-    max-width: 150px;
+    flex: 0 0 145px;
+    width: 145px;
+    min-width: 145px;
+    max-width: 145px;
   }
 
-  .movie-row .movie-card-img {
-    width: 150px;
-    height: 225px;
-    min-height: 225px;
-    max-height: 225px;
+  .movie-row .movie-card-img,
+  .movie-row img {
+    width: 145px;
+    height: 218px;
+    min-height: 218px;
+    max-height: 218px;
   }
 }
