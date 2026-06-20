@@ -193,7 +193,13 @@ export default function MovieDetail() {
 
   return (
     <>
-      <div style={pageStyle}>
+      <div
+  style={{
+    ...pageStyle,
+    flexDirection: window.innerWidth <= 768 ? "column" : "row",
+    padding: window.innerWidth <= 768 ? "16px" : "30px",
+  }}
+>
         <img
           src={poster}
           alt={movie.title}
@@ -341,9 +347,10 @@ const pageStyle = {
 };
 
 const posterStyle = {
-  width: "280px",
+  width: window.innerWidth <= 768 ? "100%" : "280px",
+  maxWidth: window.innerWidth <= 768 ? "320px" : "280px",
   borderRadius: "12px",
-  height: "420px",
+  height: "auto",
   objectFit: "cover",
 };
 
@@ -374,6 +381,7 @@ const buttonWrapStyle = {
   gap: "12px",
   flexWrap: "wrap",
   marginBottom: "24px",
+  width: "100%",
 };
 
 const logoStyle = {
@@ -439,5 +447,7 @@ function ottButtonStyle(active) {
     textDecoration: "none",
     color: "#fff",
     cursor: active ? "pointer" : "not-allowed",
+    width: window.innerWidth <= 768 ? "100%" : "auto",
+    boxSizing: "border-box",
   };
 }
