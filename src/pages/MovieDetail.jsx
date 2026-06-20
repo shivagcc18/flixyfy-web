@@ -77,7 +77,8 @@ export default function MovieDetail() {
   }
 
   const poster = buildPosterUrl(movie.poster_url);
-  const youtubeMovies = movie.youtube_full_movies || movie.youtube_variants || [];
+  const youtubeMovies = (movie.youtube_full_movies || movie.youtube_variants || [])
+  .slice(0, 5);
 
   const displayRuntime =
     movie.omdb_runtime || (movie.runtime ? `${movie.runtime} min` : null);
