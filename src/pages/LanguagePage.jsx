@@ -12,6 +12,11 @@ const API_BASE =
 const TMDB_IMG = "https://image.tmdb.org/t/p/w500";
 
 const YEARS = ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017"];
+const SORTS = [
+  { label: "Popular", value: "popular" },
+  { label: "Latest", value: "latest" },
+  { label: "Rating", value: "rating" },
+];
 
 function posterUrl(path) {
   if (!path) return "/no-poster.png";
@@ -38,6 +43,7 @@ export default function LanguagePage() {
   const [movies, setMovies] = useState([]);
   const [total, setTotal] = useState(0);
   const [year, setYear] = useState("");
+  const [sort, setSort] = useState("popular");
   const [loading, setLoading] = useState(true);
 
   const languageName = labelLanguage(language);
@@ -55,10 +61,11 @@ export default function LanguagePage() {
 
         let url;
 
-        if (q || year) {
+        if (q) {
           params.set("language", language);
           url = `${API_BASE}/api/v3/search?${params.toString()}`;
         } else {
+          params.set("sort", sort);
           url = `${API_BASE}/api/v3/language/${encodeURIComponent(language)}?${params.toString()}`;
         }
 
@@ -83,7 +90,7 @@ export default function LanguagePage() {
     }
 
     load();
-  }, [language, q, year]);
+  }, [language, q, year, sort]);
 
   return (
     <div className="language-page">
@@ -96,9 +103,7 @@ export default function LanguagePage() {
       <div className="language-header-row">
         <div>
           <h1 className="language-title">
-            {q
-              ? `Search "${q}" in ${languageName} Movies`
-              : `${languageName} Movies`}
+            {q ? `Search "${q}" in ${languageName} Movies` : `${languageName} Movies`}
           </h1>
 
           <p className="language-subtitle">
@@ -108,18 +113,30 @@ export default function LanguagePage() {
           </p>
         </div>
 
-        <select
-          className="year-dropdown language-year-dropdown"
-          value={year}
-          onChange={(e) => setYear(e.target.value)}
-        >
-          <option value="">All Years</option>
-          {YEARS.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
+        <div className="language-filter-controls">
+          <select
+            className="year-dropdown language-year-dropdown"
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+          >
+            <option value="">All Years</option>
+            {YEARS.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+
+          {!q && (
+            <select
+              className="year-dropdown language-year-dropdown"
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+            >
+              {SORTS.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
       {!loading && movies.length === 0 && (
@@ -128,16 +145,8 @@ export default function LanguagePage() {
 
       <div className="language-grid">
         {movies.map((movie) => (
-          <Link
-            key={movie.tmdb_id}
-            to={moviePath(movie)}
-            className="language-movie-card"
-          >
-            <img
-              src={posterUrl(movie.poster_url)}
-              alt={movie.title}
-              className="language-poster"
-            />
+          <Link key={movie.tmdb_id} to={moviePath(movie)} className="language-movie-card">
+            <img src={posterUrl(movie.poster_url)} alt={movie.title} className="language-poster" />
 
             <div className="language-card-body">
               <h3>{movie.title}</h3>
@@ -148,9 +157,7 @@ export default function LanguagePage() {
               </p>
 
               <span>
-                {movie.ott_primary
-                  ? `Watch on ${movie.ott_primary}`
-                  : "OTT unavailable"}
+                {movie.ott_primary ? `Watch on ${movie.ott_primary}` : "OTT unavailable"}
               </span>
             </div>
           </Link>

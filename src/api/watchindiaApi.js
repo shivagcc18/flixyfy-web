@@ -5,9 +5,14 @@ const API_BASE_URL =
 const API_V3 = `${API_BASE_URL}/api/v3`;
 
 async function apiGet(path) {
-  const res = await fetch(`${API_V3}${path}`);
+  const url = `${API_V3}${path}`;
+  console.log("API GET:", url);
+
+  const res = await fetch(url);
 
   if (!res.ok) {
+    const text = await res.text();
+    console.error("API FAILED:", res.status, url, text);
     throw new Error(`API error ${res.status}: ${path}`);
   }
 

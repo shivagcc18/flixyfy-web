@@ -6,7 +6,7 @@ import Row from "../components/Row";
 import SearchBar from "../components/SearchBar";
 import MovieGrid from "../components/MovieGrid";
 
-import { getHome, searchMovies } from "../api/watchindiaApi";
+import { getHome, getMovies, searchMovies } from "../api/watchindiaApi";
 import "./Home.css";
 
 const LANGUAGES = [
@@ -24,12 +24,18 @@ const LANGUAGES = [
 ];
 
 const YEARS = ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017"];
+const SORTS = [
+  { label: "Popular", value: "popular" },
+  { label: "Latest", value: "latest" },
+  { label: "Rating", value: "rating" },
+];
 
 export default function Home() {
   const [sections, setSections] = useState({});
   const [results, setResults] = useState([]);
   const [query, setQuery] = useState("");
   const [year, setYear] = useState("");
+  const [sort, setSort] = useState("popular");
   const [filterTotal, setFilterTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -44,14 +50,14 @@ export default function Home() {
   useEffect(() => {
     if (!loadedRef.current) return;
 
-    if (year || query) {
-      runSearch(query, year);
+    if (year || query || sort !== "popular") {
+      runFilter(query, year, sort);
     } else {
       setResults([]);
       setFilterTotal(0);
       loadHome();
     }
-  }, [year]);
+  }, [year, sort]);
 
   const loadHome = async () => {
     try {
@@ -71,28 +77,30 @@ export default function Home() {
     }
   };
 
-  const runSearch = async (searchText = "", selectedYear = "") => {
+  const runFilter = async (searchText = "", selectedYear = "", selectedSort = "popular") => {
     try {
       setLoading(true);
 
-      const data = await searchMovies({
-        q: searchText || "",
-        year: selectedYear || "",
-        limit: 100,
-      });
+      let data;
 
-      console.log("HOME FILTER API RESULT:", {
-        searchText,
-        selectedYear,
-        total: data.total,
-        count: data.count,
-        first: data.items?.[0],
-      });
+      if (searchText) {
+        data = await searchMovies({
+          q: searchText,
+          year: selectedYear || "",
+          limit: 100,
+        });
+      } else {
+        data = await getMovies({
+          year: selectedYear || "",
+          sort: selectedSort || "popular",
+          limit: 100,
+        });
+      }
 
       setResults(data.items || []);
       setFilterTotal(data.total || 0);
     } catch (err) {
-      console.error("Search API failed:", err);
+      console.error("Filter API failed:", err);
       setResults([]);
       setFilterTotal(0);
     } finally {
@@ -104,24 +112,26 @@ export default function Home() {
     const clean = q.trim();
     setQuery(clean);
 
-    if (!clean && !year) {
+    if (!clean && !year && sort === "popular") {
       setResults([]);
       setFilterTotal(0);
       await loadHome();
       return;
     }
 
-    await runSearch(clean, year);
+    await runFilter(clean, year, sort);
   };
 
-  const showingFiltered = Boolean(query || year);
+  const showingFiltered = Boolean(query || year || sort !== "popular");
 
   const resultTitle =
     query && year
       ? `Search Results for "${query}" in ${year} (${filterTotal})`
       : query
       ? `Search Results for "${query}" (${filterTotal})`
-      : `${year} Movies (${filterTotal})`;
+      : year
+      ? `${year} Movies (${filterTotal})`
+      : `${SORTS.find((s) => s.value === sort)?.label || "Popular"} Movies (${filterTotal})`;
 
   return (
     <div className="home-page">
@@ -137,16 +147,16 @@ export default function Home() {
             ))}
           </div>
 
-          <select
-            className="year-dropdown"
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-          >
+          <select className="year-dropdown" value={year} onChange={(e) => setYear(e.target.value)}>
             <option value="">All Years</option>
             {YEARS.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+
+          <select className="year-dropdown" value={sort} onChange={(e) => setSort(e.target.value)}>
+            {SORTS.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
         </div>
