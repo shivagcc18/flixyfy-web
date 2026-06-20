@@ -185,3 +185,50 @@
 .language-year-dropdown {
   margin-top: 8px;
 }
+.load-more-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 40px 0 60px;
+}
+
+.load-more-btn {
+  min-width: 240px;
+  height: 58px;
+  padding: 0 32px;
+
+  border: 0;
+  border-radius: 999px;
+
+  background: linear-gradient(
+    90deg,
+    #00c6ff,
+    #00e5ff
+  );
+
+  color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 0 20px rgba(0, 229, 255, 0.45),
+    0 0 40px rgba(0, 229, 255, 0.18);
+
+  transition: all 0.2s ease;
+}
+
+.load-more-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 28px rgba(0, 229, 255, 0.65),
+    0 0 55px rgba(0, 229, 255, 0.25);
+}
+
+.load-more-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
+}
