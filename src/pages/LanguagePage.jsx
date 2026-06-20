@@ -1,3 +1,4 @@
+import Navbar from "../components/Navbar";
 import SearchBar from "../components/SearchBar";
 import "./LanguagePage.css";
 import { useEffect, useState } from "react";
@@ -9,6 +10,8 @@ const API_BASE =
   "https://flixyfy-api-production.up.railway.app";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p/w500";
+
+const YEARS = ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017"];
 
 function posterUrl(path) {
   if (!path) return "/no-poster.png";
@@ -22,6 +25,11 @@ function moviePath(movie) {
   return "/";
 }
 
+function labelLanguage(language) {
+  if (!language) return "";
+  return language.charAt(0).toUpperCase() + language.slice(1);
+}
+
 export default function LanguagePage() {
   const { language } = useParams();
   const [searchParams] = useSearchParams();
@@ -29,16 +37,30 @@ export default function LanguagePage() {
 
   const [movies, setMovies] = useState([]);
   const [total, setTotal] = useState(0);
+  const [year, setYear] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const languageName = labelLanguage(language);
 
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
 
-        const url = q
-          ? `${API_BASE}/api/v3/search?q=${encodeURIComponent(q)}&language=${encodeURIComponent(language)}&limit=100`
-          : `${API_BASE}/api/v3/language/${encodeURIComponent(language)}?limit=100`;
+        const params = new URLSearchParams();
+        params.set("limit", "100");
+
+        if (q) params.set("q", q);
+        if (year) params.set("year", year);
+
+        let url;
+
+        if (q || year) {
+          params.set("language", language);
+          url = `${API_BASE}/api/v3/search?${params.toString()}`;
+        } else {
+          url = `${API_BASE}/api/v3/language/${encodeURIComponent(language)}?${params.toString()}`;
+        }
 
         const res = await fetch(url);
         const data = await res.json();
@@ -61,23 +83,44 @@ export default function LanguagePage() {
     }
 
     load();
-  }, [language, q]);
+  }, [language, q, year]);
 
   return (
     <div className="language-page">
-      <SearchBar large language={language} />
+      <Navbar />
 
-      <h1 className="language-title">
-        {q
-          ? `Search "${q}" in ${language?.toUpperCase()} Movies`
-          : `${language?.toUpperCase()} Movies`}
-      </h1>
+      <div className="language-search-wrap">
+        <SearchBar large language={language} />
+      </div>
 
-      <p className="language-subtitle">
-        {loading
-          ? `Loading ${language} movies...`
-          : `Showing ${movies.length} of ${total} ${language} movies from FLIXYFY catalog.`}
-      </p>
+      <div className="language-header-row">
+        <div>
+          <h1 className="language-title">
+            {q
+              ? `Search "${q}" in ${languageName} Movies`
+              : `${languageName} Movies`}
+          </h1>
+
+          <p className="language-subtitle">
+            {loading
+              ? `Loading ${languageName} movies...`
+              : `${total.toLocaleString()} ${languageName} movies available`}
+          </p>
+        </div>
+
+        <select
+          className="year-dropdown language-year-dropdown"
+          value={year}
+          onChange={(e) => setYear(e.target.value)}
+        >
+          <option value="">All Years</option>
+          {YEARS.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {!loading && movies.length === 0 && (
         <p className="language-empty">No movies found.</p>

@@ -48,19 +48,21 @@ export function getMovie(slug) {
 }
 
 export function searchMovies({
-  q,
+  q = "",
   page = 1,
   limit = 24,
   language = "",
+  year = "",
   hasOtt = "",
-}) {
+} = {}) {
   const params = new URLSearchParams();
 
-  params.set("q", q);
+  params.set("q", q || "");
   params.set("page", page);
   params.set("limit", limit);
 
   if (language) params.set("language", language);
+  if (year) params.set("year", year);
   if (hasOtt !== "") params.set("has_ott", hasOtt);
 
   return apiGet(`/search?${params.toString()}`);

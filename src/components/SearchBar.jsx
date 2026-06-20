@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./SearchBar.css";
 
-export default function SearchBar({ large = false, language = "" }) {
+export default function SearchBar({ large = false, language = "", onSearch }) {
   const [q, setQ] = useState("");
   const navigate = useNavigate();
 
@@ -10,6 +10,11 @@ export default function SearchBar({ large = false, language = "" }) {
     e.preventDefault();
     const clean = q.trim();
     if (!clean) return;
+
+    if (onSearch) {
+      onSearch(clean);
+      return;
+    }
 
     if (language) {
       navigate(`/language/${language}?q=${encodeURIComponent(clean)}`);

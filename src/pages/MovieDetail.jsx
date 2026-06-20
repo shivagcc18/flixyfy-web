@@ -44,6 +44,14 @@ function getOttUrl(ott) {
   );
 }
 
+function getYoutubeUrl(yt) {
+  if (yt?.video_url) return yt.video_url;
+  if (yt?.youtube_url) return yt.youtube_url;
+  if (yt?.url) return yt.url;
+  if (yt?.video_id) return `https://www.youtube.com/watch?v=${yt.video_id}`;
+  return null;
+}
+
 function formatViews(value) {
   if (!value) return null;
   const n = Number(value);
@@ -77,8 +85,15 @@ export default function MovieDetail() {
   }
 
   const poster = buildPosterUrl(movie.poster_url);
-  const youtubeMovies = (movie.youtube_full_movies || movie.youtube_variants || [])
-  .slice(0, 5);
+
+  const youtubeMovies = (
+    movie.youtube_full_movies ||
+    movie.youtube_variants ||
+    movie.youtube ||
+    []
+  )
+    .filter((yt) => getYoutubeUrl(yt))
+    .slice(0, 5);
 
   const displayRuntime =
     movie.omdb_runtime || (movie.runtime ? `${movie.runtime} min` : null);
@@ -90,27 +105,8 @@ export default function MovieDetail() {
       : null);
 
   return (
-    <div
-      style={{
-        background: "#141414",
-        minHeight: "100vh",
-        padding: "30px",
-        color: "white",
-        display: "flex",
-        gap: "30px",
-        alignItems: "flex-start",
-      }}
-    >
-      <img
-        src={poster}
-        alt={movie.title}
-        style={{
-          width: "280px",
-          borderRadius: "12px",
-          height: "420px",
-          objectFit: "cover",
-        }}
-      />
+    <div style={pageStyle}>
+      <img src={poster} alt={movie.title} style={posterStyle} />
 
       <div style={{ width: "100%" }}>
         <h1>{movie.title}</h1>
@@ -119,29 +115,13 @@ export default function MovieDetail() {
           {movie.release_year} • {movie.primary_language}
         </p>
 
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "10px",
-            margin: "14px 0 18px",
-          }}
-        >
+        <div style={badgeWrapStyle}>
           {movie.rating && (
             <span style={badgeStyle}>TMDB {Number(movie.rating).toFixed(1)}</span>
           )}
 
           {movie.imdb_rating && (
-            <span
-              style={{
-                ...badgeStyle,
-                background: "#f5c518",
-                color: "#111",
-                fontWeight: "800",
-              }}
-            >
-              IMDb {movie.imdb_rating}
-            </span>
+            <span style={imdbBadgeStyle}>IMDb {movie.imdb_rating}</span>
           )}
 
           {displayRuntime && <span style={badgeStyle}>{displayRuntime}</span>}
@@ -168,7 +148,7 @@ export default function MovieDetail() {
                   onClick={(e) => {
                     if (!url) e.preventDefault();
                   }}
-                  style={ottButtonStyle(url)}
+                  style={ottButtonStyle(Boolean(url))}
                 >
                   {logo ? (
                     <img src={logo} alt={providerName} style={logoStyle} />
@@ -194,32 +174,20 @@ export default function MovieDetail() {
             <div style={buttonWrapStyle}>
               {youtubeMovies.map((yt, index) => {
                 const views = formatViews(yt.view_count);
+                const url = getYoutubeUrl(yt);
 
                 return (
                   <a
-                    key={`${yt.video_id}-${index}`}
-                    href={yt.video_url}
+                    key={`${yt.video_id || url}-${index}`}
+                    href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{
-                      ...ottButtonStyle(true),
-                      background: "#2a1111",
-                      border: "1px solid #5a1c1c",
-                    }}
+                    style={youtubeButtonStyle}
                   >
-                    <span
-                      style={{
-                        ...fallbackIconStyle,
-                        background: "#ff0000",
-                        color: "#fff",
-                        fontWeight: "900",
-                      }}
-                    >
-                      ▶
-                    </span>
+                    <span style={youtubeIconStyle}>▶</span>
 
                     <span>
-                      YouTube
+                      Watch Free
                       {yt.youtube_language ? ` • ${yt.youtube_language}` : ""}
                       {views ? ` • ${views}` : ""}
                     </span>
@@ -232,18 +200,11 @@ export default function MovieDetail() {
 
         <h2>Overview</h2>
 
-        <p style={{ maxWidth: "700px", lineHeight: "1.6" }}>
+        <p style={overviewStyle}>
           {movie.overview || "Overview not available."}
         </p>
 
-        <div
-          style={{
-            marginTop: "18px",
-            display: "grid",
-            gap: "10px",
-            maxWidth: "700px",
-          }}
-        >
+        <div style={infoGridStyle}>
           {movie.director && movie.director !== "N/A" && (
             <div>
               <strong>Director: </strong>
@@ -263,12 +224,43 @@ export default function MovieDetail() {
   );
 }
 
+const pageStyle = {
+  background: "#141414",
+  minHeight: "100vh",
+  padding: "30px",
+  color: "white",
+  display: "flex",
+  gap: "30px",
+  alignItems: "flex-start",
+};
+
+const posterStyle = {
+  width: "280px",
+  borderRadius: "12px",
+  height: "420px",
+  objectFit: "cover",
+};
+
+const badgeWrapStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "10px",
+  margin: "14px 0 18px",
+};
+
 const badgeStyle = {
   background: "#222",
   color: "#fff",
   padding: "6px 10px",
   borderRadius: "10px",
   fontWeight: "700",
+};
+
+const imdbBadgeStyle = {
+  ...badgeStyle,
+  background: "#f5c518",
+  color: "#111",
+  fontWeight: "800",
 };
 
 const buttonWrapStyle = {
@@ -295,7 +287,40 @@ const fallbackIconStyle = {
   fontSize: "12px",
 };
 
-function ottButtonStyle(url) {
+const youtubeIconStyle = {
+  ...fallbackIconStyle,
+  background: "#ff0000",
+  color: "#fff",
+  fontWeight: "900",
+};
+
+const youtubeButtonStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  background: "#2a1111",
+  padding: "10px 14px",
+  borderRadius: "18px",
+  fontWeight: "800",
+  border: "1px solid #ff0000",
+  textDecoration: "none",
+  color: "#fff",
+  cursor: "pointer",
+};
+
+const overviewStyle = {
+  maxWidth: "700px",
+  lineHeight: "1.6",
+};
+
+const infoGridStyle = {
+  marginTop: "18px",
+  display: "grid",
+  gap: "10px",
+  maxWidth: "700px",
+};
+
+function ottButtonStyle(active) {
   return {
     display: "flex",
     alignItems: "center",
@@ -307,6 +332,6 @@ function ottButtonStyle(url) {
     border: "1px solid #333",
     textDecoration: "none",
     color: "#fff",
-    cursor: url ? "pointer" : "not-allowed",
+    cursor: active ? "pointer" : "not-allowed",
   };
 }
