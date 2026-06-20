@@ -8,6 +8,7 @@ import SearchBar from "../components/SearchBar";
 import MovieGrid from "../components/MovieGrid";
 
 import { getHome, getMovies, searchMovies } from "../api/watchindiaApi";
+import { setPageSeo, setJsonLd } from "../utils/seo";
 import "./Home.css";
 
 const PAGE_SIZE = 24;
@@ -67,14 +68,24 @@ export default function Home() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
-    document.title = "Flixyfy - Find Where Movies Are Streaming in India";
+    setPageSeo({
+      title: "Find Where Movies Are Streaming in India",
+      description:
+        "Search movies across Netflix, Prime Video, JioHotstar, ZEE5, SonyLIV, Aha, Sun NXT, ETV Win and more. Discover where to watch movies online in India.",
+      path: "/",
+    });
 
-    document
-      .querySelector('meta[name="description"]')
-      ?.setAttribute(
-        "content",
-        "Search movies across Netflix, Prime Video, JioHotstar, ZEE5, SonyLIV, Aha, Sun NXT, ETV Win and more. Discover where to watch movies online in India."
-      );
+    setJsonLd("homepage-schema", {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "Flixyfy",
+      url: "https://www.flixyfy.com",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: "https://www.flixyfy.com/?q={search_term_string}",
+        "query-input": "required name=search_term_string",
+      },
+    });
   }, []);
 
   const showingFiltered = Boolean(query || year || sort !== "popular" || availability || provider);

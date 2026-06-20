@@ -4,6 +4,7 @@ import SearchBar from "../components/SearchBar";
 import "./LanguagePage.css";
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { setPageSeo, setJsonLd } from "../utils/seo";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -77,19 +78,27 @@ export default function LanguagePage() {
 
   useEffect(() => {
     const title = q
-      ? `${q} in ${languageName} Movies | Flixyfy`
-      : `${languageName} Movies on OTT | Flixyfy`;
+      ? `${q} in ${languageName} Movies`
+      : `${languageName} Movies on OTT`;
 
     const description = q
       ? `Search ${q} in ${languageName} movies and find where to watch online across Indian OTT platforms.`
-      : `Discover ${languageName} movies streaming on Netflix, Prime Video, JioHotstar, ZEE5, SonyLIV, Aha, Sun NXT, ETV Win and more.`;
+      : `Discover ${languageName} movies streaming on Netflix, Prime Video, JioHotstar, ZEE5, SonyLIV, Aha, Sun NXT and more.`;
 
-    document.title = title;
+    setPageSeo({
+      title,
+      description,
+      path: `/language/${language}`,
+    });
 
-    document
-      .querySelector('meta[name="description"]')
-      ?.setAttribute("content", description);
-  }, [languageName, q]);
+    setJsonLd("language-schema", {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: `${languageName} Movies`,
+      description,
+      url: `https://www.flixyfy.com/language/${language}`,
+    });
+  }, [language, languageName, q]);
 
   useEffect(() => {
     setYear("");
@@ -243,13 +252,18 @@ export default function LanguagePage() {
 
       <div className="language-grid">
         {movies.map((movie) => (
-          <Link key={`${movie.tmdb_id}-${movie.slug}`} to={moviePath(movie)} className="language-movie-card">
+          <Link
+            key={`${movie.tmdb_id}-${movie.slug}`}
+            to={moviePath(movie)}
+            className="language-movie-card"
+          >
             <img
               src={posterUrl(movie.poster_url)}
               alt={movie.title}
               className="language-poster"
               loading="lazy"
               decoding="async"
+              draggable="false"
             />
 
             <div className="language-card-body">
