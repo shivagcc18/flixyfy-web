@@ -2,81 +2,65 @@ import { useRef } from "react";
 import MovieCard from "./MovieCard";
 import "./Row.css";
 
-export default function Row({ title, movies = [] }) {
+export default function Row({ title, movies }) {
   const rowRef = useRef(null);
-  const drag = useRef({
-    isDown: false,
-    startX: 0,
-    scrollLeft: 0,
-    moved: false,
-  });
+  const startX = useRef(0);
+  const startScrollLeft = useRef(0);
+  const isDragging = useRef(false);
+  const moved = useRef(false);
 
-  const onPointerDown = (e) => {
+  if (!movies || movies.length === 0) return null;
+
+  function onTouchStart(e) {
     const row = rowRef.current;
     if (!row) return;
 
-    drag.current.isDown = true;
-    drag.current.startX = e.clientX;
-    drag.current.scrollLeft = row.scrollLeft;
-    drag.current.moved = false;
+    isDragging.current = true;
+    moved.current = false;
+    startX.current = e.touches[0].clientX;
+    startScrollLeft.current = row.scrollLeft;
+  }
 
-    row.classList.add("is-dragging");
-    row.setPointerCapture?.(e.pointerId);
-  };
-
-  const onPointerMove = (e) => {
+  function onTouchMove(e) {
     const row = rowRef.current;
-    if (!row || !drag.current.isDown) return;
+    if (!row || !isDragging.current) return;
 
-    const dx = e.clientX - drag.current.startX;
+    const x = e.touches[0].clientX;
+    const walk = (startX.current - x) * 1.2;
 
-    if (Math.abs(dx) > 5) {
-      drag.current.moved = true;
+    if (Math.abs(walk) > 5) {
+      moved.current = true;
     }
 
-    row.scrollLeft = drag.current.scrollLeft - dx;
-  };
+    row.scrollLeft = startScrollLeft.current + walk;
+  }
 
-  const stopDrag = (e) => {
-    const row = rowRef.current;
-    if (!row) return;
+  function onTouchEnd() {
+    isDragging.current = false;
+  }
 
-    drag.current.isDown = false;
-    row.classList.remove("is-dragging");
-
-    try {
-      row.releasePointerCapture?.(e.pointerId);
-    } catch {
-      // ignore
-    }
-  };
-
-  const onClickCapture = (e) => {
-    if (drag.current.moved) {
+  function onClickCapture(e) {
+    if (moved.current) {
       e.preventDefault();
       e.stopPropagation();
-      drag.current.moved = false;
+      moved.current = false;
     }
-  };
-
-  if (!movies.length) return null;
+  }
 
   return (
     <section className="movie-section">
-      {title && <h2 className="section-title">{title}</h2>}
+      <h2 className="section-title">{title}</h2>
 
       <div
         ref={rowRef}
         className="movie-row"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={stopDrag}
-        onPointerCancel={stopDrag}
-        onPointerLeave={stopDrag}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
         onClickCapture={onClickCapture}
       >
         {movies.map((movie) => (
-          <MovieCard key={movie.tmdb_id || movie.id || movie.slug} movie={movie} />
+          <MovieCard key={movie.tmdb_id || movie.slug} movie={movie} />
         ))}
       </div>
     </section>

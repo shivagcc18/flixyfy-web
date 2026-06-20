@@ -21,13 +21,12 @@ export default function MovieCard({ movie }) {
   return (
     <div className="movie-card" onClick={handleClick}>
       <img
-  className="movie-card-img"
-  src={posterUrl}
-  alt={movie.title}
-  loading="lazy"
-  decoding="async"
-  draggable="false"
-/>
+        className="movie-card-img"
+        src={poster}
+        alt={movie.title}
+        loading="lazy"
+        decoding="async"
+      />
 
       <h3 className="movie-card-title">{movie.title}</h3>
 
