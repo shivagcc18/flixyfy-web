@@ -22,6 +22,9 @@
   align-items: flex-start;
   scrollbar-width: thin;
   overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  touch-action: pan-x;
 }
 
 .movie-row .movie-card {
@@ -30,6 +33,7 @@
   min-width: 180px;
   max-width: 180px;
   contain: layout paint;
+  scroll-snap-align: start;
 }
 
 .movie-row .movie-card-img {
@@ -41,4 +45,34 @@
   display: block;
   border-radius: 10px;
   background: #222;
+}
+
+@media (max-width: 768px) {
+  .movie-section {
+    margin: 28px 0;
+  }
+
+  .section-title {
+    padding: 0 16px;
+    font-size: 22px;
+  }
+
+  .movie-row {
+    gap: 12px;
+    padding: 0 16px 18px;
+  }
+
+  .movie-row .movie-card {
+    flex: 0 0 150px;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
+  }
+
+  .movie-row .movie-card-img {
+    width: 150px;
+    height: 225px;
+    min-height: 225px;
+    max-height: 225px;
+  }
 }
