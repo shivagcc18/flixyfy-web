@@ -1,4 +1,5 @@
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import SearchBar from "../components/SearchBar";
 import "./LanguagePage.css";
 import { useEffect, useState } from "react";
@@ -217,7 +218,9 @@ export default function LanguagePage() {
         </div>
       </div>
 
-      {!loading && movies.length === 0 && <p className="language-empty">No movies found.</p>}
+      {!loading && movies.length === 0 && (
+        <p className="language-empty">No movies found.</p>
+      )}
 
       <div className="language-grid">
         {movies.map((movie) => (
@@ -238,11 +241,15 @@ export default function LanguagePage() {
                 {movie.rating ? Number(movie.rating).toFixed(1) : "-"}
               </p>
 
-              <span>{movie.ott_primary ? `Watch on ${movie.ott_primary}` : "OTT unavailable"}</span>
+              <span>
+                {movie.ott_primary ? `Watch on ${movie.ott_primary}` : "OTT unavailable"}
+              </span>
             </div>
           </Link>
         ))}
       </div>
+
+      <Footer />
     </div>
   );
 }

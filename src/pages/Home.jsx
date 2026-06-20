@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SkeletonRow from "../components/SkeletonRow";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import Row from "../components/Row";
 import SearchBar from "../components/SearchBar";
 import MovieGrid from "../components/MovieGrid";
@@ -310,6 +311,8 @@ export default function Home() {
           )}
         </>
       )}
+
+      <Footer />
     </div>
   );
 }

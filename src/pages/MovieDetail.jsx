@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getMovie } from "../api/watchindiaApi";
 import { trackProviderClick } from "../utils/analytics";
+import Footer from "../components/Footer";
+
 function buildPosterUrl(path) {
   if (!path) return "/no-poster.png";
   if (path.startsWith("http")) return path;
@@ -152,11 +154,21 @@ export default function MovieDetail() {
   }, [movie, slug]);
 
   if (error) {
-    return <div style={{ color: "white", padding: 30 }}>Movie not found</div>;
+    return (
+      <>
+        <div style={{ color: "white", padding: 30 }}>Movie not found</div>
+        <Footer />
+      </>
+    );
   }
 
   if (!movie) {
-    return <div style={{ color: "white", padding: 30 }}>Loading...</div>;
+    return (
+      <>
+        <div style={{ color: "white", padding: 30 }}>Loading...</div>
+        <Footer />
+      </>
+    );
   }
 
   const poster = buildPosterUrl(movie.poster_url);
@@ -180,133 +192,141 @@ export default function MovieDetail() {
       : null);
 
   return (
-    <div style={pageStyle}>
-      <img
-        src={poster}
-        alt={movie.title}
-        style={posterStyle}
-        loading="eager"
-        decoding="async"
-      />
+    <>
+      <div style={pageStyle}>
+        <img
+          src={poster}
+          alt={movie.title}
+          style={posterStyle}
+          loading="eager"
+          decoding="async"
+        />
 
-      <div style={{ width: "100%" }}>
-        <h1>{movie.title}</h1>
+        <div style={{ width: "100%" }}>
+          <h1>{movie.title}</h1>
 
-        <p>
-          {movie.release_year} • {movie.primary_language}
-        </p>
+          <p>
+            {movie.release_year} • {movie.primary_language}
+          </p>
 
-        <div style={badgeWrapStyle}>
-          {movie.rating && (
-            <span style={badgeStyle}>TMDB {Number(movie.rating).toFixed(1)}</span>
-          )}
+          <div style={badgeWrapStyle}>
+            {movie.rating && (
+              <span style={badgeStyle}>TMDB {Number(movie.rating).toFixed(1)}</span>
+            )}
 
-          {movie.imdb_rating && (
-            <span style={imdbBadgeStyle}>IMDb {movie.imdb_rating}</span>
-          )}
+            {movie.imdb_rating && (
+              <span style={imdbBadgeStyle}>IMDb {movie.imdb_rating}</span>
+            )}
 
-          {displayRuntime && <span style={badgeStyle}>{displayRuntime}</span>}
+            {displayRuntime && <span style={badgeStyle}>{displayRuntime}</span>}
 
-          {displayGenres && <span style={badgeStyle}>{displayGenres}</span>}
-        </div>
-
-        <h2>Watch On</h2>
-
-        {movie.ott_all && movie.ott_all.length > 0 ? (
-          <div style={buttonWrapStyle}>
-            {movie.ott_all.map((ott, index) => {
-              const providerName =
-                ott.provider_display_name || ott.provider || ott.button_label || "OTT";
-              const logo = providerLogo(ott.provider_key, providerName);
-              const url = getOttUrl(ott);
-
-              return (
-                <a
-                  key={`${ott.provider_key || providerName}-${index}`}
-                  href={url || "#"}
-                  target={url ? "_blank" : undefined}
-                  onClick={() => trackProviderClick(providerName, movie.title)}
-                  rel={url ? "noopener noreferrer" : undefined}
-                  onClick={(e) => {
-                    if (!url) e.preventDefault();
-                  }}
-                  style={ottButtonStyle(Boolean(url))}
-                >
-                  {logo ? (
-                    <img
-                      src={logo}
-                      alt={providerName}
-                      style={logoStyle}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <span style={fallbackIconStyle}>
-                      {providerName.slice(0, 2).toUpperCase()}
-                    </span>
-                  )}
-
-                  <span>{providerName}</span>
-                </a>
-              );
-            })}
+            {displayGenres && <span style={badgeStyle}>{displayGenres}</span>}
           </div>
-        ) : (
-          <p>OTT availability not found.</p>
-        )}
 
-        {youtubeMovies.length > 0 && (
-          <>
-            <h2>Watch Free on YouTube</h2>
+          <h2>Watch On</h2>
 
+          {movie.ott_all && movie.ott_all.length > 0 ? (
             <div style={buttonWrapStyle}>
-              {youtubeMovies.map((yt, index) => {
-                const views = formatViews(yt.view_count);
-                const url = getYoutubeUrl(yt);
+              {movie.ott_all.map((ott, index) => {
+                const providerName =
+                  ott.provider_display_name || ott.provider || ott.button_label || "OTT";
+                const logo = providerLogo(ott.provider_key, providerName);
+                const url = getOttUrl(ott);
 
                 return (
                   <a
-                    key={`${yt.video_id || url}-${index}`}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={youtubeButtonStyle}
-                  >
-                    <span style={youtubeIconStyle}>▶</span>
+                    key={`${ott.provider_key || providerName}-${index}`}
+                    href={url || "#"}
+                    target={url ? "_blank" : undefined}
+                    rel={url ? "noopener noreferrer" : undefined}
+                    onClick={(e) => {
+                      if (!url) {
+                        e.preventDefault();
+                        return;
+                      }
 
-                    <span>
-                      Watch Free
-                      {yt.youtube_language ? ` • ${yt.youtube_language}` : ""}
-                      {views ? ` • ${views}` : ""}
-                    </span>
+                      trackProviderClick(providerName, movie.title);
+                    }}
+                    style={ottButtonStyle(Boolean(url))}
+                  >
+                    {logo ? (
+                      <img
+                        src={logo}
+                        alt={providerName}
+                        style={logoStyle}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <span style={fallbackIconStyle}>
+                        {providerName.slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+
+                    <span>{providerName}</span>
                   </a>
                 );
               })}
             </div>
-          </>
-        )}
-
-        <h2>Overview</h2>
-
-        <p style={overviewStyle}>{movie.overview || "Overview not available."}</p>
-
-        <div style={infoGridStyle}>
-          {movie.director && movie.director !== "N/A" && (
-            <div>
-              <strong>Director: </strong>
-              <span>{movie.director}</span>
-            </div>
+          ) : (
+            <p>OTT availability not found.</p>
           )}
 
-          {movie.actors && movie.actors !== "N/A" && (
-            <div>
-              <strong>Cast: </strong>
-              <span>{movie.actors}</span>
-            </div>
+          {youtubeMovies.length > 0 && (
+            <>
+              <h2>Watch Free on YouTube</h2>
+
+              <div style={buttonWrapStyle}>
+                {youtubeMovies.map((yt, index) => {
+                  const views = formatViews(yt.view_count);
+                  const url = getYoutubeUrl(yt);
+
+                  return (
+                    <a
+                      key={`${yt.video_id || url}-${index}`}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={youtubeButtonStyle}
+                    >
+                      <span style={youtubeIconStyle}>▶</span>
+
+                      <span>
+                        Watch Free
+                        {yt.youtube_language ? ` • ${yt.youtube_language}` : ""}
+                        {views ? ` • ${views}` : ""}
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
+            </>
           )}
+
+          <h2>Overview</h2>
+
+          <p style={overviewStyle}>{movie.overview || "Overview not available."}</p>
+
+          <div style={infoGridStyle}>
+            {movie.director && movie.director !== "N/A" && (
+              <div>
+                <strong>Director: </strong>
+                <span>{movie.director}</span>
+              </div>
+            )}
+
+            {movie.actors && movie.actors !== "N/A" && (
+              <div>
+                <strong>Cast: </strong>
+                <span>{movie.actors}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      <Footer />
+    </>
   );
 }
 
