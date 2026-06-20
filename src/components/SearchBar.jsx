@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { trackSearch } from "../utils/analytics";
 import "./SearchBar.css";
 
 export default function SearchBar({ large = false, language = "", onSearch }) {
@@ -10,6 +11,8 @@ export default function SearchBar({ large = false, language = "", onSearch }) {
     e.preventDefault();
     const clean = q.trim();
     if (!clean) return;
+
+    trackSearch(clean, language);
 
     if (onSearch) {
       onSearch(clean);

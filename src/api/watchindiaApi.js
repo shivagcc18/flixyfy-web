@@ -4,19 +4,52 @@ const API_BASE_URL =
 
 const API_V3 = `${API_BASE_URL}/api/v3`;
 
+const cache = new Map();
+const pendingRequests = new Map();
+
+const CACHE_TTL = 5 * 60 * 1000;
+
 async function apiGet(path) {
-  const url = `${API_V3}${path}`;
-  console.log("API GET:", url);
+  const now = Date.now();
+  const cached = cache.get(path);
 
-  const res = await fetch(url);
-
-  if (!res.ok) {
-    const text = await res.text();
-    console.error("API FAILED:", res.status, url, text);
-    throw new Error(`API error ${res.status}: ${path}`);
+  if (cached && now - cached.time < CACHE_TTL) {
+    return cached.data;
   }
 
-  return res.json();
+  if (pendingRequests.has(path)) {
+    return pendingRequests.get(path);
+  }
+
+  const request = fetch(`${API_V3}${path}`)
+    .then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("API FAILED:", res.status, path, text);
+        throw new Error(`API error ${res.status}: ${path}`);
+      }
+
+      const data = await res.json();
+
+      cache.set(path, {
+        data,
+        time: Date.now(),
+      });
+
+      return data;
+    })
+    .finally(() => {
+      pendingRequests.delete(path);
+    });
+
+  pendingRequests.set(path, request);
+
+  return request;
+}
+
+export function clearCache() {
+  cache.clear();
+  pendingRequests.clear();
 }
 
 export function getHome() {
@@ -31,6 +64,7 @@ export function getMovies({
   hasOtt = "",
   isFree = "",
   provider = "",
+  availability = "",
   sort = "popular",
 } = {}) {
   const params = new URLSearchParams();
@@ -44,6 +78,7 @@ export function getMovies({
   if (hasOtt !== "") params.set("has_ott", hasOtt);
   if (isFree !== "") params.set("is_free", isFree);
   if (provider) params.set("provider", provider);
+  if (availability) params.set("availability", availability);
 
   return apiGet(`/movies?${params.toString()}`);
 }
@@ -52,49 +87,32 @@ export function getMovie(slug) {
   return apiGet(`/movie/${slug}`);
 }
 
-export function searchMovies({
-  q = "",
-  page = 1,
-  limit = 24,
-  language = "",
-  year = "",
-  hasOtt = "",
-} = {}) {
-  const params = new URLSearchParams();
+export function searchMovies(params = {}) {
+  const query = new URLSearchParams();
 
-  params.set("q", q || "");
-  params.set("page", page);
-  params.set("limit", limit);
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== "" && v !== undefined && v !== null) {
+      query.set(k, v);
+    }
+  });
 
-  if (language) params.set("language", language);
-  if (year) params.set("year", year);
-  if (hasOtt !== "") params.set("has_ott", hasOtt);
-
-  return apiGet(`/search?${params.toString()}`);
+  return apiGet(`/search?${query.toString()}`);
 }
 
 export function getLanguages() {
   return apiGet("/languages");
 }
 
-export function getLanguageMovies({
-  language,
-  page = 1,
-  limit = 24,
-  sort = "popular",
-  year = "",
-  hasOtt = "",
-}) {
-  const params = new URLSearchParams();
+export function getLanguageMovies(language, params = {}) {
+  const query = new URLSearchParams();
 
-  params.set("page", page);
-  params.set("limit", limit);
-  params.set("sort", sort);
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== "" && v !== undefined && v !== null) {
+      query.set(k, v);
+    }
+  });
 
-  if (year) params.set("year", year);
-  if (hasOtt !== "") params.set("has_ott", hasOtt);
-
-  return apiGet(`/language/${language}?${params.toString()}`);
+  return apiGet(`/language/${language}?${query.toString()}`);
 }
 
 export function getOttProviders() {

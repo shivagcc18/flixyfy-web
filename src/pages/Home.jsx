@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
+import SkeletonRow from "../components/SkeletonRow";
 import Navbar from "../components/Navbar";
 import Row from "../components/Row";
 import SearchBar from "../components/SearchBar";
@@ -8,6 +8,8 @@ import MovieGrid from "../components/MovieGrid";
 
 import { getHome, getMovies, searchMovies } from "../api/watchindiaApi";
 import "./Home.css";
+
+const PAGE_SIZE = 24;
 
 const LANGUAGES = [
   { label: "Hindi", slug: "hindi" },
@@ -24,10 +26,30 @@ const LANGUAGES = [
 ];
 
 const YEARS = ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017"];
+
 const SORTS = [
   { label: "Popular", value: "popular" },
   { label: "Latest", value: "latest" },
   { label: "Rating", value: "rating" },
+];
+
+const AVAILABILITY = [
+  { label: "All Movies", value: "" },
+  { label: "OTT Available", value: "ott" },
+  { label: "Free to Watch", value: "youtube" },
+];
+
+const PROVIDERS = [
+  { label: "All Providers", value: "" },
+  { label: "Netflix", value: "netflix" },
+  { label: "Prime Video", value: "prime_video" },
+  { label: "JioHotstar", value: "jiohotstar" },
+  { label: "ZEE5", value: "zee5" },
+  { label: "SonyLIV", value: "sonyliv" },
+  { label: "Aha", value: "aha" },
+  { label: "Sun NXT", value: "sun_nxt" },
+  { label: "ETV Win", value: "etv_win" },
+  { label: "YouTube", value: "youtube" },
 ];
 
 export default function Home() {
@@ -36,31 +58,31 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [year, setYear] = useState("");
   const [sort, setSort] = useState("popular");
+  const [availability, setAvailability] = useState("");
+  const [provider, setProvider] = useState("");
   const [filterTotal, setFilterTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-
-  const loadedRef = useRef(false);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
-    if (loadedRef.current) return;
-    loadedRef.current = true;
-    loadHome();
+    document.title = "Flixyfy - Find Where Movies Are Streaming in India";
+
+    document
+      .querySelector('meta[name="description"]')
+      ?.setAttribute(
+        "content",
+        "Search movies across Netflix, Prime Video, JioHotstar, ZEE5, SonyLIV, Aha, Sun NXT, ETV Win and more. Discover where to watch movies online in India."
+      );
   }, []);
 
-  useEffect(() => {
-    if (!loadedRef.current) return;
-
-    if (year || query || sort !== "popular") {
-      runFilter(query, year, sort);
-    } else {
-      setResults([]);
-      setFilterTotal(0);
-      loadHome();
-    }
-  }, [year, sort]);
+  const showingFiltered = Boolean(query || year || sort !== "popular" || availability || provider);
+  const canLoadMore = showingFiltered && results.length < filterTotal;
 
   const loadHome = async () => {
     try {
+      setLoading(true);
+
       const data = await getHome();
 
       setSections({
@@ -74,12 +96,26 @@ export default function Home() {
     } catch (err) {
       console.error("Home API failed:", err);
       setSections({});
+    } finally {
+      setLoading(false);
     }
   };
 
-  const runFilter = async (searchText = "", selectedYear = "", selectedSort = "popular") => {
+  const runFilter = async (
+    searchText = "",
+    selectedYear = "",
+    selectedSort = "popular",
+    selectedAvailability = "",
+    selectedProvider = "",
+    selectedPage = 1,
+    append = false
+  ) => {
     try {
-      setLoading(true);
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
 
       let data;
 
@@ -87,51 +123,89 @@ export default function Home() {
         data = await searchMovies({
           q: searchText,
           year: selectedYear || "",
-          limit: 100,
+          page: selectedPage,
+          limit: PAGE_SIZE,
         });
       } else {
         data = await getMovies({
+          page: selectedPage,
+          limit: PAGE_SIZE,
           year: selectedYear || "",
           sort: selectedSort || "popular",
-          limit: 100,
+          availability: selectedAvailability || "",
+          provider: selectedProvider || "",
         });
       }
 
-      setResults(data.items || []);
+      const items = data.items || [];
+
+      setResults((prev) => (append ? [...prev, ...items] : items));
       setFilterTotal(data.total || 0);
+      setPage(selectedPage);
     } catch (err) {
       console.error("Filter API failed:", err);
-      setResults([]);
-      setFilterTotal(0);
+      if (!append) {
+        setResults([]);
+        setFilterTotal(0);
+      }
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  useEffect(() => {
+    loadHome();
+  }, []);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (showingFiltered) {
+        runFilter(query, year, sort, availability, provider, 1, false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timeout);
+  }, [year, sort, availability, provider]);
 
   const handleSearch = async (q) => {
     const clean = q.trim();
     setQuery(clean);
 
-    if (!clean && !year && sort === "popular") {
+    if (!clean && !year && sort === "popular" && !availability && !provider) {
       setResults([]);
       setFilterTotal(0);
+      setPage(1);
       await loadHome();
       return;
     }
 
-    await runFilter(clean, year, sort);
+    await runFilter(clean, year, sort, availability, provider, 1, false);
   };
 
-  const showingFiltered = Boolean(query || year || sort !== "popular");
+  const handleLoadMore = async () => {
+    if (loadingMore || !canLoadMore) return;
 
-  const resultTitle =
-    query && year
-      ? `Search Results for "${query}" in ${year} (${filterTotal})`
-      : query
-      ? `Search Results for "${query}" (${filterTotal})`
-      : year
-      ? `${year} Movies (${filterTotal})`
-      : `${SORTS.find((s) => s.value === sort)?.label || "Popular"} Movies (${filterTotal})`;
+    await runFilter(query, year, sort, availability, provider, page + 1, true);
+  };
+
+  const availabilityLabel =
+    AVAILABILITY.find((item) => item.value === availability)?.label || "All Movies";
+
+  const providerLabel =
+    PROVIDERS.find((item) => item.value === provider)?.label || "All Providers";
+
+  const sortLabel = SORTS.find((s) => s.value === sort)?.label || "Popular";
+
+  const titleParts = [];
+  if (provider) titleParts.push(providerLabel);
+  if (availability) titleParts.push(availabilityLabel);
+  if (year) titleParts.push(year);
+  titleParts.push(sortLabel);
+
+  const resultTitle = query
+    ? `Search Results for "${query}" (${filterTotal})`
+    : `${titleParts.join(" • ")} Movies (${filterTotal})`;
 
   return (
     <div className="home-page">
@@ -150,13 +224,41 @@ export default function Home() {
           <select className="year-dropdown" value={year} onChange={(e) => setYear(e.target.value)}>
             <option value="">All Years</option>
             {YEARS.map((y) => (
-              <option key={y} value={y}>{y}</option>
+              <option key={y} value={y}>
+                {y}
+              </option>
             ))}
           </select>
 
           <select className="year-dropdown" value={sort} onChange={(e) => setSort(e.target.value)}>
             {SORTS.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="year-dropdown"
+            value={availability}
+            onChange={(e) => setAvailability(e.target.value)}
+          >
+            {AVAILABILITY.map((item) => (
+              <option key={item.value || "all"} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="year-dropdown"
+            value={provider}
+            onChange={(e) => setProvider(e.target.value)}
+          >
+            {PROVIDERS.map((item) => (
+              <option key={item.value || "all-provider"} value={item.value}>
+                {item.label}
+              </option>
             ))}
           </select>
         </div>
@@ -170,17 +272,42 @@ export default function Home() {
         <section className="home-filter-results">
           <h2>{loading ? "Loading movies..." : resultTitle}</h2>
 
-          {!loading && results.length === 0 ? (
+          {loading ? (
+            <SkeletonRow />
+          ) : results.length === 0 ? (
             <p className="home-empty">No movies found.</p>
           ) : (
-            <MovieGrid movies={results} />
+            <>
+              <MovieGrid movies={results} />
+
+              {canLoadMore && (
+                <div className="load-more-wrap">
+                  <button
+                    className="load-more-btn"
+                    type="button"
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                  >
+                    {loadingMore ? "Loading..." : "Load More"}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </section>
       ) : (
         <>
-          {Object.entries(sections).map(([title, movies]) => (
-            <Row key={title} title={title} movies={movies} />
-          ))}
+          {loading ? (
+            <>
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+            </>
+          ) : (
+            Object.entries(sections).map(([title, movies]) => (
+              <Row key={title} title={title} movies={movies} />
+            ))
+          )}
         </>
       )}
     </div>

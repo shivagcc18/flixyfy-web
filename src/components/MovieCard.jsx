@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { trackMovieClick } from "../utils/analytics";
 import "./MovieCard.css";
 
 function buildPosterUrl(path) {
@@ -12,9 +13,20 @@ export default function MovieCard({ movie }) {
 
   const poster = buildPosterUrl(movie.poster_url || movie.poster_path);
 
+  const handleClick = () => {
+    trackMovieClick(movie);
+    navigate(`/movie/${movie.slug}`);
+  };
+
   return (
-    <div className="movie-card" onClick={() => navigate(`/movie/${movie.slug}`)}>
-      <img className="movie-card-img" src={poster} alt={movie.title} />
+    <div className="movie-card" onClick={handleClick}>
+      <img
+        className="movie-card-img"
+        src={poster}
+        alt={movie.title}
+        loading="lazy"
+        decoding="async"
+      />
 
       <h3 className="movie-card-title">{movie.title}</h3>
 

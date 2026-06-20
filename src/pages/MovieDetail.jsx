@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getMovie } from "../api/watchindiaApi";
-
+import { trackProviderClick } from "../utils/analytics";
 function buildPosterUrl(path) {
   if (!path) return "/no-poster.png";
   if (path.startsWith("http")) return path;
@@ -62,6 +62,59 @@ function formatViews(value) {
   return `${n} views`;
 }
 
+function updateMeta(name, content) {
+  document.querySelector(`meta[name="${name}"]`)?.setAttribute("content", content);
+}
+
+function updateOg(property, content) {
+  let tag = document.querySelector(`meta[property="${property}"]`);
+
+  if (!tag) {
+    tag = document.createElement("meta");
+    tag.setAttribute("property", property);
+    document.head.appendChild(tag);
+  }
+
+  tag.setAttribute("content", content);
+}
+
+function addMovieSchema(movie, poster) {
+  const oldSchema = document.getElementById("movie-schema-json");
+  if (oldSchema) oldSchema.remove();
+
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Movie",
+    name: movie.title,
+    description: movie.overview || `${movie.title} movie streaming availability on Flixyfy.`,
+    image: poster,
+    datePublished: movie.release_year ? String(movie.release_year) : undefined,
+    inLanguage: movie.primary_language || undefined,
+    director:
+      movie.director && movie.director !== "N/A"
+        ? {
+            "@type": "Person",
+            name: movie.director,
+          }
+        : undefined,
+    aggregateRating: movie.rating
+      ? {
+          "@type": "AggregateRating",
+          ratingValue: Number(movie.rating).toFixed(1),
+          bestRating: "10",
+          worstRating: "1",
+          ratingCount: "1",
+        }
+      : undefined,
+  };
+
+  const script = document.createElement("script");
+  script.id = "movie-schema-json";
+  script.type = "application/ld+json";
+  script.textContent = JSON.stringify(schema);
+  document.head.appendChild(script);
+}
+
 export default function MovieDetail() {
   const { slug } = useParams();
   const [movie, setMovie] = useState(null);
@@ -75,6 +128,28 @@ export default function MovieDetail() {
       .then((data) => setMovie(data))
       .catch((err) => setError(err.message));
   }, [slug]);
+
+  useEffect(() => {
+    if (!movie) return;
+
+    const poster = buildPosterUrl(movie.poster_url);
+    const yearText = movie.release_year ? ` (${movie.release_year})` : "";
+    const title = `${movie.title}${yearText} - Where to Watch | Flixyfy`;
+    const description = movie.overview
+      ? movie.overview.slice(0, 155)
+      : `Find where to watch ${movie.title}${yearText} online across Indian OTT platforms.`;
+
+    document.title = title;
+
+    updateMeta("description", description);
+    updateOg("og:title", title);
+    updateOg("og:description", description);
+    updateOg("og:type", "video.movie");
+    updateOg("og:image", poster);
+    updateOg("og:url", `https://flixyfy.com/movie/${slug}`);
+
+    addMovieSchema(movie, poster);
+  }, [movie, slug]);
 
   if (error) {
     return <div style={{ color: "white", padding: 30 }}>Movie not found</div>;
@@ -106,7 +181,13 @@ export default function MovieDetail() {
 
   return (
     <div style={pageStyle}>
-      <img src={poster} alt={movie.title} style={posterStyle} />
+      <img
+        src={poster}
+        alt={movie.title}
+        style={posterStyle}
+        loading="eager"
+        decoding="async"
+      />
 
       <div style={{ width: "100%" }}>
         <h1>{movie.title}</h1>
@@ -144,6 +225,7 @@ export default function MovieDetail() {
                   key={`${ott.provider_key || providerName}-${index}`}
                   href={url || "#"}
                   target={url ? "_blank" : undefined}
+                  onClick={() => trackProviderClick(providerName, movie.title)}
                   rel={url ? "noopener noreferrer" : undefined}
                   onClick={(e) => {
                     if (!url) e.preventDefault();
@@ -151,7 +233,13 @@ export default function MovieDetail() {
                   style={ottButtonStyle(Boolean(url))}
                 >
                   {logo ? (
-                    <img src={logo} alt={providerName} style={logoStyle} />
+                    <img
+                      src={logo}
+                      alt={providerName}
+                      style={logoStyle}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : (
                     <span style={fallbackIconStyle}>
                       {providerName.slice(0, 2).toUpperCase()}
@@ -200,9 +288,7 @@ export default function MovieDetail() {
 
         <h2>Overview</h2>
 
-        <p style={overviewStyle}>
-          {movie.overview || "Overview not available."}
-        </p>
+        <p style={overviewStyle}>{movie.overview || "Overview not available."}</p>
 
         <div style={infoGridStyle}>
           {movie.director && movie.director !== "N/A" && (
