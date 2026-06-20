@@ -1,106 +1,50 @@
-.movie-grid,
 .movie-row,
 .row {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    gap: 14px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 12px 20px 24px;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 12px 20px 24px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.movie-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, 180px) !important;
+  gap: 26px 18px !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  padding: 12px 20px 32px;
+  width: 100%;
+}
+
+.movie-row::-webkit-scrollbar,
+.row::-webkit-scrollbar {
+  height: 8px;
+}
+
+.movie-row::-webkit-scrollbar-thumb,
+.row::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 999px;
 }
 
 .movie-card {
-    width: 180px !important;
-    min-width: 180px !important;
-    max-width: 180px !important;
-    flex: 0 0 180px !important;
-    color: white;
-    cursor: pointer;
-}
-
-.movie-card-img {
-    width: 180px !important;
-    height: 270px !important;
-    max-width: 180px !important;
-    object-fit: cover !important;
-    display: block;
-    border-radius: 8px;
-    background: #222;
-}
-
-.movie-card-title {
-    font-size: 15px;
-    margin: 8px 0 4px;
-    line-height: 1.2;
-}
-
-.movie-card-meta {
-    font-size: 13px;
-    margin: 0;
-    opacity: 0.85;
-}
-
-.movie-card-ott {
-    margin-top: 8px;
-    display: inline-block;
-    padding: 5px 10px;
-    border-radius: 999px;
-    background: #202020;
-    color: #ffffff;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1.2;
-    border: 1px solid #303030;
-}
-
-.ott-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 28px;
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: #111;
-    color: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1;
-    white-space: nowrap;
-}
-
-.ott-badge-logo {
-    height: 18px;
-    max-width: 86px;
-    object-fit: contain;
-}
-
-.ott-badge-text {
-    display: inline-block;
-}
-.movie-card {
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  width: 180px !important;
+  min-width: 180px !important;
+  max-width: 180px !important;
+  flex: 0 0 180px !important;
+  color: white;
   cursor: pointer;
-}
-
-.movie-card:hover {
-  transform: translateY(-6px) scale(1.03);
-  box-shadow: 0 0 24px rgba(45, 212, 191, 0.35);
-}
-
-.movie-card-img {
-  transition: transform 0.18s ease, filter 0.18s ease;
-}
-
-.movie-card:hover .movie-card-img {
-  transform: scale(1.04);
-  filter: brightness(1.12);
-}
-.movie-card {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid transparent;
+  border-radius: 10px;
+  text-decoration: none;
+  scroll-snap-align: start;
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
-  cursor: pointer;
 }
 
 .movie-card:hover {
@@ -137,6 +81,13 @@
 }
 
 .movie-card-img {
+  width: 180px !important;
+  height: 270px !important;
+  max-width: 180px !important;
+  object-fit: cover !important;
+  display: block;
+  border-radius: 8px;
+  background: #222;
   transition: transform 0.22s ease, filter 0.22s ease;
 }
 
@@ -145,12 +96,176 @@
   filter: brightness(1.18) contrast(1.08);
 }
 
+.movie-card-title {
+  display: block;
+  font-size: 15px;
+  margin: 8px 0 4px;
+  line-height: 1.25;
+  color: #fff;
+  font-weight: 800;
+  white-space: normal;
+}
+
+.movie-card-meta {
+  display: block;
+  font-size: 13px;
+  margin: 0;
+  opacity: 0.85;
+  color: #ddd;
+}
+
+.movie-card-ott {
+  margin-top: 8px;
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #202020;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  border: 1px solid #303030;
+}
+
+.ott-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ott-badge-logo {
+  height: 18px;
+  max-width: 86px;
+  object-fit: contain;
+}
+
+.ott-badge-text {
+  display: inline-block;
+}
+
+.movie-card * {
+  position: relative;
+  z-index: 3;
+}
+
+.home-filter-results .movie-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, 180px) !important;
+  gap: 26px 18px !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+}
+
+.home-filter-results .movie-card {
+  width: 180px !important;
+  min-width: 180px !important;
+  max-width: 180px !important;
+  flex: none !important;
+}
+
 @keyframes pinkSpin {
   to {
     transform: rotate(360deg);
   }
 }
-.movie-card * {
-  position: relative;
-  z-index: 3;
+
+@media (max-width: 768px) {
+  .movie-row,
+  .row {
+    gap: 14px;
+    padding: 10px 14px 26px;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+
+  .movie-grid {
+    grid-template-columns: repeat(auto-fill, 155px) !important;
+    gap: 22px 14px !important;
+    padding: 10px 14px 28px;
+  }
+
+  .movie-card {
+    width: 155px !important;
+    min-width: 155px !important;
+    max-width: 155px !important;
+    flex: 0 0 155px !important;
+  }
+
+  .movie-grid .movie-card,
+  .home-filter-results .movie-card {
+    width: 155px !important;
+    min-width: 155px !important;
+    max-width: 155px !important;
+    flex: none !important;
+  }
+
+  .movie-card-img {
+    width: 155px !important;
+    height: 232px !important;
+    max-width: 155px !important;
+  }
+
+  .movie-card-title {
+    display: block !important;
+    font-size: 14px;
+    line-height: 1.25;
+    margin-top: 8px;
+  }
+
+  .movie-card-meta {
+    display: block !important;
+    font-size: 12px;
+  }
+
+  .movie-card-ott {
+    display: inline-block !important;
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+}
+/* FLIXYFY MOBILE DRAG FIX — keep desktop hover effects */
+@media (max-width: 768px) {
+  .movie-row,
+  .row {
+    touch-action: pan-x pan-y;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    cursor: grab;
+  }
+
+  .movie-row .movie-card,
+  .row .movie-card {
+    user-select: none;
+    -webkit-user-drag: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .movie-row .movie-card:hover,
+  .row .movie-card:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: transparent;
+  }
+
+  .movie-row .movie-card:hover::before,
+  .row .movie-card:hover::before {
+    opacity: 0;
+  }
+
+  .movie-row .movie-card:hover .movie-card-img,
+  .row .movie-card:hover .movie-card-img {
+    transform: none;
+    filter: none;
+  }
 }
