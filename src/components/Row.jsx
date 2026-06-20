@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import MovieCard from "./MovieCard";
+import "./Row.css";
 
 export default function Row({ title, movies }) {
   const rowRef = useRef(null);
@@ -40,7 +41,7 @@ export default function Row({ title, movies }) {
   }
 
   return (
-    <section>
+    <section className="movie-section">
       <h2 className="section-title">{title}</h2>
 
       <div
