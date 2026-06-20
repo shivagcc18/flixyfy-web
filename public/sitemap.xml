@@ -1,61 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset
-  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-
-  <url>
-    <loc>https://flixyfy.com/</loc>
-  </url>
-
-  <url>
-    <loc>https://flixyfy.com/about</loc>
-  </url>
-
-  <url>
-    <loc>https://flixyfy.com/contact</loc>
-  </url>
-
-  <url>
-    <loc>https://flixyfy.com/language/hindi</loc>
-  </url>
-
-  <url>
-    <loc>https://flixyfy.com/language/telugu</loc>
-  </url>
-
-  <url>
-    <loc>https://flixyfy.com/language/tamil</loc>
-  </url>
-
-  <url>
-    <loc>https://flixyfy.com/language/malayalam</loc>
-  </url>
-
-  <url>
-    <loc>https://flixyfy.com/language/kannada</loc>
-  </url>
-
-  <url>
-    <loc>https://flixyfy.com/language/bengali</loc>
-  </url>
-
-  <url>
-    <loc>https://flixyfy.com/language/marathi</loc>
-  </url>
-
-  <url>
-    <loc>https://flixyfy.com/language/punjabi</loc>
-  </url>
-
-  <url>
-    <loc>https://flixyfy.com/language/gujarati</loc>
-  </url>
-
-  <url>
-    <loc>https://flixyfy.com/language/odia</loc>
-  </url>
-
-  <url>
-    <loc>https://flixyfy.com/language/assamese</loc>
-  </url>
-
-</urlset>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://flixyfy.com/sitemaps/core.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://flixyfy.com/sitemaps/languages.xml</loc>
+  </sitemap>
+  <sitemap>
+    <loc>https://flixyfy.com/sitemaps/movies_1.xml</loc>
+  </sitemap>
+</sitemapindex>
