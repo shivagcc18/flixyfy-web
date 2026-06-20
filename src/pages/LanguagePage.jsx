@@ -11,6 +11,7 @@ const API_BASE =
   "https://flixyfy-api-production.up.railway.app";
 
 const TMDB_IMG = "https://image.tmdb.org/t/p/w500";
+const PAGE_SIZE = 24;
 
 const YEARS = ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017"];
 
@@ -67,9 +68,12 @@ export default function LanguagePage() {
   const [sort, setSort] = useState("popular");
   const [availability, setAvailability] = useState("");
   const [provider, setProvider] = useState("");
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const languageName = labelLanguage(language);
+  const canLoadMore = movies.length < total;
 
   useEffect(() => {
     const title = q
@@ -92,54 +96,69 @@ export default function LanguagePage() {
     setSort("popular");
     setAvailability("");
     setProvider("");
+    setPage(1);
   }, [language]);
 
-  useEffect(() => {
-    async function load() {
-      try {
+  async function loadMovies(selectedPage = 1, append = false) {
+    try {
+      if (append) {
+        setLoadingMore(true);
+      } else {
         setLoading(true);
+      }
 
-        const params = new URLSearchParams();
-        params.set("page", "1");
-        params.set("limit", "100");
+      const params = new URLSearchParams();
+      params.set("page", String(selectedPage));
+      params.set("limit", String(PAGE_SIZE));
 
-        if (year) params.set("year", year);
+      if (year) params.set("year", year);
 
-        let url;
+      let url;
 
-        if (q) {
-          params.set("q", q);
-          params.set("language", language);
-          url = `${API_BASE}/api/v3/search?${params.toString()}`;
-        } else {
-          params.set("sort", sort || "popular");
-          if (availability) params.set("availability", availability);
-          if (provider) params.set("provider", provider);
-          url = `${API_BASE}/api/v3/language/${encodeURIComponent(language)}?${params.toString()}`;
-        }
+      if (q) {
+        params.set("q", q);
+        params.set("language", language);
+        url = `${API_BASE}/api/v3/search?${params.toString()}`;
+      } else {
+        params.set("sort", sort || "popular");
+        if (availability) params.set("availability", availability);
+        if (provider) params.set("provider", provider);
+        url = `${API_BASE}/api/v3/language/${encodeURIComponent(language)}?${params.toString()}`;
+      }
 
-        const res = await fetch(url);
-        const data = await res.json();
+      const res = await fetch(url);
+      const data = await res.json();
 
-        if (!res.ok) {
-          console.error("Language API error:", data);
-          throw new Error("API Error");
-        }
+      if (!res.ok) {
+        console.error("Language API error:", data);
+        throw new Error("API Error");
+      }
 
-        const list = data.items || data.movies || [];
-        setMovies(list);
-        setTotal(data.total || data.count || list.length || 0);
-      } catch (err) {
-        console.error("Language page failed:", err);
+      const list = data.items || data.movies || [];
+
+      setMovies((prev) => (append ? [...prev, ...list] : list));
+      setTotal(data.total || data.count || list.length || 0);
+      setPage(selectedPage);
+    } catch (err) {
+      console.error("Language page failed:", err);
+      if (!append) {
         setMovies([]);
         setTotal(0);
-      } finally {
-        setLoading(false);
       }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
     }
+  }
 
-    load();
+  useEffect(() => {
+    loadMovies(1, false);
   }, [language, q, year, sort, availability, provider]);
+
+  const handleLoadMore = () => {
+    if (loadingMore || !canLoadMore) return;
+    loadMovies(page + 1, true);
+  };
 
   return (
     <div className="language-page">
@@ -224,7 +243,7 @@ export default function LanguagePage() {
 
       <div className="language-grid">
         {movies.map((movie) => (
-          <Link key={movie.tmdb_id} to={moviePath(movie)} className="language-movie-card">
+          <Link key={`${movie.tmdb_id}-${movie.slug}`} to={moviePath(movie)} className="language-movie-card">
             <img
               src={posterUrl(movie.poster_url)}
               alt={movie.title}
@@ -248,6 +267,19 @@ export default function LanguagePage() {
           </Link>
         ))}
       </div>
+
+      {!loading && canLoadMore && (
+        <div className="load-more-wrap">
+          <button
+            className="load-more-btn"
+            type="button"
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+          >
+            {loadingMore ? "Loading..." : "Load More"}
+          </button>
+        </div>
+      )}
 
       <Footer />
     </div>
