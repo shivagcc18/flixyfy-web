@@ -1,97 +1,63 @@
-const SITE_NAME = "Flixyfy";
 const SITE_URL = "https://www.flixyfy.com";
-const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
-function ensureMetaByName(name) {
-  let tag = document.querySelector(`meta[name="${name}"]`);
-
-  if (!tag) {
-    tag = document.createElement("meta");
-    tag.setAttribute("name", name);
-    document.head.appendChild(tag);
-  }
-
-  return tag;
-}
-
-function ensureMetaByProperty(property) {
-  let tag = document.querySelector(`meta[property="${property}"]`);
+function upsertMeta(selector, createAttrs, content) {
+  let tag = document.head.querySelector(selector);
 
   if (!tag) {
     tag = document.createElement("meta");
-    tag.setAttribute("property", property);
+    Object.entries(createAttrs).forEach(([key, value]) => {
+      tag.setAttribute(key, value);
+    });
     document.head.appendChild(tag);
   }
 
-  return tag;
+  tag.setAttribute("content", content || "");
 }
 
-function ensureCanonical() {
-  let link = document.querySelector('link[rel="canonical"]');
+function upsertLinkCanonical(href) {
+  let tag = document.head.querySelector('link[rel="canonical"]');
 
-  if (!link) {
-    link = document.createElement("link");
-    link.setAttribute("rel", "canonical");
-    document.head.appendChild(link);
+  if (!tag) {
+    tag = document.createElement("link");
+    tag.setAttribute("rel", "canonical");
+    document.head.appendChild(tag);
   }
 
-  return link;
+  tag.setAttribute("href", href);
 }
 
-export function absoluteUrl(path = "/") {
-  if (!path) return SITE_URL;
-  if (path.startsWith("http")) return path;
-  return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+export function setPageSeo({ title, description, path, image, type = "website" }) {
+  const cleanPath = path || "/";
+  const url = `${SITE_URL}${cleanPath}`;
+  const finalImage = image || `${SITE_URL}/og-image.png`;
+
+  document.title = title;
+
+  upsertMeta('meta[name="description"]', { name: "description" }, description);
+  upsertMeta('meta[name="robots"]', { name: "robots" }, "index, follow");
+
+  upsertLinkCanonical(url);
+
+  upsertMeta('meta[property="og:type"]', { property: "og:type" }, type);
+  upsertMeta('meta[property="og:site_name"]', { property: "og:site_name" }, "Flixyfy");
+  upsertMeta('meta[property="og:title"]', { property: "og:title" }, title);
+  upsertMeta('meta[property="og:description"]', { property: "og:description" }, description);
+  upsertMeta('meta[property="og:url"]', { property: "og:url" }, url);
+  upsertMeta('meta[property="og:image"]', { property: "og:image" }, finalImage);
+
+  upsertMeta('meta[name="twitter:card"]', { name: "twitter:card" }, "summary_large_image");
+  upsertMeta('meta[name="twitter:title"]', { name: "twitter:title" }, title);
+  upsertMeta('meta[name="twitter:description"]', { name: "twitter:description" }, description);
+  upsertMeta('meta[name="twitter:image"]', { name: "twitter:image" }, finalImage);
 }
 
-export function setPageSeo({
-  title,
-  description,
-  path = "/",
-  image = DEFAULT_IMAGE,
-  type = "website",
-}) {
-  const finalTitle = title?.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
-  const finalUrl = absoluteUrl(path);
-  const finalImage = absoluteUrl(image);
-
-  document.title = finalTitle;
-
-  ensureMetaByName("description").setAttribute("content", description);
-
-  ensureCanonical().setAttribute("href", finalUrl);
-
-  ensureMetaByProperty("og:title").setAttribute("content", finalTitle);
-  ensureMetaByProperty("og:description").setAttribute("content", description);
-  ensureMetaByProperty("og:type").setAttribute("content", type);
-  ensureMetaByProperty("og:url").setAttribute("content", finalUrl);
-  ensureMetaByProperty("og:image").setAttribute("content", finalImage);
-  ensureMetaByProperty("og:site_name").setAttribute("content", SITE_NAME);
-
-  ensureMetaByName("twitter:card").setAttribute("content", "summary_large_image");
-  ensureMetaByName("twitter:title").setAttribute("content", finalTitle);
-  ensureMetaByName("twitter:description").setAttribute("content", description);
-  ensureMetaByName("twitter:image").setAttribute("content", finalImage);
-}
-
-export function setJsonLd(id, schema) {
-  const oldScript = document.getElementById(id);
-  if (oldScript) oldScript.remove();
+export function setJsonLd(id, data) {
+  const old = document.getElementById(id);
+  if (old) old.remove();
 
   const script = document.createElement("script");
   script.id = id;
   script.type = "application/ld+json";
-  script.textContent = JSON.stringify(schema);
+  script.textContent = JSON.stringify(data);
   document.head.appendChild(script);
 }
-
-export function removeJsonLd(id) {
-  const oldScript = document.getElementById(id);
-  if (oldScript) oldScript.remove();
-}
-
-export const SEO_SITE = {
-  name: SITE_NAME,
-  url: SITE_URL,
-  defaultImage: DEFAULT_IMAGE,
-};

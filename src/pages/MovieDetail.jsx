@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getMovie } from "../api/watchindiaApi";
 import { trackProviderClick } from "../utils/analytics";
+import { setPageSeo, setJsonLd } from "../utils/seo";
 import Footer from "../components/Footer";
 
 function buildPosterUrl(path) {
@@ -64,59 +65,6 @@ function formatViews(value) {
   return `${n} views`;
 }
 
-function updateMeta(name, content) {
-  document.querySelector(`meta[name="${name}"]`)?.setAttribute("content", content);
-}
-
-function updateOg(property, content) {
-  let tag = document.querySelector(`meta[property="${property}"]`);
-
-  if (!tag) {
-    tag = document.createElement("meta");
-    tag.setAttribute("property", property);
-    document.head.appendChild(tag);
-  }
-
-  tag.setAttribute("content", content);
-}
-
-function addMovieSchema(movie, poster) {
-  const oldSchema = document.getElementById("movie-schema-json");
-  if (oldSchema) oldSchema.remove();
-
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "Movie",
-    name: movie.title,
-    description: movie.overview || `${movie.title} movie streaming availability on Flixyfy.`,
-    image: poster,
-    datePublished: movie.release_year ? String(movie.release_year) : undefined,
-    inLanguage: movie.primary_language || undefined,
-    director:
-      movie.director && movie.director !== "N/A"
-        ? {
-            "@type": "Person",
-            name: movie.director,
-          }
-        : undefined,
-    aggregateRating: movie.rating
-      ? {
-          "@type": "AggregateRating",
-          ratingValue: Number(movie.rating).toFixed(1),
-          bestRating: "10",
-          worstRating: "1",
-          ratingCount: "1",
-        }
-      : undefined,
-  };
-
-  const script = document.createElement("script");
-  script.id = "movie-schema-json";
-  script.type = "application/ld+json";
-  script.textContent = JSON.stringify(schema);
-  document.head.appendChild(script);
-}
-
 export default function MovieDetail() {
   const { slug } = useParams();
   const [movie, setMovie] = useState(null);
@@ -136,21 +84,54 @@ export default function MovieDetail() {
 
     const poster = buildPosterUrl(movie.poster_url);
     const yearText = movie.release_year ? ` (${movie.release_year})` : "";
-    const title = `${movie.title}${yearText} - Where to Watch | Flixyfy`;
+    const title = `${movie.title}${yearText} - Where to Watch Online | Flixyfy`;
     const description = movie.overview
-      ? movie.overview.slice(0, 155)
+      ? String(movie.overview).slice(0, 155)
       : `Find where to watch ${movie.title}${yearText} online across Indian OTT platforms.`;
 
-    document.title = title;
+    setPageSeo({
+      title,
+      description,
+      path: `/movie/${slug}`,
+      image: poster,
+      type: "video.movie",
+    });
 
-    updateMeta("description", description);
-    updateOg("og:title", title);
-    updateOg("og:description", description);
-    updateOg("og:type", "video.movie");
-    updateOg("og:image", poster);
-    updateOg("og:url", `https://flixyfy.com/movie/${slug}`);
-
-    addMovieSchema(movie, poster);
+    setJsonLd("movie-schema-json", {
+      "@context": "https://schema.org",
+      "@type": "Movie",
+      name: movie.title,
+      description,
+      image: poster,
+      datePublished: movie.release_year ? String(movie.release_year) : undefined,
+      inLanguage: movie.primary_language || movie.original_language || undefined,
+      director:
+        movie.director && movie.director !== "N/A"
+          ? {
+              "@type": "Person",
+              name: movie.director,
+            }
+          : undefined,
+      actor:
+        movie.actors && movie.actors !== "N/A"
+          ? String(movie.actors)
+              .split(",")
+              .slice(0, 8)
+              .map((name) => ({
+                "@type": "Person",
+                name: name.trim(),
+              }))
+          : undefined,
+      aggregateRating: movie.rating
+        ? {
+            "@type": "AggregateRating",
+            ratingValue: Number(movie.rating).toFixed(1),
+            bestRating: "10",
+            worstRating: "1",
+            ratingCount: movie.vote_count ? String(movie.vote_count) : "1",
+          }
+        : undefined,
+    });
   }, [movie, slug]);
 
   if (error) {
@@ -194,12 +175,12 @@ export default function MovieDetail() {
   return (
     <>
       <div
-  style={{
-    ...pageStyle,
-    flexDirection: window.innerWidth <= 768 ? "column" : "row",
-    padding: window.innerWidth <= 768 ? "16px" : "30px",
-  }}
->
+        style={{
+          ...pageStyle,
+          flexDirection: window.innerWidth <= 768 ? "column" : "row",
+          padding: window.innerWidth <= 768 ? "16px" : "30px",
+        }}
+      >
         <img
           src={poster}
           alt={movie.title}
@@ -212,7 +193,7 @@ export default function MovieDetail() {
           <h1>{movie.title}</h1>
 
           <p>
-            {movie.release_year} • {movie.primary_language}
+            {movie.release_year} • {movie.primary_language || movie.original_language || ""}
           </p>
 
           <div style={badgeWrapStyle}>
