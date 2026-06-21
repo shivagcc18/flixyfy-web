@@ -1,117 +1,93 @@
-const SITE_NAME = "Flixyfy";
-const SITE_URL = "https://flixyfy.com";
-const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
+export const SITE_NAME = "Flixyfy";
+export const SITE_URL = "https://www.flixyfy.com";
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
 
-function cleanText(value, fallback = "") {
-  return String(value || fallback)
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function absoluteUrl(path = "/") {
+export function absoluteUrl(path = "/") {
   if (!path) return SITE_URL;
-  if (String(path).startsWith("http")) return path;
-  if (path === "/") return SITE_URL;
+  if (path.startsWith("http")) return path;
   return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-function upsertMeta(selector, attrs) {
-  let tag = document.head.querySelector(selector);
+function upsertMeta(attr, key, content) {
+  if (!content) return;
+
+  let tag = document.querySelector(`meta[${attr}="${key}"]`);
 
   if (!tag) {
     tag = document.createElement("meta");
+    tag.setAttribute(attr, key);
     document.head.appendChild(tag);
   }
 
-  Object.entries(attrs).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      tag.setAttribute(key, String(value));
-    }
-  });
+  tag.setAttribute("content", content);
 }
 
-function setMetaName(name, content) {
-  if (!content) return;
-  upsertMeta(`meta[name="${name}"]`, { name, content });
+function upsertLink(rel, href) {
+  if (!href) return;
+
+  let tag = document.querySelector(`link[rel="${rel}"]`);
+
+  if (!tag) {
+    tag = document.createElement("link");
+    tag.setAttribute("rel", rel);
+    document.head.appendChild(tag);
+  }
+
+  tag.setAttribute("href", href);
 }
 
-function setMetaProperty(property, content) {
-  if (!content) return;
-  upsertMeta(`meta[property="${property}"]`, { property, content });
-}
-
-function setCanonical(href) {
-  document.head.querySelectorAll('link[rel="canonical"]').forEach((el) => el.remove());
-
-  const link = document.createElement("link");
-  link.setAttribute("rel", "canonical");
-  link.setAttribute("href", href);
-  document.head.appendChild(link);
-}
-
-export function setJsonLd(id, data) {
-  if (!id || !data) return;
-
+export function removeJsonLd(id) {
   const existing = document.getElementById(id);
   if (existing) existing.remove();
+}
+
+export function injectJsonLd(id, data) {
+  if (!data) return;
+
+  removeJsonLd(id);
 
   const script = document.createElement("script");
   script.id = id;
   script.type = "application/ld+json";
-  script.textContent = JSON.stringify(data, (key, value) => {
-    if (value === undefined || value === null || value === "") return undefined;
-    return value;
-  });
-
+  script.textContent = JSON.stringify(data);
   document.head.appendChild(script);
 }
 
-export function setPageSeo({
+export function setSeo({
   title,
   description,
-  path = "/",
-  image = DEFAULT_IMAGE,
+  url = SITE_URL,
+  image = DEFAULT_OG_IMAGE,
   type = "website",
-} = {}) {
-  const finalTitle = cleanText(title || `${SITE_NAME} - Find Where to Watch Indian Movies Online`);
-  const finalDescription = cleanText(
+}) {
+  const cleanTitle = title || `${SITE_NAME} - Find Where to Watch Movies Online`;
+  const cleanDescription =
     description ||
-      "Search Indian movies and find where to watch them online across OTT platforms."
-  );
-  const canonical = absoluteUrl(path);
-  const finalImage = image && String(image).startsWith("http") ? image : absoluteUrl(image || DEFAULT_IMAGE);
+    "Find where to watch Indian movies online across OTT platforms with Flixyfy.";
+  const cleanUrl = absoluteUrl(url);
+  const cleanImage = absoluteUrl(image);
 
-  document.title = finalTitle;
+  document.title = cleanTitle;
 
-  setMetaName("description", finalDescription);
-  setMetaName("robots", "index, follow");
+  upsertMeta("name", "description", cleanDescription);
 
-  setCanonical(canonical);
+  upsertLink("canonical", cleanUrl);
 
-  setMetaProperty("og:type", type);
-  setMetaProperty("og:site_name", SITE_NAME);
-  setMetaProperty("og:title", finalTitle);
-  setMetaProperty("og:description", finalDescription);
-  setMetaProperty("og:url", canonical);
-  setMetaProperty("og:image", finalImage);
+  upsertMeta("property", "og:site_name", SITE_NAME);
+  upsertMeta("property", "og:type", type);
+  upsertMeta("property", "og:title", cleanTitle);
+  upsertMeta("property", "og:description", cleanDescription);
+  upsertMeta("property", "og:url", cleanUrl);
+  upsertMeta("property", "og:image", cleanImage);
 
-  setMetaName("twitter:card", "summary_large_image");
-  setMetaName("twitter:title", finalTitle);
-  setMetaName("twitter:description", finalDescription);
-  setMetaName("twitter:image", finalImage);
+  upsertMeta("name", "twitter:card", "summary_large_image");
+  upsertMeta("name", "twitter:title", cleanTitle);
+  upsertMeta("name", "twitter:description", cleanDescription);
+  upsertMeta("name", "twitter:image", cleanImage);
 }
 
-export function applyHomeSeo() {
-  setPageSeo({
-    title: "Flixyfy - Find Where to Watch Indian Movies Online",
-    description:
-      "Search Indian movies and find where to watch them online across OTT platforms. Explore Hindi, Telugu, Tamil, Malayalam, Kannada, Bengali, Marathi, Punjabi, Gujarati, Odia, and Assamese movies.",
-    path: "/",
-    image: DEFAULT_IMAGE,
-    type: "website",
-  });
-
-  setJsonLd("website-schema-json", {
+export function buildWebSiteSchema() {
+  return {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: SITE_NAME,
@@ -121,67 +97,129 @@ export function applyHomeSeo() {
       target: `${SITE_URL}/search?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
-  });
+  };
 }
 
-export function applyMovieSeo(movie, slug) {
-  if (!movie) return;
+export function buildOrganizationSchema() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: SITE_NAME,
+    url: SITE_URL,
+    logo: `${SITE_URL}/logo.png`,
+  };
+}
 
-  const title = cleanText(movie.title || movie.name || "Movie");
-  const year = movie.release_year || movie.year || "";
-  const poster = movie.poster_url
-    ? String(movie.poster_url).startsWith("http")
-      ? movie.poster_url
-      : `https://image.tmdb.org/t/p/w500${movie.poster_url}`
-    : DEFAULT_IMAGE;
+export function buildBreadcrumbSchema(items = []) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: absoluteUrl(item.url),
+    })),
+  };
+}
 
-  const yearText = year ? ` (${year})` : "";
-  const description = movie.overview
-    ? cleanText(String(movie.overview).slice(0, 155))
-    : `Find where to watch ${title}${yearText} online across Indian OTT platforms.`;
+export function buildMovieSchema(movie) {
+  if (!movie) return null;
 
-  setPageSeo({
-    title: `${title}${yearText} - Where to Watch Online | ${SITE_NAME}`,
-    description,
-    path: `/movie/${slug || movie.slug}`,
-    image: poster,
-    type: "video.movie",
-  });
+  const title = movie.title || movie.name || "Movie";
+  const year = movie.release_year || movie.year || movie.release_date?.slice(0, 4);
+  const poster = movie.poster_url || movie.poster || movie.image || DEFAULT_OG_IMAGE;
 
-  setJsonLd("movie-schema-json", {
+  const schema = {
     "@context": "https://schema.org",
     "@type": "Movie",
     name: title,
-    description,
-    image: poster,
-    url: absoluteUrl(`/movie/${slug || movie.slug}`),
-    datePublished: year ? String(year) : undefined,
-    inLanguage: movie.primary_language || movie.original_language || movie.language || undefined,
-    director:
-      movie.director && movie.director !== "N/A"
-        ? {
-            "@type": "Person",
-            name: movie.director,
-          }
-        : undefined,
-    actor:
-      movie.actors && movie.actors !== "N/A"
-        ? String(movie.actors)
-            .split(",")
-            .slice(0, 8)
-            .map((name) => ({
-              "@type": "Person",
-              name: name.trim(),
-            }))
-        : undefined,
-    aggregateRating: movie.rating
-      ? {
-          "@type": "AggregateRating",
-          ratingValue: Number(movie.rating).toFixed(1),
-          bestRating: "10",
-          worstRating: "1",
-          ratingCount: movie.vote_count ? String(movie.vote_count) : "1",
-        }
-      : undefined,
-  });
+    url: absoluteUrl(movie.slug ? `/movie/${movie.slug}` : window.location.pathname),
+    image: absoluteUrl(poster),
+    description:
+      movie.overview ||
+      movie.description ||
+      `Find where to watch ${title}${year ? ` (${year})` : ""} online on Flixyfy.`,
+  };
+
+  if (year) schema.datePublished = `${year}-01-01`;
+  if (movie.runtime || movie.omdb_runtime) schema.duration = movie.runtime || movie.omdb_runtime;
+  if (movie.director) schema.director = { "@type": "Person", name: movie.director };
+
+  if (movie.imdb_rating || movie.vote_average) {
+    schema.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: String(movie.imdb_rating || movie.vote_average),
+      bestRating: "10",
+      worstRating: "1",
+      ratingCount: String(movie.vote_count || 1),
+    };
+  }
+
+  if (movie.actors) {
+    const actors = Array.isArray(movie.actors)
+      ? movie.actors
+      : String(movie.actors)
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean);
+
+    if (actors.length) {
+      schema.actor = actors.slice(0, 8).map((name) => ({
+        "@type": "Person",
+        name,
+      }));
+    }
+  }
+
+  return schema;
 }
+
+export function applyHomeSeo() {
+  setSeo({
+    title: "Flixyfy - Find Where to Watch Indian Movies Online",
+    description:
+      "Search Indian movies and find where to watch them online across OTT platforms.",
+    url: "/",
+    type: "website",
+  });
+
+  injectJsonLd("website-schema", buildWebSiteSchema());
+  injectJsonLd("organization-schema", buildOrganizationSchema());
+}
+
+export function applyMovieSeo(movie) {
+  if (!movie) return;
+
+  const title = movie.title || movie.name || "Movie";
+  const year = movie.release_year || movie.year || movie.release_date?.slice(0, 4);
+  const slug = movie.slug || "";
+  const description =
+    movie.overview ||
+    `Find where to watch ${title}${year ? ` (${year})` : ""} online across OTT platforms.`;
+
+  setSeo({
+    title: `${title}${year ? ` (${year})` : ""} - Where to Watch Online | Flixyfy`,
+    description,
+    url: slug ? `/movie/${slug}` : window.location.pathname,
+    image: movie.poster_url || movie.poster || DEFAULT_OG_IMAGE,
+    type: "video.movie",
+  });
+
+  injectJsonLd("movie-schema", buildMovieSchema(movie));
+  injectJsonLd(
+    "breadcrumb-schema",
+    buildBreadcrumbSchema([
+      { name: "Home", url: "/" },
+      { name: "Movies", url: "/" },
+      { name: title, url: slug ? `/movie/${slug}` : window.location.pathname },
+    ])
+  );
+}
+
+/* Backward-compatible export aliases */
+export const setPageSeo = setSeo;
+export const setDynamicSeo = setSeo;
+export const setSeoTags = setSeo;
+export const updateSeo = setSeo;
+export const buildWebsiteSchema = buildWebSiteSchema;
