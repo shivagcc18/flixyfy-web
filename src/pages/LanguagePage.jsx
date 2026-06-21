@@ -14,7 +14,11 @@ const API_BASE =
 const TMDB_IMG = "https://image.tmdb.org/t/p/w500";
 const PAGE_SIZE = 24;
 
-const YEARS = ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "2018", "2017"];
+const YEARS = [];
+
+for (let year = 2026; year >= 2000; year--) {
+  YEARS.push(String(year));
+}
 
 const SORTS = [
   { label: "Popular", value: "popular" },
