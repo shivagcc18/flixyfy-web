@@ -223,3 +223,15 @@ export const setDynamicSeo = setSeo;
 export const setSeoTags = setSeo;
 export const updateSeo = setSeo;
 export const buildWebsiteSchema = buildWebSiteSchema;
+export function setJsonLd(data) {
+  let el = document.getElementById("flixyfy-jsonld");
+
+  if (!el) {
+    el = document.createElement("script");
+    el.type = "application/ld+json";
+    el.id = "flixyfy-jsonld";
+    document.head.appendChild(el);
+  }
+
+  el.textContent = JSON.stringify(data);
+}

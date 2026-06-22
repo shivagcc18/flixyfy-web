@@ -1,4 +1,5 @@
-import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 
 import Home from "./pages/Home";
 import MovieDetail from "./pages/MovieDetail";
@@ -8,10 +9,26 @@ import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
 import RouteLoader from "./components/RouteLoader";
+import { initGA, trackPageView } from "./utils/analytics";
+
+function AnalyticsTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    initGA();
+  }, []);
+
+  useEffect(() => {
+    trackPageView(location.pathname + location.search);
+  }, [location.pathname, location.search]);
+
+  return null;
+}
 
 export default function App() {
   return (
     <>
+      <AnalyticsTracker />
       <RouteLoader />
 
       <Routes>
