@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getMovie } from "../api/watchindiaApi";
-import { trackProviderClick } from "../utils/analytics";
+import {
+  trackProviderClick,
+  trackYoutubeClick,
+} from "../utils/analytics";
 import { setPageSeo, setJsonLd } from "../utils/seo";
 import Footer from "../components/Footer";
 
@@ -270,12 +273,15 @@ export default function MovieDetail() {
 
                   return (
                     <a
-                      key={`${yt.video_id || url}-${index}`}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={youtubeButtonStyle}
-                    >
+  key={`${yt.video_id || url}-${index}`}
+  href={url}
+  target="_blank"
+  rel="noopener noreferrer"
+  onClick={() => {
+    trackYoutubeClick(movie.title);
+  }}
+  style={youtubeButtonStyle}
+>
                       <span style={youtubeIconStyle}>▶</span>
 
                       <span>

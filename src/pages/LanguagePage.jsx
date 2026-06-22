@@ -5,6 +5,7 @@ import "./LanguagePage.css";
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { setPageSeo, setJsonLd } from "../utils/seo";
+import { trackFilter, trackLoadMore, trackMovieClick } from "../utils/analytics";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
@@ -95,7 +96,7 @@ export default function LanguagePage() {
       path: `/language/${language}`,
     });
 
-    setJsonLd("language-schema", {
+    setJsonLd({
       "@context": "https://schema.org",
       "@type": "CollectionPage",
       name: `${languageName} Movies`,
@@ -170,7 +171,29 @@ export default function LanguagePage() {
 
   const handleLoadMore = () => {
     if (loadingMore || !canLoadMore) return;
+
+    trackLoadMore(page + 1);
     loadMovies(page + 1, true);
+  };
+
+  const handleYearChange = (value) => {
+    setYear(value);
+    trackFilter("language_year", value || "all");
+  };
+
+  const handleSortChange = (value) => {
+    setSort(value);
+    trackFilter("language_sort", value || "popular");
+  };
+
+  const handleAvailabilityChange = (value) => {
+    setAvailability(value);
+    trackFilter("language_availability", value || "all");
+  };
+
+  const handleProviderChange = (value) => {
+    setProvider(value);
+    trackFilter("language_provider", value || "all");
   };
 
   return (
@@ -198,7 +221,7 @@ export default function LanguagePage() {
           <select
             className="year-dropdown language-year-dropdown"
             value={year}
-            onChange={(e) => setYear(e.target.value)}
+            onChange={(e) => handleYearChange(e.target.value)}
           >
             <option value="">All Years</option>
             {YEARS.map((y) => (
@@ -213,7 +236,7 @@ export default function LanguagePage() {
               <select
                 className="year-dropdown language-year-dropdown"
                 value={sort}
-                onChange={(e) => setSort(e.target.value)}
+                onChange={(e) => handleSortChange(e.target.value)}
               >
                 {SORTS.map((s) => (
                   <option key={s.value} value={s.value}>
@@ -225,7 +248,7 @@ export default function LanguagePage() {
               <select
                 className="year-dropdown language-year-dropdown"
                 value={availability}
-                onChange={(e) => setAvailability(e.target.value)}
+                onChange={(e) => handleAvailabilityChange(e.target.value)}
               >
                 {AVAILABILITY.map((item) => (
                   <option key={item.value || "all"} value={item.value}>
@@ -237,7 +260,7 @@ export default function LanguagePage() {
               <select
                 className="year-dropdown language-year-dropdown"
                 value={provider}
-                onChange={(e) => setProvider(e.target.value)}
+                onChange={(e) => handleProviderChange(e.target.value)}
               >
                 {PROVIDERS.map((item) => (
                   <option key={item.value || "all"} value={item.value}>
@@ -260,6 +283,7 @@ export default function LanguagePage() {
             key={`${movie.tmdb_id}-${movie.slug}`}
             to={moviePath(movie)}
             className="language-movie-card"
+            onClick={() => trackMovieClick(movie)}
           >
             <img
               src={posterUrl(movie.poster_url)}

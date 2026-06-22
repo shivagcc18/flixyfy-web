@@ -1,4 +1,5 @@
 import React from "react";
+import { trackProviderClick } from "../utils/analytics";
 
 function cleanProviderName(provider) {
   return (
@@ -30,7 +31,7 @@ function getProviderUrl(provider) {
   );
 }
 
-export default function WatchProviders({ providers = [], ottAll = [] }) {
+export default function WatchProviders({ providers = [], ottAll = [], movieTitle = "" }) {
   const list = Array.isArray(providers) && providers.length ? providers : ottAll;
 
   if (!Array.isArray(list) || list.length === 0) {
@@ -57,6 +58,8 @@ export default function WatchProviders({ providers = [], ottAll = [] }) {
               key={`${name}-${type}-${index}`}
               type="button"
               onClick={() => {
+                trackProviderClick(name, movieTitle);
+
                 if (url) {
                   window.open(url, "_blank", "noopener,noreferrer");
                 }

@@ -9,6 +9,7 @@ import MovieGrid from "../components/MovieGrid";
 
 import { getHome, getMovies, searchMovies } from "../api/watchindiaApi";
 import { setPageSeo, setJsonLd } from "../utils/seo";
+import { trackFilter, trackLanguageOpen, trackLoadMore } from "../utils/analytics";
 import "./Home.css";
 
 const PAGE_SIZE = 24;
@@ -79,7 +80,7 @@ export default function Home() {
       path: "/",
     });
 
-    setJsonLd("homepage-schema", {
+    setJsonLd({
       "@context": "https://schema.org",
       "@type": "WebSite",
       name: "Flixyfy",
@@ -202,7 +203,28 @@ export default function Home() {
   const handleLoadMore = async () => {
     if (loadingMore || !canLoadMore) return;
 
+    trackLoadMore(page + 1);
     await runFilter(query, year, sort, availability, provider, page + 1, true);
+  };
+
+  const handleYearChange = (value) => {
+    setYear(value);
+    trackFilter("year", value || "all");
+  };
+
+  const handleSortChange = (value) => {
+    setSort(value);
+    trackFilter("sort", value || "popular");
+  };
+
+  const handleAvailabilityChange = (value) => {
+    setAvailability(value);
+    trackFilter("availability", value || "all");
+  };
+
+  const handleProviderChange = (value) => {
+    setProvider(value);
+    trackFilter("provider", value || "all");
   };
 
   const availabilityLabel =
@@ -231,13 +253,21 @@ export default function Home() {
         <div className="home-filter-row">
           <div className="language-nav">
             {LANGUAGES.map((lang) => (
-              <Link key={lang.slug} to={`/language/${lang.slug}`}>
+              <Link
+                key={lang.slug}
+                to={`/language/${lang.slug}`}
+                onClick={() => trackLanguageOpen(lang.slug)}
+              >
                 {lang.label}
               </Link>
             ))}
           </div>
 
-          <select className="year-dropdown" value={year} onChange={(e) => setYear(e.target.value)}>
+          <select
+            className="year-dropdown"
+            value={year}
+            onChange={(e) => handleYearChange(e.target.value)}
+          >
             <option value="">All Years</option>
             {YEARS.map((y) => (
               <option key={y} value={y}>
@@ -246,7 +276,11 @@ export default function Home() {
             ))}
           </select>
 
-          <select className="year-dropdown" value={sort} onChange={(e) => setSort(e.target.value)}>
+          <select
+            className="year-dropdown"
+            value={sort}
+            onChange={(e) => handleSortChange(e.target.value)}
+          >
             {SORTS.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
@@ -257,7 +291,7 @@ export default function Home() {
           <select
             className="year-dropdown"
             value={availability}
-            onChange={(e) => setAvailability(e.target.value)}
+            onChange={(e) => handleAvailabilityChange(e.target.value)}
           >
             {AVAILABILITY.map((item) => (
               <option key={item.value || "all"} value={item.value}>
@@ -269,7 +303,7 @@ export default function Home() {
           <select
             className="year-dropdown"
             value={provider}
-            onChange={(e) => setProvider(e.target.value)}
+            onChange={(e) => handleProviderChange(e.target.value)}
           >
             {PROVIDERS.map((item) => (
               <option key={item.value || "all-provider"} value={item.value}>

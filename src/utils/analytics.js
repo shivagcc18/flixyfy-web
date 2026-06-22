@@ -62,8 +62,10 @@ export function trackMovieClick(movie) {
   trackEvent("movie_opened", {
     movie_title: movie?.title || movie?.name || "unknown",
     movie_slug: movie?.slug || "",
-    movie_year: movie?.year || "",
-    movie_language: movie?.language || "",
+    movie_year: movie?.release_year || movie?.year || "",
+    movie_language: movie?.primary_language || movie?.language || "",
+    ott_primary: movie?.ott_primary || "",
+    is_free: Boolean(movie?.is_free),
   });
 }
 
