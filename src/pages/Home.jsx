@@ -49,13 +49,13 @@ const AVAILABILITY = [
 const PROVIDERS = [
   { label: "All Providers", value: "" },
   { label: "Netflix", value: "netflix" },
-  { label: "Prime Video", value: "prime_video" },
+  { label: "Prime Video", value: "prime" },
   { label: "JioHotstar", value: "jiohotstar" },
   { label: "ZEE5", value: "zee5" },
   { label: "SonyLIV", value: "sonyliv" },
   { label: "Aha", value: "aha" },
-  { label: "Sun NXT", value: "sun_nxt" },
-  { label: "ETV Win", value: "etv_win" },
+  { label: "Sun NXT", value: "sunnxt" },
+  { label: "ETV Win", value: "etvwin" },
   { label: "YouTube", value: "youtube" },
 ];
 
