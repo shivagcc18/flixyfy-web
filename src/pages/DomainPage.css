@@ -1,0 +1,135 @@
+.domain-page {
+  min-height: 100vh;
+  background: #111111;
+  color: #ffffff;
+}
+
+.domain-hero {
+  padding: 42px 24px 22px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.domain-kicker {
+  margin: 0 0 8px;
+  color: #25d9ff;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+
+.domain-hero h1 {
+  margin: 0 0 10px;
+  font-size: clamp(34px, 5vw, 60px);
+  line-height: 1;
+  font-weight: 950;
+}
+
+.domain-hero p {
+  margin: 0;
+  max-width: 760px;
+  color: #cbd5e1;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.domain-controls {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 10px 24px 26px;
+}
+
+.domain-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.domain-filter-row select {
+  height: 44px;
+  min-width: 170px;
+  border-radius: 999px;
+  border: 1px solid #20d9ff;
+  background: #1a1a1a;
+  color: #ffffff;
+  padding: 0 18px;
+  font-weight: 800;
+  outline: none;
+}
+
+.domain-results {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 8px 16px 40px;
+}
+
+.domain-results h2 {
+  margin: 18px 0 18px;
+  font-size: 28px;
+  font-weight: 950;
+}
+
+.domain-empty {
+  color: #cbd5e1;
+  font-size: 18px;
+}
+
+.load-more-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 28px 0 10px;
+}
+
+.load-more-btn {
+  border: 1px solid #20d9ff;
+  border-radius: 999px;
+  background: #20d9ff;
+  color: #071018;
+  padding: 13px 34px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.load-more-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) {
+  .load-more-btn:hover,
+  .domain-filter-row select:hover {
+    box-shadow: 0 0 18px rgba(32, 217, 255, 0.55);
+  }
+}
+
+.load-more-btn:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 720px) {
+  .domain-hero {
+    padding: 30px 16px 14px;
+  }
+
+  .domain-controls {
+    padding: 8px 16px 22px;
+  }
+
+  .domain-filter-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .domain-filter-row select {
+    width: 100%;
+  }
+
+  .domain-results {
+    padding: 4px 12px 36px;
+  }
+
+  .domain-results h2 {
+    font-size: 23px;
+  }
+}

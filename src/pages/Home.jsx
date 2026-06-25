@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import SkeletonRow from "../components/SkeletonRow";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -7,14 +7,20 @@ import Row from "../components/Row";
 import SearchBar from "../components/SearchBar";
 import MovieGrid from "../components/MovieGrid";
 
-import { getHome, getMovies, searchMovies } from "../api/watchindiaApi";
+import { getHome, getMovies } from "../api/watchindiaApi";
 import { setPageSeo, setJsonLd } from "../utils/seo";
 import { trackFilter, trackLanguageOpen, trackLoadMore } from "../utils/analytics";
 import "./Home.css";
 
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  "https://flixyfy-api-production.up.railway.app";
+
 const PAGE_SIZE = 24;
 
 const LANGUAGES = [
+  { label: "All Indian Languages", slug: "" },
   { label: "Hindi", slug: "hindi" },
   { label: "Telugu", slug: "telugu" },
   { label: "Tamil", slug: "tamil" },
@@ -29,7 +35,6 @@ const LANGUAGES = [
 ];
 
 const YEARS = [];
-
 for (let year = 2026; year >= 2000; year--) {
   YEARS.push(String(year));
 }
@@ -60,6 +65,8 @@ const PROVIDERS = [
 ];
 
 export default function Home() {
+  const navigate = useNavigate();
+
   const [sections, setSections] = useState({});
   const [results, setResults] = useState([]);
   const [query, setQuery] = useState("");
@@ -76,7 +83,7 @@ export default function Home() {
     setPageSeo({
       title: "Find Where Movies Are Streaming in India",
       description:
-        "Search movies across Netflix, Prime Video, JioHotstar, ZEE5, SonyLIV, Aha, Sun NXT, ETV Win and more. Discover where to watch movies online in India.",
+        "Search Indian movies, Hollywood movies, and classic Indian movies across OTT platforms and free YouTube full-movie links.",
       path: "/",
     });
 
@@ -118,6 +125,28 @@ export default function Home() {
     }
   };
 
+  const runGlobalSearch = async (searchText, selectedYear, selectedPage, append) => {
+    const params = new URLSearchParams();
+    params.set("q", searchText);
+    params.set("page", String(selectedPage));
+    params.set("limit", String(PAGE_SIZE));
+
+    if (selectedYear) params.set("year", selectedYear);
+
+    const res = await fetch(`${API_BASE}/api/v3/global-search?${params.toString()}`);
+
+    if (!res.ok) {
+      throw new Error(`Global search failed: ${res.status}`);
+    }
+
+    const data = await res.json();
+    const items = data.items || [];
+
+    setResults((prev) => (append ? [...prev, ...items] : items));
+    setFilterTotal(data.total || 0);
+    setPage(selectedPage);
+  };
+
   const runFilter = async (
     searchText = "",
     selectedYear = "",
@@ -134,17 +163,10 @@ export default function Home() {
         setLoading(true);
       }
 
-      let data;
-
       if (searchText) {
-        data = await searchMovies({
-          q: searchText,
-          year: selectedYear || "",
-          page: selectedPage,
-          limit: PAGE_SIZE,
-        });
+        await runGlobalSearch(searchText, selectedYear, selectedPage, append);
       } else {
-        data = await getMovies({
+        const data = await getMovies({
           page: selectedPage,
           limit: PAGE_SIZE,
           year: selectedYear || "",
@@ -152,13 +174,13 @@ export default function Home() {
           availability: selectedAvailability || "",
           provider: selectedProvider || "",
         });
+
+        const items = data.items || [];
+
+        setResults((prev) => (append ? [...prev, ...items] : items));
+        setFilterTotal(data.total || 0);
+        setPage(selectedPage);
       }
-
-      const items = data.items || [];
-
-      setResults((prev) => (append ? [...prev, ...items] : items));
-      setFilterTotal(data.total || 0);
-      setPage(selectedPage);
     } catch (err) {
       console.error("Filter API failed:", err);
       if (!append) {
@@ -207,6 +229,13 @@ export default function Home() {
     await runFilter(query, year, sort, availability, provider, page + 1, true);
   };
 
+  const handleLanguageChange = (value) => {
+    if (!value) return;
+
+    trackLanguageOpen(value);
+    navigate(`/language/${value}`);
+  };
+
   const handleYearChange = (value) => {
     setYear(value);
     trackFilter("year", value || "all");
@@ -250,18 +279,26 @@ export default function Home() {
       <Navbar />
 
       {!query && (
-        <div className="home-filter-row">
-          <div className="language-nav">
+        <div className="home-filter-row home-filter-row-v2">
+          <select
+            className="year-dropdown language-dropdown-v2"
+            defaultValue=""
+            onChange={(e) => handleLanguageChange(e.target.value)}
+          >
             {LANGUAGES.map((lang) => (
-              <Link
-                key={lang.slug}
-                to={`/language/${lang.slug}`}
-                onClick={() => trackLanguageOpen(lang.slug)}
-              >
+              <option key={lang.slug || "all"} value={lang.slug}>
                 {lang.label}
-              </Link>
+              </option>
             ))}
-          </div>
+          </select>
+
+          <Link className="domain-pill hollywood-pill" to="/hollywood">
+            Hollywood
+          </Link>
+
+          <Link className="domain-pill historical-pill" to="/historical">
+            Historical
+          </Link>
 
           <select
             className="year-dropdown"

@@ -1,35 +1,86 @@
 .navbar {
   width: 100%;
-  min-height: 86px;
-  padding: 18px 22px;
-  background: #111;
-  border-bottom: 1px solid #222;
+  min-height: 102px;
+  background: #111111;
+  border-bottom: 1px solid #222222;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
+  position: relative;
 }
 
 .brand {
+  color: #ffffff;
   text-decoration: none;
-  font-size: 46px;
-  font-weight: 900;
-  letter-spacing: 1px;
-  background: linear-gradient(90deg, #ff2bd6, #ffffff, #00bfff);
+  font-size: clamp(36px, 5vw, 54px);
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  background: linear-gradient(90deg, #ff35d1, #ffffff, #20d9ff);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow:
-    0 0 10px rgba(255,43,214,.5),
-    0 0 25px rgba(0,191,255,.35);
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 28px rgba(32, 217, 255, 0.4);
 }
 
-@media (max-width: 768px) {
+.navbar-links {
+  position: absolute;
+  right: 22px;
+  bottom: 18px;
+  display: flex;
+  gap: 10px;
+}
+
+.navbar-links a {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #343434;
+  border-radius: 999px;
+  padding: 0 14px;
+  color: #ffffff;
+  background: #1e1e1e;
+  text-decoration: none;
+  font-weight: 900;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.navbar-links a.active {
+  border-color: #20d9ff;
+  background: #20d9ff;
+  color: #071018;
+}
+
+@media (hover: hover) {
+  .navbar-links a:hover {
+    border-color: #20d9ff;
+    box-shadow: 0 0 16px rgba(32, 217, 255, 0.5);
+  }
+}
+
+.navbar-links a:active {
+  transform: scale(0.96);
+}
+
+@media (max-width: 760px) {
   .navbar {
-    min-height: 74px;
-    padding: 14px;
+    min-height: 122px;
+    align-items: flex-start;
+    padding-top: 22px;
   }
 
-  .brand {
-    font-size: 36px;
+  .navbar-links {
+    left: 12px;
+    right: 12px;
+    bottom: 14px;
+    justify-content: center;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .navbar-links a {
+    flex: 0 0 auto;
+    min-width: 92px;
   }
 }

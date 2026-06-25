@@ -1,46 +1,56 @@
-import { useNavigate } from "react-router-dom";
-import { trackMovieClick } from "../utils/analytics";
+import { Link } from "react-router-dom";
 import "./MovieCard.css";
 
-function buildPosterUrl(path) {
-  if (!path) return "/no-poster.png";
-  if (path.startsWith("http")) return path;
-  return `https://image.tmdb.org/t/p/w500${path}`;
+function fallbackPoster(title) {
+  return (
+    "https://dummyimage.com/360x540/111827/ffffff&text=" +
+    encodeURIComponent(title || "FLIXYFY")
+  );
+}
+
+function getMovieUrl(movie) {
+  if (movie.movie_url) return movie.movie_url;
+
+  if (movie.domain === "hollywood") return `/hollywood/${movie.slug}`;
+  if (movie.domain === "historical") return `/historical/${movie.slug}`;
+
+  return `/movie/${movie.slug}`;
 }
 
 export default function MovieCard({ movie }) {
-  const navigate = useNavigate();
+  if (!movie) return null;
 
-  const poster = buildPosterUrl(movie.poster_url || movie.poster_path);
-
-  const handleClick = () => {
-    trackMovieClick(movie);
-    navigate(`/movie/${movie.slug}`);
-  };
+  const title = movie.title || "Untitled";
+  const poster = movie.poster_url || movie.poster || fallbackPoster(title);
+  const url = getMovieUrl(movie);
+  const label = movie.source_label || movie.domain;
 
   return (
-    <div className="movie-card" onClick={handleClick}>
-      <img
-        className="movie-card-img"
-        src={poster}
-        alt={movie.title}
-        loading="lazy"
-        decoding="async"
-        draggable="false"
-      />
+    <Link to={url} className="movie-card">
+      <div className="movie-card-poster-wrap">
+        <img
+          className="movie-card-img"
+          src={poster}
+          alt={title}
+          loading="lazy"
+          decoding="async"
+        />
 
-      <h3 className="movie-card-title">{movie.title}</h3>
+        {label && movie.domain && movie.domain !== "modern" && (
+          <span className={`movie-domain-badge ${movie.domain}`}>{label}</span>
+        )}
+      </div>
 
-      <p className="movie-card-meta">
-        {movie.release_year} • {movie.primary_language}
-      </p>
+      <div className="movie-card-body">
+        <h3 className="movie-card-title">{title}</h3>
 
-      {movie.ott_primary && (
-        <div className="movie-card-ott">
-          {movie.is_free ? "Free on " : "Watch on "}
-          {movie.ott_primary}
+        <div className="movie-card-meta">
+          {movie.release_year && <span>{movie.release_year}</span>}
+          {movie.primary_language && <span>{movie.primary_language}</span>}
         </div>
-      )}
-    </div>
+
+        {movie.ott_primary && <p className="movie-card-provider">{movie.ott_primary}</p>}
+      </div>
+    </Link>
   );
 }

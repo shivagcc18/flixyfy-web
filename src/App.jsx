@@ -4,6 +4,8 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import MovieDetail from "./pages/MovieDetail";
 import LanguagePage from "./pages/LanguagePage";
+import DomainPage from "./pages/DomainPage";
+import DomainDetail from "./pages/DomainDetail";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
@@ -35,6 +37,13 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/movie/:slug" element={<MovieDetail />} />
         <Route path="/language/:language" element={<LanguagePage />} />
+
+        <Route path="/hollywood" element={<DomainPage domain="hollywood" />} />
+        <Route path="/hollywood/:slug" element={<DomainDetail domain="hollywood" />} />
+
+        <Route path="/historical" element={<DomainPage domain="historical" />} />
+        <Route path="/historical/:slug" element={<DomainDetail domain="historical" />} />
+
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
 

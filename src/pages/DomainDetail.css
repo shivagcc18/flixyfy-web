@@ -1,0 +1,156 @@
+.domain-detail-page {
+  min-height: 100vh;
+  background: #111111;
+  color: #ffffff;
+}
+
+.domain-detail-loading {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 60px 24px;
+  color: #ffffff;
+}
+
+.domain-detail-loading a {
+  color: #20d9ff;
+  font-weight: 900;
+}
+
+.domain-detail {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 42px 24px 60px;
+  display: grid;
+  grid-template-columns: 310px 1fr;
+  gap: 42px;
+  align-items: start;
+}
+
+.domain-poster-wrap {
+  width: 100%;
+}
+
+.domain-poster {
+  width: 100%;
+  border-radius: 20px;
+  object-fit: cover;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.domain-badge {
+  display: inline-flex;
+  margin: 0 0 14px;
+  padding: 8px 14px;
+  border: 1px solid #20d9ff;
+  border-radius: 999px;
+  color: #20d9ff;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+}
+
+.domain-info h1 {
+  margin: 0 0 12px;
+  font-size: clamp(34px, 5vw, 64px);
+  line-height: 1;
+  font-weight: 950;
+}
+
+.domain-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.domain-meta span {
+  background: #222222;
+  border: 1px solid #343434;
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: #e5e7eb;
+  font-weight: 800;
+}
+
+.domain-overview {
+  max-width: 820px;
+  color: #d1d5db;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.domain-line {
+  color: #e5e7eb;
+  line-height: 1.6;
+}
+
+.watch-block {
+  margin-top: 28px;
+}
+
+.watch-block h2 {
+  margin: 0 0 14px;
+  font-size: 24px;
+}
+
+.watch-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.watch-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: #20d9ff;
+  color: #071018;
+  font-weight: 950;
+  text-decoration: none;
+  border: 1px solid #20d9ff;
+}
+
+.watch-button.youtube {
+  background: #ff0033;
+  border-color: #ff0033;
+  color: #ffffff;
+}
+
+.domain-no-watch {
+  margin-top: 28px;
+  color: #cbd5e1;
+  font-size: 17px;
+}
+
+@media (hover: hover) {
+  .watch-button:hover {
+    box-shadow: 0 0 18px rgba(32, 217, 255, 0.45);
+    transform: translateY(-1px);
+  }
+
+  .watch-button.youtube:hover {
+    box-shadow: 0 0 18px rgba(255, 0, 51, 0.45);
+  }
+}
+
+.watch-button:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 760px) {
+  .domain-detail {
+    grid-template-columns: 1fr;
+    padding: 26px 16px 46px;
+    gap: 24px;
+  }
+
+  .domain-poster-wrap {
+    max-width: 260px;
+  }
+
+  .domain-info h1 {
+    font-size: 36px;
+  }
+}
