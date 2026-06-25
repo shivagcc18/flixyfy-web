@@ -1,13 +1,6 @@
 import { Link } from "react-router-dom";
 import "./MovieCard.css";
 
-function fallbackPoster(title) {
-  return (
-    "https://dummyimage.com/360x540/111827/ffffff&text=" +
-    encodeURIComponent(title || "FLIXYFY")
-  );
-}
-
 function getMovieUrl(movie) {
   if (movie.movie_url) return movie.movie_url;
 
@@ -17,24 +10,57 @@ function getMovieUrl(movie) {
   return `/movie/${movie.slug}`;
 }
 
+function getDomainLabel(movie) {
+  if (movie.source_label) return movie.source_label;
+  if (movie.domain === "hollywood") return "Hollywood";
+  if (movie.domain === "historical") return "Historical";
+  return "";
+}
+
+function PosterFallback({ movie, title }) {
+  const year = movie.release_year || movie.year || "";
+  const language = movie.language_name || movie.primary_language || "";
+  const isHistorical = movie.domain === "historical";
+
+  return (
+    <div className={`movie-poster-fallback ${movie.domain || "modern"}`}>
+      <div className="fallback-glow" />
+
+      <div className="fallback-content">
+        {isHistorical && <span className="fallback-kicker">CLASSIC INDIAN</span>}
+
+        <span className="fallback-title">{title}</span>
+
+        <span className="fallback-meta">
+          {[year, language].filter(Boolean).join(" • ")}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function MovieCard({ movie }) {
   if (!movie) return null;
 
   const title = movie.title || "Untitled";
-  const poster = movie.poster_url || movie.poster || fallbackPoster(title);
+  const poster = movie.poster_url || movie.poster || "";
   const url = getMovieUrl(movie);
-  const label = movie.source_label || movie.domain;
+  const label = getDomainLabel(movie);
 
   return (
-    <Link to={url} className="movie-card">
+    <Link to={url} className={`movie-card ${movie.domain || "modern"}`}>
       <div className="movie-card-poster-wrap">
-        <img
-          className="movie-card-img"
-          src={poster}
-          alt={title}
-          loading="lazy"
-          decoding="async"
-        />
+        {poster ? (
+          <img
+            className="movie-card-img"
+            src={poster}
+            alt={title}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <PosterFallback movie={movie} title={title} />
+        )}
 
         {label && movie.domain && movie.domain !== "modern" && (
           <span className={`movie-domain-badge ${movie.domain}`}>{label}</span>

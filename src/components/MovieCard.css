@@ -312,3 +312,79 @@
 .movie-card:active {
   transform: scale(0.97);
 }
+
+.movie-poster-fallback {
+  width: 100%;
+  height: 100%;
+  min-height: 270px;
+  border-radius: inherit;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(32, 217, 255, 0.22), transparent 28%),
+    radial-gradient(circle at 85% 85%, rgba(255, 53, 209, 0.16), transparent 30%),
+    linear-gradient(145deg, #111827, #070b12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.movie-poster-fallback.historical {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(250, 204, 21, 0.2), transparent 30%),
+    radial-gradient(circle at 80% 85%, rgba(180, 83, 9, 0.22), transparent 32%),
+    linear-gradient(145deg, #18120a, #070707);
+}
+
+.movie-poster-fallback.hollywood {
+  background:
+    radial-gradient(circle at 20% 15%, rgba(32, 217, 255, 0.24), transparent 30%),
+    radial-gradient(circle at 85% 85%, rgba(59, 130, 246, 0.2), transparent 32%),
+    linear-gradient(145deg, #07111f, #05070c);
+}
+
+.fallback-glow {
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+}
+
+.fallback-content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  text-align: center;
+  width: 100%;
+}
+
+.fallback-kicker {
+  color: #facc15;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+}
+
+.fallback-title {
+  color: #ffffff;
+  font-size: clamp(20px, 2.3vw, 34px);
+  font-weight: 300;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.fallback-meta {
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.movie-card.historical .movie-card-title {
+  color: #ffffff;
+}
+
+.movie-card.historical .movie-card-meta {
+  color: #d6d3d1;
+}
