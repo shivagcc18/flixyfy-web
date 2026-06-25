@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+from pathlib import Path
+
+LANGUAGE_PAGE = r'''import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
@@ -288,3 +290,11 @@ export default function LanguagePage() {
     </div>
   );
 }
+'''
+
+Path("src/pages/LanguagePage.jsx").write_text(LANGUAGE_PAGE, encoding="utf-8")
+
+print("PATCHED:")
+print("src/pages/LanguagePage.jsx")
+print("Hindi page search now uses global Indian search when q is present.")
+print("Pushpa can appear even if its primary language is Telugu.")
