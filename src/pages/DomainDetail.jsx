@@ -10,6 +10,8 @@ const API_BASE =
   import.meta.env.VITE_API_URL ||
   "https://flixyfy-api-production.up.railway.app";
 
+const TMDB_LOGO_BASE = "https://image.tmdb.org/t/p/w92";
+
 function domainName(domain) {
   return domain === "historical" ? "Historical Indian" : "Hollywood";
 }
@@ -19,6 +21,144 @@ function fallbackPoster(title) {
     "https://dummyimage.com/500x750/111827/ffffff&text=" +
     encodeURIComponent(title || "FLIXYFY")
   );
+}
+
+function logoUrl(path) {
+  if (!path) return null;
+  const value = String(path);
+  if (value.startsWith("http")) return value;
+  if (value.startsWith("/")) return `${TMDB_LOGO_BASE}${value}`;
+  return null;
+}
+
+function cleanName(value) {
+  return String(value || "")
+    .replace(/^watch on\s+/i, "")
+    .trim();
+}
+
+function normalizeProviderKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
+}
+
+function providerTypeLabel(type) {
+  const value = String(type || "").toLowerCase();
+
+  if (value === "subscription") return "Subscription";
+  if (value === "free") return "Free";
+  if (value === "free_with_ads") return "Free with Ads";
+  if (value === "rent") return "Rent";
+  if (value === "buy") return "Buy";
+
+  return "";
+}
+
+function regionLabel(region) {
+  const value = String(region || "").toUpperCase();
+
+  if (value === "IN") return "India";
+  if (value === "US") return "US";
+  if (value === "GB") return "UK";
+  if (value) return value;
+
+  return "";
+}
+
+function providerUrl(item) {
+  return (
+    item.final_url ||
+    item.deep_link ||
+    item.provider_deep_link ||
+    item.tmdb_watch_url ||
+    item.youtube_url ||
+    item.video_url ||
+    ""
+  );
+}
+
+function providerName(item) {
+  return cleanName(
+    item.provider_display_name ||
+      item.provider_name ||
+      item.provider ||
+      item.button_label ||
+      "Watch"
+  );
+}
+
+function providerRank(item) {
+  const region = String(item.region || "").toUpperCase();
+  const type = String(item.provider_type || "").toLowerCase();
+
+  const regionRank =
+    region === "IN" ? 0 :
+    region === "US" ? 1 :
+    region === "GB" ? 2 :
+    3;
+
+  const typeRank = {
+    subscription: 0,
+    free: 1,
+    free_with_ads: 2,
+    rent: 3,
+    buy: 4,
+  }[type] ?? 9;
+
+  const priority = Number(item.display_priority || item.priority || 999);
+
+  return regionRank * 10000 + typeRank * 1000 + priority;
+}
+
+function cleanProviders(items) {
+  if (!Array.isArray(items)) return [];
+
+  const sorted = [...items]
+    .filter((item) => item && providerUrl(item))
+    .sort((a, b) => providerRank(a) - providerRank(b));
+
+  const seen = new Set();
+  const output = [];
+
+  for (const item of sorted) {
+    const name = providerName(item);
+    const key = normalizeProviderKey(item.provider_key || name);
+
+    if (!key || key === "watch") continue;
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    output.push(item);
+
+    if (output.length >= 10) break;
+  }
+
+  return output;
+}
+
+function cleanYoutube(items) {
+  if (!Array.isArray(items)) return [];
+
+  const seen = new Set();
+  const output = [];
+
+  for (const item of items) {
+    const url = item.video_url || item.final_url || item.youtube_url;
+    if (!url) continue;
+
+    const key = item.video_id || url;
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    output.push(item);
+
+    if (output.length >= 3) break;
+  }
+
+  return output;
 }
 
 export default function DomainDetail({ domain }) {
@@ -74,8 +214,11 @@ export default function DomainDetail({ domain }) {
     };
   }, [apiPath, domain, slug]);
 
-  const availability = movie?.availability || movie?.ott_all || movie?.watch_providers || [];
-  const youtube = movie?.youtube_full_movies || [];
+  const availability = cleanProviders(
+    movie?.availability || movie?.ott_all || movie?.watch_providers || []
+  );
+
+  const youtube = cleanYoutube(movie?.youtube_full_movies || []);
 
   return (
     <div className="domain-detail-page">
@@ -106,9 +249,11 @@ export default function DomainDetail({ domain }) {
 
             <div className="domain-meta">
               {movie.release_year && <span>{movie.release_year}</span>}
+
               {movie.language_name || movie.primary_language ? (
                 <span>{movie.language_name || movie.primary_language}</span>
               ) : null}
+
               {movie.rating && <span>Rating {movie.rating}</span>}
             </div>
 
@@ -129,11 +274,12 @@ export default function DomainDetail({ domain }) {
             {youtube.length > 0 && (
               <div className="watch-block">
                 <h2>Free Full Movie</h2>
+
                 <div className="watch-buttons">
                   {youtube.map((item, index) => (
                     <a
                       key={`${item.video_id || item.video_url || index}`}
-                      href={item.video_url || item.final_url}
+                      href={item.video_url || item.final_url || item.youtube_url}
                       target="_blank"
                       rel="noreferrer"
                       className="watch-button youtube"
@@ -148,29 +294,48 @@ export default function DomainDetail({ domain }) {
             {availability.length > 0 && (
               <div className="watch-block">
                 <h2>Where to Watch</h2>
-                <div className="watch-buttons">
-                  {availability.map((item, index) => {
-                    const url =
-                      item.final_url ||
-                      item.deep_link ||
-                      item.provider_deep_link ||
-                      item.youtube_url ||
-                      item.video_url;
 
-                    if (!url) return null;
+                <div className="provider-grid">
+                  {availability.map((item, index) => {
+                    const url = providerUrl(item);
+                    const name = providerName(item);
+                    const img = logoUrl(item.logo_path);
+                    const type = providerTypeLabel(item.provider_type);
+                    const region = regionLabel(item.region);
 
                     return (
                       <a
-                        key={`${item.provider_key || item.provider_display_name || index}`}
+                        key={`${item.provider_key || name || index}`}
                         href={url}
                         target="_blank"
                         rel="noreferrer"
-                        className="watch-button"
+                        className="provider-card"
                       >
-                        {item.button_label ||
-                          item.provider_display_name ||
-                          item.provider_name ||
-                          "Watch"}
+                        <span className="provider-logo-wrap">
+                          {img ? (
+                            <img
+                              src={img}
+                              alt=""
+                              className="provider-logo"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : (
+                            <span className="provider-logo-fallback">
+                              {name.slice(0, 1)}
+                            </span>
+                          )}
+                        </span>
+
+                        <span className="provider-copy">
+                          <strong>{name}</strong>
+
+                          {(type || region) && (
+                            <small>
+                              {[type, region].filter(Boolean).join(" • ")}
+                            </small>
+                          )}
+                        </span>
                       </a>
                     );
                   })}
