@@ -10,7 +10,7 @@ const API_BASE =
   import.meta.env.VITE_API_URL ||
   "https://flixyfy-api-production.up.railway.app";
 
-const TMDB_LOGO_BASE = "https://image.tmdb.org/t/p/w92";
+const LOCAL_LOGO_BASE = "/provider-logos";
 
 function domainName(domain) {
   return domain === "historical" ? "Historical Indian" : "Hollywood";
@@ -25,10 +25,27 @@ function fallbackPoster(title) {
 
 function logoUrl(path) {
   if (!path) return null;
-  const value = String(path);
-  if (value.startsWith("http")) return value;
-  if (value.startsWith("/")) return `${TMDB_LOGO_BASE}${value}`;
-  return null;
+
+  const value = String(path).trim();
+
+  if (!value) return null;
+
+  let filename = "";
+
+  if (value.startsWith("http")) {
+    try {
+      const url = new URL(value);
+      filename = url.pathname.split("/").filter(Boolean).pop() || "";
+    } catch {
+      return null;
+    }
+  } else {
+    filename = value.replace(/^\/+/, "").replace(/\//g, "_");
+  }
+
+  if (!filename) return null;
+
+  return `${LOCAL_LOGO_BASE}/${filename}`;
 }
 
 function cleanName(value) {
