@@ -1,0 +1,120 @@
+{
+  "source_dir": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott",
+  "target_dir": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian",
+  "copied": 11,
+  "existing": 4,
+  "missing": 1,
+  "logos": [
+    {
+      "provider_key": "netflix",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\netflix.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\netflix.png",
+      "public_path": "/provider-logos/indian/netflix.png",
+      "status": "copied"
+    },
+    {
+      "provider_key": "prime-video",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\prime-video.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\prime-video.png",
+      "public_path": "/provider-logos/indian/prime-video.png",
+      "status": "copied"
+    },
+    {
+      "provider_key": "amazon-prime-video",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\prime-video.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\prime-video.png",
+      "public_path": "/provider-logos/indian/prime-video.png",
+      "status": "exists"
+    },
+    {
+      "provider_key": "jiohotstar",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\jiohotstar.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\jiohotstar.png",
+      "public_path": "/provider-logos/indian/jiohotstar.png",
+      "status": "copied"
+    },
+    {
+      "provider_key": "hotstar",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\jiohotstar.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\jiohotstar.png",
+      "public_path": "/provider-logos/indian/jiohotstar.png",
+      "status": "exists"
+    },
+    {
+      "provider_key": "zee5",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\zee5.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\zee5.png",
+      "public_path": "/provider-logos/indian/zee5.png",
+      "status": "copied"
+    },
+    {
+      "provider_key": "sonyliv",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\sonyliv.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\sonyliv.png",
+      "public_path": "/provider-logos/indian/sonyliv.png",
+      "status": "copied"
+    },
+    {
+      "provider_key": "sony-liv",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\sonyliv.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\sonyliv.png",
+      "public_path": "/provider-logos/indian/sonyliv.png",
+      "status": "exists"
+    },
+    {
+      "provider_key": "sun-nxt",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\sun-nxt.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\sun-nxt.png",
+      "public_path": "/provider-logos/indian/sun-nxt.png",
+      "status": "copied"
+    },
+    {
+      "provider_key": "sunnxt",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\sun-nxt.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\sun-nxt.png",
+      "public_path": "/provider-logos/indian/sun-nxt.png",
+      "status": "exists"
+    },
+    {
+      "provider_key": "aha",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\aha.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\aha.png",
+      "public_path": "/provider-logos/indian/aha.png",
+      "status": "copied"
+    },
+    {
+      "provider_key": "etv-win",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\etv-win.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\etv-win.png",
+      "public_path": "/provider-logos/indian/etv-win.png",
+      "status": "copied"
+    },
+    {
+      "provider_key": "vi-movies-and-tv",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\VI_movies.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\vi-movies-and-tv.png",
+      "public_path": "/provider-logos/indian/vi-movies-and-tv.png",
+      "status": "copied"
+    },
+    {
+      "provider_key": "google-play-movies",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\Google.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\google-play-movies.png",
+      "public_path": "/provider-logos/indian/google-play-movies.png",
+      "status": "copied"
+    },
+    {
+      "provider_key": "apple-tv-store",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\AppleTV.png",
+      "target_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\provider-logos\\indian\\apple-tv-store.png",
+      "public_path": "/provider-logos/indian/apple-tv-store.png",
+      "status": "copied"
+    },
+    {
+      "provider_key": "youtube",
+      "source_file": "C:\\Users\\USER\\Desktop\\flixyfy-deploy\\flixyfy-web\\public\\ott\\youtube.png",
+      "public_path": "/provider-logos/indian/youtube.png",
+      "status": "missing"
+    }
+  ]
+}
