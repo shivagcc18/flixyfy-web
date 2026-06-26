@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
+import YouTubeLinksSection from "../components/YouTubeLinksSection";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getMovie } from "../api/watchindiaApi";
-import {
-  trackProviderClick,
-  trackYoutubeClick,
-} from "../utils/analytics";
+import { trackProviderClick } from "../utils/analytics";
 import { setPageSeo, setJsonLd } from "../utils/seo";
 import Footer from "../components/Footer";
 
@@ -51,21 +49,158 @@ function getOttUrl(ott) {
 }
 
 function getYoutubeUrl(yt) {
-  if (yt?.video_url) return yt.video_url;
-  if (yt?.youtube_url) return yt.youtube_url;
   if (yt?.url) return yt.url;
-  if (yt?.video_id) return `https://www.youtube.com/watch?v=${yt.video_id}`;
+  if (yt?.youtube_url) return yt.youtube_url;
+  if (yt?.video_url) return yt.video_url;
+  if (yt?.youtube_video_id) {
+    return `https://www.youtube.com/watch?v=${yt.youtube_video_id}`;
+  }
+  if (yt?.video_id) {
+    return `https://www.youtube.com/watch?v=${yt.video_id}`;
+  }
   return null;
 }
 
-function formatViews(value) {
-  if (!value) return null;
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-  if (n >= 10000000) return `${(n / 10000000).toFixed(1)}Cr views`;
-  if (n >= 100000) return `${(n / 100000).toFixed(1)}L views`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}K views`;
-  return `${n} views`;
+function getYoutubeVideoId(yt) {
+  if (yt?.video_id) return yt.video_id;
+  if (yt?.youtube_video_id) return yt.youtube_video_id;
+
+  const url = getYoutubeUrl(yt);
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+    return parsed.searchParams.get("v");
+  } catch {
+    return null;
+  }
+}
+
+function isDubbedYoutubeTitle(yt) {
+  if (yt?.is_dubbed === true || yt?.is_dubbed === 1 || yt?.is_dubbed === "1") {
+    return true;
+  }
+
+  const title = String(yt?.title || yt?.youtube_title || "").toLowerCase();
+
+  return (
+    title.includes("dubbed") ||
+    title.includes("hindi dubbed") ||
+    title.includes("in hindi")
+  );
+}
+
+function normalizeYoutubeLink(yt) {
+  const url = getYoutubeUrl(yt);
+  const videoId = getYoutubeVideoId(yt);
+
+  if (!url || !videoId) return null;
+
+  return {
+    video_id: videoId,
+    youtube_video_id: videoId,
+    url,
+    youtube_url: url,
+    title:
+      yt?.title ||
+      yt?.youtube_title ||
+      yt?.video_title ||
+      "Watch full movie on YouTube",
+    youtube_title:
+      yt?.youtube_title ||
+      yt?.title ||
+      yt?.video_title ||
+      "Watch full movie on YouTube",
+    channel:
+      yt?.channel ||
+      yt?.youtube_channel ||
+      yt?.channel_name ||
+      yt?.video_channel_title ||
+      yt?.channel_title ||
+      "",
+    youtube_channel:
+      yt?.youtube_channel ||
+      yt?.channel ||
+      yt?.channel_name ||
+      yt?.video_channel_title ||
+      yt?.channel_title ||
+      "",
+    duration_seconds: yt?.duration_seconds || yt?.duration || null,
+    view_count: yt?.view_count || yt?.views || null,
+    audio_language:
+      yt?.audio_language ||
+      yt?.youtube_language ||
+      yt?.language ||
+      yt?.language_slug ||
+      "",
+    youtube_language:
+      yt?.youtube_language ||
+      yt?.audio_language ||
+      yt?.language ||
+      yt?.language_slug ||
+      "",
+    is_dubbed: isDubbedYoutubeTitle(yt),
+    match_score: yt?.match_score || null,
+    match_type: yt?.match_type || null,
+    source: yt?.source || "youtube",
+  };
+}
+
+function buildYoutubeLinks(movie) {
+  if (!movie) return [];
+
+  const directLinks = Array.isArray(movie.youtube_links)
+    ? movie.youtube_links
+    : [];
+
+  const legacyLinks = [
+    ...(Array.isArray(movie.youtube_full_movies)
+      ? movie.youtube_full_movies
+      : []),
+    ...(Array.isArray(movie.youtube_variants) ? movie.youtube_variants : []),
+    ...(Array.isArray(movie.youtube) ? movie.youtube : []),
+  ];
+
+  const singleHistoricalLink =
+    movie.youtube_url || movie.youtube_video_id || movie.youtube_title
+      ? [
+          {
+            video_id: movie.youtube_video_id,
+            youtube_video_id: movie.youtube_video_id,
+            url: movie.youtube_url,
+            youtube_url: movie.youtube_url,
+            title: movie.youtube_title,
+            youtube_title: movie.youtube_title,
+            view_count: movie.youtube_view_count,
+            youtube_language: movie.youtube_language,
+            audio_language: movie.youtube_language,
+            source: "historical_serving_v1",
+          },
+        ]
+      : [];
+
+  const normalized = [...directLinks, ...legacyLinks, ...singleHistoricalLink]
+    .map(normalizeYoutubeLink)
+    .filter(Boolean);
+
+  const seen = new Set();
+
+  return normalized.filter((link) => {
+    if (seen.has(link.video_id)) return false;
+    seen.add(link.video_id);
+    return true;
+  });
+}
+
+function buildMovieForYoutubeSection(movie) {
+  const youtubeLinks = buildYoutubeLinks(movie);
+
+  return {
+    ...movie,
+    youtube_links: youtubeLinks,
+    best_youtube_link: youtubeLinks[0] || null,
+    has_youtube: youtubeLinks.length > 0,
+  };
 }
 
 export default function MovieDetail() {
@@ -137,10 +272,15 @@ export default function MovieDetail() {
     });
   }, [movie, slug]);
 
+  const movieForYoutubeSection = useMemo(
+    () => buildMovieForYoutubeSection(movie),
+    [movie]
+  );
+
   if (error) {
     return (
       <>
-        <div style={{ color: "white", padding: 30 }}>Movie not found</div>
+        <div style={messageStyle}>Movie not found</div>
         <Footer />
       </>
     );
@@ -149,22 +289,13 @@ export default function MovieDetail() {
   if (!movie) {
     return (
       <>
-        <div style={{ color: "white", padding: 30 }}>Loading...</div>
+        <div style={messageStyle}>Loading...</div>
         <Footer />
       </>
     );
   }
 
   const poster = buildPosterUrl(movie.poster_url);
-
-  const youtubeMovies = (
-    movie.youtube_full_movies ||
-    movie.youtube_variants ||
-    movie.youtube ||
-    []
-  )
-    .filter((yt) => getYoutubeUrl(yt))
-    .slice(0, 5);
 
   const displayRuntime =
     movie.omdb_runtime || (movie.runtime ? `${movie.runtime} min` : null);
@@ -177,13 +308,7 @@ export default function MovieDetail() {
 
   return (
     <>
-      <div
-        style={{
-          ...pageStyle,
-          flexDirection: window.innerWidth <= 768 ? "column" : "row",
-          padding: window.innerWidth <= 768 ? "16px" : "30px",
-        }}
-      >
+      <div style={pageStyle}>
         <img
           src={poster}
           alt={movie.title}
@@ -192,11 +317,12 @@ export default function MovieDetail() {
           decoding="async"
         />
 
-        <div style={{ width: "100%" }}>
-          <h1>{movie.title}</h1>
+        <div style={contentStyle}>
+          <h1 style={titleStyle}>{movie.title}</h1>
 
-          <p>
-            {movie.release_year} • {movie.primary_language || movie.original_language || ""}
+          <p style={metaStyle}>
+            {movie.release_year} •{" "}
+            {movie.primary_language || movie.original_language || ""}
           </p>
 
           <div style={badgeWrapStyle}>
@@ -213,13 +339,16 @@ export default function MovieDetail() {
             {displayGenres && <span style={badgeStyle}>{displayGenres}</span>}
           </div>
 
-          <h2>Watch On</h2>
+          <h2 style={sectionTitleStyle}>Available on OTT</h2>
 
           {movie.ott_all && movie.ott_all.length > 0 ? (
             <div style={buttonWrapStyle}>
               {movie.ott_all.map((ott, index) => {
                 const providerName =
-                  ott.provider_display_name || ott.provider || ott.button_label || "OTT";
+                  ott.provider_display_name ||
+                  ott.provider ||
+                  ott.button_label ||
+                  "OTT";
                 const logo = providerLogo(ott.provider_key, providerName);
                 const url = getOttUrl(ott);
 
@@ -259,44 +388,12 @@ export default function MovieDetail() {
               })}
             </div>
           ) : (
-            <p>OTT availability not found.</p>
+            <p style={mutedStyle}>OTT availability not found.</p>
           )}
 
-          {youtubeMovies.length > 0 && (
-            <>
-              <h2>Watch Free on YouTube</h2>
+          <YouTubeLinksSection movie={movieForYoutubeSection} />
 
-              <div style={buttonWrapStyle}>
-                {youtubeMovies.map((yt, index) => {
-                  const views = formatViews(yt.view_count);
-                  const url = getYoutubeUrl(yt);
-
-                  return (
-                    <a
-  key={`${yt.video_id || url}-${index}`}
-  href={url}
-  target="_blank"
-  rel="noopener noreferrer"
-  onClick={() => {
-    trackYoutubeClick(movie.title);
-  }}
-  style={youtubeButtonStyle}
->
-                      <span style={youtubeIconStyle}>▶</span>
-
-                      <span>
-                        Watch Free
-                        {yt.youtube_language ? ` • ${yt.youtube_language}` : ""}
-                        {views ? ` • ${views}` : ""}
-                      </span>
-                    </a>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          <h2>Overview</h2>
+          <h2 style={sectionTitleStyle}>Overview</h2>
 
           <p style={overviewStyle}>{movie.overview || "Overview not available."}</p>
 
@@ -323,19 +420,43 @@ export default function MovieDetail() {
   );
 }
 
+const messageStyle = {
+  color: "white",
+  padding: 30,
+  background: "#141414",
+  minHeight: "100vh",
+};
+
 const pageStyle = {
   background: "#141414",
   minHeight: "100vh",
   padding: "30px",
   color: "white",
   display: "flex",
+  flexWrap: "wrap",
   gap: "30px",
   alignItems: "flex-start",
+  boxSizing: "border-box",
+};
+
+const contentStyle = {
+  flex: "1 1 360px",
+  minWidth: 0,
+  width: "100%",
+};
+
+const titleStyle = {
+  marginTop: 0,
+  lineHeight: 1.15,
+};
+
+const metaStyle = {
+  opacity: 0.82,
 };
 
 const posterStyle = {
-  width: window.innerWidth <= 768 ? "100%" : "280px",
-  maxWidth: window.innerWidth <= 768 ? "320px" : "280px",
+  width: "min(100%, 280px)",
+  maxWidth: "320px",
   borderRadius: "12px",
   height: "auto",
   objectFit: "cover",
@@ -363,6 +484,10 @@ const imdbBadgeStyle = {
   fontWeight: "800",
 };
 
+const sectionTitleStyle = {
+  marginTop: "26px",
+};
+
 const buttonWrapStyle = {
   display: "flex",
   gap: "12px",
@@ -386,31 +511,15 @@ const fallbackIconStyle = {
   alignItems: "center",
   justifyContent: "center",
   fontSize: "12px",
+  flex: "0 0 auto",
 };
 
-const youtubeIconStyle = {
-  ...fallbackIconStyle,
-  background: "#ff0000",
-  color: "#fff",
-  fontWeight: "900",
-};
-
-const youtubeButtonStyle = {
-  display: "flex",
-  alignItems: "center",
-  gap: "10px",
-  background: "#2a1111",
-  padding: "10px 14px",
-  borderRadius: "18px",
-  fontWeight: "800",
-  border: "1px solid #ff0000",
-  textDecoration: "none",
-  color: "#fff",
-  cursor: "pointer",
+const mutedStyle = {
+  opacity: 0.78,
 };
 
 const overviewStyle = {
-  maxWidth: "700px",
+  maxWidth: "760px",
   lineHeight: "1.6",
 };
 
@@ -418,7 +527,7 @@ const infoGridStyle = {
   marginTop: "18px",
   display: "grid",
   gap: "10px",
-  maxWidth: "700px",
+  maxWidth: "760px",
 };
 
 function ottButtonStyle(active) {
@@ -434,7 +543,6 @@ function ottButtonStyle(active) {
     textDecoration: "none",
     color: "#fff",
     cursor: active ? "pointer" : "not-allowed",
-    width: window.innerWidth <= 768 ? "100%" : "auto",
     boxSizing: "border-box",
   };
 }
