@@ -34,11 +34,143 @@ const HISTORICAL_LANGUAGES = [
   { label: "Kannada", value: "kn" },
 ];
 
+const HISTORICAL_NON_MOVIE_TITLES = new Set([
+  "a r rahman",
+  "a. r. rahman",
+  "a.r. rahman",
+  "ar rahman",
+  "a venkatesh",
+  "a. venkatesh",
+]);
+
+function normalizeTitle(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function isHistoricalNonMovieRow(movie) {
+  const title = normalizeTitle(movie?.title || movie?.name || movie?.original_title);
+  if (!title) return false;
+
+  if (HISTORICAL_NON_MOVIE_TITLES.has(title)) return true;
+
+  const slug = normalizeTitle(movie?.slug || "");
+  if (slug === "a-r-rahman" || slug === "ar-rahman" || slug === "a-venkatesh") {
+    return true;
+  }
+
+  return false;
+}
+
+function hasRealPoster(movie) {
+  const value =
+    movie?.poster_url ||
+    movie?.poster ||
+    movie?.poster_path ||
+    movie?.image_url ||
+    movie?.image ||
+    movie?.thumbnail ||
+    "";
+
+  if (!value) return false;
+
+  const poster = String(value).trim();
+  if (!poster) return false;
+
+  const lowered = poster.toLowerCase();
+
+  if (lowered.includes("placeholder")) return false;
+  if (lowered.includes("classic-indian")) return false;
+  if (lowered.includes("classic indian")) return false;
+  if (lowered.includes("no-poster")) return false;
+  if (lowered.includes("no_poster")) return false;
+  if (lowered.includes("default")) return false;
+  if (lowered === "null") return false;
+  if (lowered === "none") return false;
+  if (lowered === "unknown") return false;
+
+  return (
+    lowered.startsWith("http://") ||
+    lowered.startsWith("https://") ||
+    lowered.startsWith("/")
+  );
+}
+
+function getYear(movie) {
+  const value = movie?.release_year || movie?.year || 0;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getQualityValue(movie) {
+  const quality = Number(movie?.quality_score || 0);
+  const popularity = Number(movie?.popularity || 0);
+  const rating = Number(movie?.rating || 0);
+
+  if (Number.isFinite(quality) && quality > 0) return quality;
+  if (Number.isFinite(popularity) && popularity > 0) return popularity;
+  if (Number.isFinite(rating) && rating > 0) return rating;
+
+  return 0;
+}
+
+function cleanDomainItems(items, domain) {
+  if (!Array.isArray(items)) return [];
+
+  if (domain !== "historical") {
+    return items;
+  }
+
+  return items.filter((movie) => !isHistoricalNonMovieRow(movie));
+}
+
+function sortHistoricalPosterFirst(items) {
+  if (!Array.isArray(items)) return [];
+
+  return [...items].sort((a, b) => {
+    const aPosterRank = hasRealPoster(a) ? 0 : 1;
+    const bPosterRank = hasRealPoster(b) ? 0 : 1;
+
+    if (aPosterRank !== bPosterRank) {
+      return aPosterRank - bPosterRank;
+    }
+
+    const aYear = getYear(a);
+    const bYear = getYear(b);
+
+    if (aYear !== bYear) {
+      return bYear - aYear;
+    }
+
+    const aQuality = getQualityValue(a);
+    const bQuality = getQualityValue(b);
+
+    if (aQuality !== bQuality) {
+      return bQuality - aQuality;
+    }
+
+    return String(a?.title || "").localeCompare(String(b?.title || ""));
+  });
+}
+
+function prepareDomainItems(items, domain) {
+  const cleaned = cleanDomainItems(items, domain);
+
+  if (domain === "historical") {
+    return sortHistoricalPosterFirst(cleaned);
+  }
+
+  return cleaned;
+}
+
 function domainConfig(domain) {
   if (domain === "historical") {
     return {
       title: "Historical Indian Movies",
-      subtitle: "Classic Indian movies from 1960 to 1999 with YouTube full-movie availability where found.",
+      subtitle:
+        "Classic Indian movies from 1960 to 1999 with YouTube full-movie availability where found.",
       apiPath: "/api/v3/historical",
       seoTitle: "Historical Indian Movies 1960–1999",
       seoDescription:
@@ -48,7 +180,8 @@ function domainConfig(domain) {
 
   return {
     title: "Hollywood Movies",
-    subtitle: "Hollywood movies with streaming and rental availability across major providers.",
+    subtitle:
+      "Hollywood movies with streaming and rental availability across major providers.",
     apiPath: "/api/v3/hollywood",
     seoTitle: "Hollywood Movies Streaming Availability",
     seoDescription:
@@ -103,10 +236,19 @@ export default function DomainPage({ domain }) {
       }
 
       const data = await res.json();
-      const items = data.items || [];
+      const rawItems = data.items || data.movies || data.results || [];
+      const preparedItems = prepareDomainItems(rawItems, domain);
 
-      setMovies((prev) => (append ? [...prev, ...items] : items));
-      setTotal(data.total || 0);
+      setMovies((prev) => {
+        if (!append) {
+          return preparedItems;
+        }
+
+        const combined = [...prev, ...preparedItems];
+        return prepareDomainItems(combined, domain);
+      });
+
+      setTotal(data.total || preparedItems.length || 0);
       setPage(selectedPage);
     } catch (err) {
       console.error(`${domain} API failed:`, err);
@@ -121,12 +263,17 @@ export default function DomainPage({ domain }) {
   };
 
   useEffect(() => {
+    setMovies([]);
+    setPage(1);
     fetchMovies(1, false, query);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [domain, year, sort, language]);
 
   const handleSearch = async (value) => {
     const clean = value.trim();
     setQuery(clean);
+    setMovies([]);
+    setPage(1);
     await fetchMovies(1, false, clean);
   };
 
