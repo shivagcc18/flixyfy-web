@@ -26,6 +26,25 @@ const SORTS = [
   { label: "Title", value: "title" },
 ];
 
+const AVAILABILITY_OPTIONS = [
+  { label: "All Movies", value: "all" },
+  { label: "OTT Only", value: "ott" },
+  { label: "Free", value: "free" },
+];
+
+const PROVIDERS = [
+  { label: "All Providers", value: "" },
+  { label: "Netflix", value: "netflix" },
+  { label: "Prime Video", value: "prime_video" },
+  { label: "JioHotstar", value: "jiohotstar" },
+  { label: "ZEE5", value: "zee5" },
+  { label: "SonyLIV", value: "sonyliv" },
+  { label: "Aha", value: "aha" },
+  { label: "Sun NXT", value: "sun_nxt" },
+  { label: "ETV Win", value: "etv_win" },
+  { label: "YouTube", value: "youtube" },
+];
+
 const HISTORICAL_LANGUAGES = [
   { label: "All Languages", value: "" },
   { label: "Hindi", value: "hi" },
@@ -82,14 +101,11 @@ const HISTORICAL_CLASSIC_TITLE_BOOSTS = new Map([
   ["roja", 8100],
   ["anjali", 8050],
   ["moondram pirai", 8000],
-  ["naduvula konjam pakkatha kaanom", 0],
   ["manichitrathazhu", 7950],
   ["kireedam", 7900],
   ["bharatham", 7850],
   ["oru vadakkan veeragatha", 7800],
   ["mathilukal", 7750],
-  ["sandhesam", 7700],
-  ["drishyam", 0],
   ["mayabazar", 7650],
   ["daana veera soora karna", 7600],
   ["sankarabharanam", 7550],
@@ -106,7 +122,6 @@ const HISTORICAL_CLASSIC_TITLE_BOOSTS = new Map([
   ["om", 7000],
   ["aakasmika", 6950],
   ["upendra", 6900],
-  ["a", 0],
   ["dilwale dulhania le jayenge", 9900],
   ["hum aapke hain koun", 9850],
   ["hum aapke hain kaun", 9850],
@@ -118,7 +133,6 @@ const HISTORICAL_CLASSIC_TITLE_BOOSTS = new Map([
   ["sarfarosh", 9525],
   ["rangeela", 9475],
   ["andaz apna apna", 9425],
-  ["lagaan", 0],
 ]);
 
 function normalizeTitle(value) {
@@ -130,9 +144,7 @@ function normalizeTitle(value) {
 }
 
 function normalizeSlug(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
+  return String(value || "").trim().toLowerCase();
 }
 
 function isHistoricalNonMovieRow(movie) {
@@ -142,11 +154,7 @@ function isHistoricalNonMovieRow(movie) {
   if (HISTORICAL_NON_MOVIE_TITLES.has(title)) return true;
 
   const slug = normalizeSlug(movie?.slug || "");
-  if (slug === "a-r-rahman" || slug === "ar-rahman" || slug === "a-venkatesh") {
-    return true;
-  }
-
-  return false;
+  return slug === "a-r-rahman" || slug === "ar-rahman" || slug === "a-venkatesh";
 }
 
 function hasRealPoster(movie) {
@@ -176,16 +184,11 @@ function hasRealPoster(movie) {
   if (lowered === "none") return false;
   if (lowered === "unknown") return false;
 
-  return (
-    lowered.startsWith("http://") ||
-    lowered.startsWith("https://") ||
-    lowered.startsWith("/")
-  );
+  return lowered.startsWith("http://") || lowered.startsWith("https://") || lowered.startsWith("/");
 }
 
 function getYear(movie) {
-  const value = movie?.release_year || movie?.year || 0;
-  const parsed = Number(value);
+  const parsed = Number(movie?.release_year || movie?.year || 0);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
@@ -196,7 +199,9 @@ function getNumber(value) {
 
 function getClassicTitleBoost(movie) {
   const title = normalizeTitle(movie?.title || movie?.name || movie?.original_title);
-  const slug = normalizeSlug(movie?.slug || "").replace(/-\d{4}.*/, "").replace(/-/g, " ");
+  const slug = normalizeSlug(movie?.slug || "")
+    .replace(/-\d{4}.*/, "")
+    .replace(/-/g, " ");
 
   if (HISTORICAL_CLASSIC_TITLE_BOOSTS.has(title)) {
     return HISTORICAL_CLASSIC_TITLE_BOOSTS.get(title);
@@ -209,55 +214,49 @@ function getClassicTitleBoost(movie) {
   return 0;
 }
 
-function getPopularScore(movie, originalIndex = 0) {
-  const classicBoost = getClassicTitleBoost(movie);
+function getPopularScore(movie, originalIndex = 0, domain = "") {
+  const classicBoost = domain === "historical" ? getClassicTitleBoost(movie) : 0;
   const quality = getNumber(movie?.quality_score);
   const popularity = getNumber(movie?.popularity);
   const rating = getNumber(movie?.rating);
   const voteCount = getNumber(movie?.vote_count);
-  const year = getYear(movie);
-
-  const qualityScore = quality * 20;
-  const popularityScore = popularity * 10;
-  const ratingScore = rating * 100;
-  const voteScore = Math.min(voteCount, 5000) / 5;
-
-  const yearPenalty = year >= 1995 ? 0 : year >= 1980 ? 20 : year >= 1970 ? 40 : 60;
-
+  const ottBoost = movie?.has_ott ? 250 : 0;
+  const freeBoost = movie?.is_free || movie?.has_free_ott ? 150 : 0;
+  const posterBoost = hasRealPoster(movie) ? 300 : 0;
   const apiOrderScore = Math.max(0, 1000 - originalIndex);
 
   return (
     classicBoost +
-    qualityScore +
-    popularityScore +
-    ratingScore +
-    voteScore +
-    apiOrderScore -
-    yearPenalty
+    posterBoost +
+    ottBoost +
+    freeBoost +
+    quality * 20 +
+    popularity * 10 +
+    rating * 100 +
+    Math.min(voteCount, 5000) / 5 +
+    apiOrderScore
   );
 }
 
 function cleanDomainItems(items, domain) {
   if (!Array.isArray(items)) return [];
 
-  if (domain !== "historical") {
-    return items;
-  }
+  if (domain !== "historical") return items;
 
   return items.filter((movie) => !isHistoricalNonMovieRow(movie));
 }
 
-function sortHistoricalItems(items, selectedSort) {
+function sortDomainItems(items, selectedSort, domain) {
   if (!Array.isArray(items)) return [];
 
   return [...items]
     .map((movie, index) => ({ movie, index }))
     .sort((a, b) => {
-      const aHasPoster = hasRealPoster(a.movie) ? 0 : 1;
-      const bHasPoster = hasRealPoster(b.movie) ? 0 : 1;
+      if (domain === "historical") {
+        const aHasPoster = hasRealPoster(a.movie) ? 0 : 1;
+        const bHasPoster = hasRealPoster(b.movie) ? 0 : 1;
 
-      if (aHasPoster !== bHasPoster) {
-        return aHasPoster - bHasPoster;
+        if (aHasPoster !== bHasPoster) return aHasPoster - bHasPoster;
       }
 
       if (selectedSort === "title") {
@@ -268,7 +267,8 @@ function sortHistoricalItems(items, selectedSort) {
         const yearDiff = getYear(b.movie) - getYear(a.movie);
         if (yearDiff !== 0) return yearDiff;
 
-        const popularDiff = getPopularScore(b.movie, b.index) - getPopularScore(a.movie, a.index);
+        const popularDiff =
+          getPopularScore(b.movie, b.index, domain) - getPopularScore(a.movie, a.index, domain);
         if (popularDiff !== 0) return popularDiff;
 
         return a.index - b.index;
@@ -278,13 +278,15 @@ function sortHistoricalItems(items, selectedSort) {
         const ratingDiff = getNumber(b.movie?.rating) - getNumber(a.movie?.rating);
         if (ratingDiff !== 0) return ratingDiff;
 
-        const popularDiff = getPopularScore(b.movie, b.index) - getPopularScore(a.movie, a.index);
+        const popularDiff =
+          getPopularScore(b.movie, b.index, domain) - getPopularScore(a.movie, a.index, domain);
         if (popularDiff !== 0) return popularDiff;
 
         return a.index - b.index;
       }
 
-      const popularDiff = getPopularScore(b.movie, b.index) - getPopularScore(a.movie, a.index);
+      const popularDiff =
+        getPopularScore(b.movie, b.index, domain) - getPopularScore(a.movie, a.index, domain);
       if (popularDiff !== 0) return popularDiff;
 
       return a.index - b.index;
@@ -294,12 +296,7 @@ function sortHistoricalItems(items, selectedSort) {
 
 function prepareDomainItems(items, domain, selectedSort) {
   const cleaned = cleanDomainItems(items, domain);
-
-  if (domain === "historical") {
-    return sortHistoricalItems(cleaned, selectedSort);
-  }
-
-  return cleaned;
+  return sortDomainItems(cleaned, selectedSort, domain);
 }
 
 function domainConfig(domain) {
@@ -334,6 +331,8 @@ export default function DomainPage({ domain }) {
   const [year, setYear] = useState("");
   const [sort, setSort] = useState("popular");
   const [language, setLanguage] = useState("");
+  const [availability, setAvailability] = useState("all");
+  const [provider, setProvider] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -366,6 +365,20 @@ export default function DomainPage({ domain }) {
       if (year) params.set("year", year);
       if (domain === "historical" && language) params.set("language", language);
 
+      if (availability === "ott") {
+        params.set("has_ott", "true");
+      }
+
+      if (availability === "free") {
+        params.set("has_ott", "true");
+        params.set("has_free_ott", "true");
+        params.set("is_free", "true");
+      }
+
+      if (provider) {
+        params.set("provider", provider);
+      }
+
       const res = await fetch(`${API_BASE}${config.apiPath}?${params.toString()}`);
 
       if (!res.ok) {
@@ -377,9 +390,7 @@ export default function DomainPage({ domain }) {
       const preparedItems = prepareDomainItems(rawItems, domain, sort);
 
       setMovies((prev) => {
-        if (!append) {
-          return preparedItems;
-        }
+        if (!append) return preparedItems;
 
         const combined = [...prev, ...preparedItems];
         return prepareDomainItems(combined, domain, sort);
@@ -404,7 +415,7 @@ export default function DomainPage({ domain }) {
     setPage(1);
     fetchMovies(1, false, query);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [domain, year, sort, language]);
+  }, [domain, year, sort, language, availability, provider]);
 
   const handleSearch = async (value) => {
     const clean = value.trim();
@@ -457,6 +468,22 @@ export default function DomainPage({ domain }) {
           <select value={sort} onChange={(e) => setSort(e.target.value)}>
             {SORTS.map((item) => (
               <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+
+          <select value={availability} onChange={(e) => setAvailability(e.target.value)}>
+            {AVAILABILITY_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+
+          <select value={provider} onChange={(e) => setProvider(e.target.value)}>
+            {PROVIDERS.map((item) => (
+              <option key={item.value || "all"} value={item.value}>
                 {item.label}
               </option>
             ))}

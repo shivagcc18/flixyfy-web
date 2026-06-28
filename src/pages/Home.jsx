@@ -292,14 +292,6 @@ export default function Home() {
             ))}
           </select>
 
-          <Link className="domain-pill hollywood-pill" to="/hollywood">
-            Hollywood
-          </Link>
-
-          <Link className="domain-pill historical-pill" to="/historical">
-            Historical
-          </Link>
-
           <select
             className="year-dropdown"
             value={year}
