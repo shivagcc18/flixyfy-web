@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-
+import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import SearchBar from "../components/SearchBar";
 import MovieGrid from "../components/MovieGrid";
 import SkeletonRow from "../components/SkeletonRow";
-
+import SearchBar from "../components/SearchBar";
 import { setPageSeo } from "../utils/seo";
 import "./LanguagePage.css";
 
@@ -16,6 +14,35 @@ const API_BASE =
   "https://flixyfy-api-production.up.railway.app";
 
 const PAGE_SIZE = 24;
+
+const INDIAN_LANGUAGES = [
+  { label: "All Indian Languages", value: "all", path: "/" },
+  { label: "Hindi", value: "hindi", path: "/language/hindi" },
+  { label: "Telugu", value: "telugu", path: "/language/telugu" },
+  { label: "Tamil", value: "tamil", path: "/language/tamil" },
+  { label: "Malayalam", value: "malayalam", path: "/language/malayalam" },
+  { label: "Kannada", value: "kannada", path: "/language/kannada" },
+  { label: "Bengali", value: "bengali", path: "/language/bengali" },
+  { label: "Marathi", value: "marathi", path: "/language/marathi" },
+  { label: "Punjabi", value: "punjabi", path: "/language/punjabi" },
+  { label: "Gujarati", value: "gujarati", path: "/language/gujarati" },
+  { label: "Odia", value: "odia", path: "/language/odia" },
+  { label: "Assamese", value: "assamese", path: "/language/assamese" },
+];
+
+const LANGUAGE_ALIASES = {
+  hi: "hindi",
+  te: "telugu",
+  ta: "tamil",
+  ml: "malayalam",
+  kn: "kannada",
+  bn: "bengali",
+  mr: "marathi",
+  pa: "punjabi",
+  gu: "gujarati",
+  or: "odia",
+  as: "assamese",
+};
 
 const LANGUAGE_LABELS = {
   hindi: "Hindi",
@@ -40,114 +67,170 @@ const SORTS = [
   { label: "Popular", value: "popular" },
   { label: "Latest", value: "latest" },
   { label: "Rating", value: "rating" },
+  { label: "Title", value: "title" },
 ];
 
-function extractItems(data) {
-  if (!data) return [];
+const AVAILABILITY_OPTIONS = [
+  { label: "All Movies", value: "all" },
+  { label: "OTT Only", value: "ott" },
+  { label: "Free", value: "free" },
+];
 
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data.items)) return data.items;
-  if (Array.isArray(data.movies)) return data.movies;
-  if (Array.isArray(data.results)) return data.results;
-  if (Array.isArray(data.data)) return data.data;
+const PROVIDERS = [
+  { label: "All Providers", value: "" },
+  { label: "Netflix", value: "netflix" },
+  { label: "Prime Video", value: "prime_video" },
+  { label: "JioHotstar", value: "jiohotstar" },
+  { label: "ZEE5", value: "zee5" },
+  { label: "SonyLIV", value: "sonyliv" },
+  { label: "Aha", value: "aha" },
+  { label: "Sun NXT", value: "sun_nxt" },
+  { label: "ETV Win", value: "etv_win" },
+  { label: "YouTube", value: "youtube" },
+];
 
-  return [];
+function normalizeLanguageSlug(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  return LANGUAGE_ALIASES[raw] || raw || "hindi";
 }
 
-function totalFrom(data, fallbackCount) {
-  if (!data) return fallbackCount;
+function getLanguageLabel(slug) {
+  return LANGUAGE_LABELS[slug] || "Indian";
+}
 
-  return data.total || data.count_total || data.movie_count || fallbackCount;
+function hasRealPoster(movie) {
+  const value =
+    movie?.poster_url ||
+    movie?.poster ||
+    movie?.poster_path ||
+    movie?.image_url ||
+    movie?.image ||
+    movie?.thumbnail ||
+    "";
+
+  if (!value) return false;
+
+  const poster = String(value).trim();
+  if (!poster) return false;
+
+  const lowered = poster.toLowerCase();
+
+  if (lowered.includes("placeholder")) return false;
+  if (lowered.includes("classic-indian")) return false;
+  if (lowered.includes("classic indian")) return false;
+  if (lowered.includes("no-poster")) return false;
+  if (lowered.includes("no_poster")) return false;
+  if (lowered.includes("default")) return false;
+  if (lowered === "null") return false;
+  if (lowered === "none") return false;
+  if (lowered === "unknown") return false;
+
+  return (
+    lowered.startsWith("http://") ||
+    lowered.startsWith("https://") ||
+    lowered.startsWith("/")
+  );
+}
+
+function getNumber(value) {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getYear(movie) {
+  const parsed = Number(movie?.release_year || movie?.year || 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getPopularScore(movie, originalIndex = 0) {
+  const quality = getNumber(movie?.quality_score);
+  const popularity = getNumber(movie?.popularity);
+  const rating = getNumber(movie?.rating);
+  const voteCount = getNumber(movie?.vote_count);
+  const ottBoost = movie?.has_ott ? 250 : 0;
+  const freeBoost = movie?.is_free || movie?.has_free_ott ? 150 : 0;
+  const posterBoost = hasRealPoster(movie) ? 300 : 0;
+  const apiOrderScore = Math.max(0, 1000 - originalIndex);
+
+  return (
+    posterBoost +
+    ottBoost +
+    freeBoost +
+    quality * 20 +
+    popularity * 10 +
+    rating * 100 +
+    Math.min(voteCount, 5000) / 5 +
+    apiOrderScore
+  );
+}
+
+function sortLanguageItems(items, selectedSort) {
+  if (!Array.isArray(items)) return [];
+
+  return [...items]
+    .map((movie, index) => ({ movie, index }))
+    .sort((a, b) => {
+      if (selectedSort === "title") {
+        return String(a.movie?.title || "").localeCompare(String(b.movie?.title || ""));
+      }
+
+      if (selectedSort === "latest") {
+        const yearDiff = getYear(b.movie) - getYear(a.movie);
+        if (yearDiff !== 0) return yearDiff;
+
+        const popularDiff = getPopularScore(b.movie, b.index) - getPopularScore(a.movie, a.index);
+        if (popularDiff !== 0) return popularDiff;
+
+        return a.index - b.index;
+      }
+
+      if (selectedSort === "rating") {
+        const ratingDiff = getNumber(b.movie?.rating) - getNumber(a.movie?.rating);
+        if (ratingDiff !== 0) return ratingDiff;
+
+        const popularDiff = getPopularScore(b.movie, b.index) - getPopularScore(a.movie, a.index);
+        if (popularDiff !== 0) return popularDiff;
+
+        return a.index - b.index;
+      }
+
+      const popularDiff = getPopularScore(b.movie, b.index) - getPopularScore(a.movie, a.index);
+      if (popularDiff !== 0) return popularDiff;
+
+      return a.index - b.index;
+    })
+    .map((item) => item.movie);
 }
 
 export default function LanguagePage() {
-  const { language } = useParams();
-  const [searchParams] = useSearchParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
 
-  const languageSlug = String(language || "").toLowerCase();
-  const languageLabel = LANGUAGE_LABELS[languageSlug] || languageSlug || "Language";
+  const languageSlug = useMemo(() => normalizeLanguageSlug(slug), [slug]);
+  const languageLabel = useMemo(() => getLanguageLabel(languageSlug), [languageSlug]);
 
-  const initialQuery = searchParams.get("q") || "";
-
-  const [query, setQuery] = useState(initialQuery);
   const [movies, setMovies] = useState([]);
+  const [query, setQuery] = useState("");
   const [year, setYear] = useState("");
   const [sort, setSort] = useState("popular");
+  const [availability, setAvailability] = useState("all");
+  const [provider, setProvider] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const isSearchMode = Boolean(query.trim());
   const canLoadMore = movies.length < total;
-
-  const seoTitle = useMemo(() => {
-    if (isSearchMode) {
-      return `Search ${query} across Indian Movies`;
-    }
-
-    return `${languageLabel} Movies Streaming Online`;
-  }, [isSearchMode, query, languageLabel]);
 
   useEffect(() => {
     setPageSeo({
-      title: seoTitle,
-      description: isSearchMode
-        ? `Search ${query} across Indian movies, including pan-Indian and dubbed movie results.`
-        : `Find where to watch ${languageLabel} movies online on OTT platforms and free YouTube links.`,
-      path: isSearchMode
-        ? `/language/${languageSlug}?q=${encodeURIComponent(query)}`
-        : `/language/${languageSlug}`,
+      title: `${languageLabel} Movies Streaming Availability`,
+      description: `Explore ${languageLabel} movies and find where to watch them online on OTT platforms.`,
+      path: `/language/${languageSlug}`,
     });
-  }, [seoTitle, isSearchMode, query, languageSlug, languageLabel]);
+  }, [languageLabel, languageSlug]);
 
-  async function fetchLanguageMovies(selectedPage = 1, append = false) {
-    const params = new URLSearchParams();
-
-    params.set("page", String(selectedPage));
-    params.set("limit", String(PAGE_SIZE));
-    params.set("sort", sort || "popular");
-
-    if (year) {
-      params.set("year", year);
-    }
-
-    const url = `${API_BASE}/api/v3/language/${languageSlug}?${params.toString()}`;
-    const res = await fetch(url);
-
-    if (!res.ok) {
-      throw new Error(`Language API failed: ${res.status}`);
-    }
-
-    return await res.json();
-  }
-
-  async function fetchPanIndianSearch(selectedPage = 1, append = false) {
-    const params = new URLSearchParams();
-
-    params.set("q", query.trim());
-    params.set("page", String(selectedPage));
-    params.set("limit", String(PAGE_SIZE));
-
-    // Search only Indian domains. Do not include Hollywood here.
-    params.set("domain", "modern,historical");
-
-    if (year) {
-      params.set("year", year);
-    }
-
-    const url = `${API_BASE}/api/v3/global-search?${params.toString()}`;
-    const res = await fetch(url);
-
-    if (!res.ok) {
-      throw new Error(`Global search API failed: ${res.status}`);
-    }
-
-    return await res.json();
-  }
-
-  async function loadMovies(selectedPage = 1, append = false) {
+  const fetchMovies = async (selectedPage = 1, append = false, searchText = query) => {
     try {
       if (append) {
         setLoadingMore(true);
@@ -155,18 +238,51 @@ export default function LanguagePage() {
         setLoading(true);
       }
 
-      const data = isSearchMode
-        ? await fetchPanIndianSearch(selectedPage, append)
-        : await fetchLanguageMovies(selectedPage, append);
+      const params = new URLSearchParams();
+      params.set("page", String(selectedPage));
+      params.set("limit", String(PAGE_SIZE));
+      params.set("sort", sort || "popular");
 
-      const items = extractItems(data);
+      if (searchText) params.set("q", searchText);
+      if (year) params.set("year", year);
 
-      setMovies((prev) => (append ? [...prev, ...items] : items));
-      setTotal(totalFrom(data, items.length));
+      if (availability === "ott") {
+        params.set("has_ott", "true");
+      }
+
+      if (availability === "free") {
+        params.set("has_ott", "true");
+        params.set("has_free_ott", "true");
+        params.set("is_free", "true");
+      }
+
+      if (provider) {
+        params.set("provider", provider);
+      }
+
+      const url = `${API_BASE}/api/v3/language/${languageSlug}?${params.toString()}`;
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        throw new Error(`Language API failed: ${res.status}`);
+      }
+
+      const data = await res.json();
+      const rawItems = data.items || data.movies || data.results || [];
+      const preparedItems = sortLanguageItems(rawItems, sort);
+
+      setMovies((prev) => {
+        if (!append) {
+          return preparedItems;
+        }
+
+        return sortLanguageItems([...prev, ...preparedItems], sort);
+      });
+
+      setTotal(data.total || preparedItems.length || 0);
       setPage(selectedPage);
     } catch (err) {
-      console.error("Language page load failed:", err);
-
+      console.error("Language API failed:", err);
       if (!append) {
         setMovies([]);
         setTotal(0);
@@ -175,66 +291,71 @@ export default function LanguagePage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }
+  };
 
   useEffect(() => {
-    setQuery(initialQuery);
-  }, [initialQuery]);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      loadMovies(1, false);
-    }, 200);
-
-    return () => clearTimeout(timeout);
-  }, [languageSlug, query, year, sort]);
-
-  async function handleSearch(value) {
-    const clean = value.trim();
-
-    setQuery(clean);
+    setMovies([]);
     setPage(1);
+    fetchMovies(1, false, query);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [languageSlug, year, sort, availability, provider]);
 
-    if (clean) {
-      navigate(`/language/${languageSlug}?q=${encodeURIComponent(clean)}`);
-    } else {
-      navigate(`/language/${languageSlug}`);
-    }
-  }
+  const handleSearch = async (value) => {
+    const clean = value.trim();
+    setQuery(clean);
+    setMovies([]);
+    setPage(1);
+    await fetchMovies(1, false, clean);
+  };
 
-  async function handleLoadMore() {
+  const handleLoadMore = async () => {
     if (loadingMore || !canLoadMore) return;
-    await loadMovies(page + 1, true);
-  }
+    await fetchMovies(page + 1, true, query);
+  };
 
-  const title = isSearchMode
-    ? `Search Results for "${query}" across Indian Movies`
-    : `${languageLabel} Movies`;
-
-  const subtitle = isSearchMode
-    ? `Showing pan-Indian matches too, not only ${languageLabel}-primary movies.`
-    : `${total} ${languageLabel} movies available`;
+  const handleLanguageChange = (value) => {
+    const selected = INDIAN_LANGUAGES.find((item) => item.value === value);
+    if (!selected) return;
+    navigate(selected.path);
+  };
 
   return (
     <div className="language-page">
       <Navbar />
 
-      <div className="language-search-wrap">
+      <section className="language-hero">
         <SearchBar onSearch={handleSearch} large />
-      </div>
-
-      <section className="language-header">
-        <div>
-          <h1>{title}</h1>
-          <p>{loading ? "Loading..." : subtitle}</p>
-        </div>
 
         <div className="language-filter-row">
           <select
-            className="year-dropdown"
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
+            value={languageSlug}
+            onChange={(e) => handleLanguageChange(e.target.value)}
+            aria-label="Select Indian language"
           >
+            {INDIAN_LANGUAGES.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+
+          <button
+            className="domain-filter-pill"
+            type="button"
+            onClick={() => navigate("/hollywood")}
+          >
+            Hollywood
+          </button>
+
+          <button
+            className="domain-filter-pill"
+            type="button"
+            onClick={() => navigate("/historical")}
+          >
+            Historical
+          </button>
+
+          <select value={year} onChange={(e) => setYear(e.target.value)} aria-label="Select year">
             <option value="">All Years</option>
             {YEARS.map((item) => (
               <option key={item} value={item}>
@@ -243,23 +364,49 @@ export default function LanguagePage() {
             ))}
           </select>
 
-          {!isSearchMode && (
-            <select
-              className="year-dropdown"
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-            >
-              {SORTS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          )}
+          <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort movies">
+            {SORTS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={availability}
+            onChange={(e) => setAvailability(e.target.value)}
+            aria-label="Select availability"
+          >
+            {AVAILABILITY_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={provider}
+            onChange={(e) => setProvider(e.target.value)}
+            aria-label="Select provider"
+          >
+            {PROVIDERS.map((item) => (
+              <option key={item.value || "all"} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
         </div>
       </section>
 
       <section className="language-results">
+        <h1>{languageLabel} Movies</h1>
+
+        <p className="language-count">
+          {loading
+            ? "Loading..."
+            : `${total} ${languageLabel} movies available`}
+        </p>
+
         {loading ? (
           <SkeletonRow />
         ) : movies.length === 0 ? (
