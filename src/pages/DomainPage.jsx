@@ -43,11 +43,96 @@ const HISTORICAL_NON_MOVIE_TITLES = new Set([
   "a. venkatesh",
 ]);
 
+const HISTORICAL_CLASSIC_TITLE_BOOSTS = new Map([
+  ["sholay", 10000],
+  ["mughal-e-azam", 9800],
+  ["mughal e azam", 9800],
+  ["mother india", 9700],
+  ["guide", 9600],
+  ["pyaasa", 9550],
+  ["kaagaz ke phool", 9500],
+  ["sahib bibi aur ghulam", 9450],
+  ["anand", 9400],
+  ["deewaar", 9350],
+  ["deewar", 9350],
+  ["zanjeer", 9300],
+  ["amar akbar anthony", 9250],
+  ["don", 9200],
+  ["trishul", 9150],
+  ["kaala patthar", 9100],
+  ["shakti", 9050],
+  ["agneepath", 9000],
+  ["silsila", 8950],
+  ["kabhi kabhie", 8900],
+  ["muqaddar ka sikandar", 8850],
+  ["abhimaan", 8800],
+  ["chupke chupke", 8750],
+  ["gol maal", 8700],
+  ["jaane bhi do yaaro", 8650],
+  ["masoom", 8600],
+  ["ardh satya", 8550],
+  ["parinda", 8500],
+  ["satya", 8450],
+  ["nayakan", 8400],
+  ["thevar magan", 8350],
+  ["thalapathi", 8300],
+  ["baasha", 8250],
+  ["indian", 8200],
+  ["bombay", 8150],
+  ["roja", 8100],
+  ["anjali", 8050],
+  ["moondram pirai", 8000],
+  ["naduvula konjam pakkatha kaanom", 0],
+  ["manichitrathazhu", 7950],
+  ["kireedam", 7900],
+  ["bharatham", 7850],
+  ["oru vadakkan veeragatha", 7800],
+  ["mathilukal", 7750],
+  ["sandhesam", 7700],
+  ["drishyam", 0],
+  ["mayabazar", 7650],
+  ["daana veera soora karna", 7600],
+  ["sankarabharanam", 7550],
+  ["sagara sangamam", 7500],
+  ["rudraveena", 7450],
+  ["swathi muthyam", 7400],
+  ["geethanjali", 7350],
+  ["jagadeka veerudu athiloka sundari", 7300],
+  ["gang leader", 7250],
+  ["pathala bhairavi", 7200],
+  ["bangarada manushya", 7150],
+  ["kaviratna kalidasa", 7100],
+  ["nagarahavu", 7050],
+  ["om", 7000],
+  ["aakasmika", 6950],
+  ["upendra", 6900],
+  ["a", 0],
+  ["dilwale dulhania le jayenge", 9900],
+  ["hum aapke hain koun", 9850],
+  ["hum aapke hain kaun", 9850],
+  ["kuch kuch hota hai", 9825],
+  ["baazigar", 9725],
+  ["darr", 9675],
+  ["dil to pagal hai", 9625],
+  ["karan arjun", 9575],
+  ["sarfarosh", 9525],
+  ["rangeela", 9475],
+  ["andaz apna apna", 9425],
+  ["lagaan", 0],
+]);
+
 function normalizeTitle(value) {
   return String(value || "")
     .trim()
     .toLowerCase()
+    .replace(/[._:;'"!?()[\]{}]/g, " ")
     .replace(/\s+/g, " ");
+}
+
+function normalizeSlug(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function isHistoricalNonMovieRow(movie) {
@@ -56,7 +141,7 @@ function isHistoricalNonMovieRow(movie) {
 
   if (HISTORICAL_NON_MOVIE_TITLES.has(title)) return true;
 
-  const slug = normalizeTitle(movie?.slug || "");
+  const slug = normalizeSlug(movie?.slug || "");
   if (slug === "a-r-rahman" || slug === "ar-rahman" || slug === "a-venkatesh") {
     return true;
   }
@@ -104,16 +189,52 @@ function getYear(movie) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function getQualityValue(movie) {
-  const quality = Number(movie?.quality_score || 0);
-  const popularity = Number(movie?.popularity || 0);
-  const rating = Number(movie?.rating || 0);
+function getNumber(value) {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
-  if (Number.isFinite(quality) && quality > 0) return quality;
-  if (Number.isFinite(popularity) && popularity > 0) return popularity;
-  if (Number.isFinite(rating) && rating > 0) return rating;
+function getClassicTitleBoost(movie) {
+  const title = normalizeTitle(movie?.title || movie?.name || movie?.original_title);
+  const slug = normalizeSlug(movie?.slug || "").replace(/-\d{4}.*/, "").replace(/-/g, " ");
+
+  if (HISTORICAL_CLASSIC_TITLE_BOOSTS.has(title)) {
+    return HISTORICAL_CLASSIC_TITLE_BOOSTS.get(title);
+  }
+
+  if (HISTORICAL_CLASSIC_TITLE_BOOSTS.has(slug)) {
+    return HISTORICAL_CLASSIC_TITLE_BOOSTS.get(slug);
+  }
 
   return 0;
+}
+
+function getPopularScore(movie, originalIndex = 0) {
+  const classicBoost = getClassicTitleBoost(movie);
+  const quality = getNumber(movie?.quality_score);
+  const popularity = getNumber(movie?.popularity);
+  const rating = getNumber(movie?.rating);
+  const voteCount = getNumber(movie?.vote_count);
+  const year = getYear(movie);
+
+  const qualityScore = quality * 20;
+  const popularityScore = popularity * 10;
+  const ratingScore = rating * 100;
+  const voteScore = Math.min(voteCount, 5000) / 5;
+
+  const yearPenalty = year >= 1995 ? 0 : year >= 1980 ? 20 : year >= 1970 ? 40 : 60;
+
+  const apiOrderScore = Math.max(0, 1000 - originalIndex);
+
+  return (
+    classicBoost +
+    qualityScore +
+    popularityScore +
+    ratingScore +
+    voteScore +
+    apiOrderScore -
+    yearPenalty
+  );
 }
 
 function cleanDomainItems(items, domain) {
@@ -126,40 +247,56 @@ function cleanDomainItems(items, domain) {
   return items.filter((movie) => !isHistoricalNonMovieRow(movie));
 }
 
-function sortHistoricalPosterFirst(items) {
+function sortHistoricalItems(items, selectedSort) {
   if (!Array.isArray(items)) return [];
 
-  return [...items].sort((a, b) => {
-    const aPosterRank = hasRealPoster(a) ? 0 : 1;
-    const bPosterRank = hasRealPoster(b) ? 0 : 1;
+  return [...items]
+    .map((movie, index) => ({ movie, index }))
+    .sort((a, b) => {
+      const aHasPoster = hasRealPoster(a.movie) ? 0 : 1;
+      const bHasPoster = hasRealPoster(b.movie) ? 0 : 1;
 
-    if (aPosterRank !== bPosterRank) {
-      return aPosterRank - bPosterRank;
-    }
+      if (aHasPoster !== bHasPoster) {
+        return aHasPoster - bHasPoster;
+      }
 
-    const aYear = getYear(a);
-    const bYear = getYear(b);
+      if (selectedSort === "title") {
+        return String(a.movie?.title || "").localeCompare(String(b.movie?.title || ""));
+      }
 
-    if (aYear !== bYear) {
-      return bYear - aYear;
-    }
+      if (selectedSort === "latest") {
+        const yearDiff = getYear(b.movie) - getYear(a.movie);
+        if (yearDiff !== 0) return yearDiff;
 
-    const aQuality = getQualityValue(a);
-    const bQuality = getQualityValue(b);
+        const popularDiff = getPopularScore(b.movie, b.index) - getPopularScore(a.movie, a.index);
+        if (popularDiff !== 0) return popularDiff;
 
-    if (aQuality !== bQuality) {
-      return bQuality - aQuality;
-    }
+        return a.index - b.index;
+      }
 
-    return String(a?.title || "").localeCompare(String(b?.title || ""));
-  });
+      if (selectedSort === "rating") {
+        const ratingDiff = getNumber(b.movie?.rating) - getNumber(a.movie?.rating);
+        if (ratingDiff !== 0) return ratingDiff;
+
+        const popularDiff = getPopularScore(b.movie, b.index) - getPopularScore(a.movie, a.index);
+        if (popularDiff !== 0) return popularDiff;
+
+        return a.index - b.index;
+      }
+
+      const popularDiff = getPopularScore(b.movie, b.index) - getPopularScore(a.movie, a.index);
+      if (popularDiff !== 0) return popularDiff;
+
+      return a.index - b.index;
+    })
+    .map((item) => item.movie);
 }
 
-function prepareDomainItems(items, domain) {
+function prepareDomainItems(items, domain, selectedSort) {
   const cleaned = cleanDomainItems(items, domain);
 
   if (domain === "historical") {
-    return sortHistoricalPosterFirst(cleaned);
+    return sortHistoricalItems(cleaned, selectedSort);
   }
 
   return cleaned;
@@ -237,7 +374,7 @@ export default function DomainPage({ domain }) {
 
       const data = await res.json();
       const rawItems = data.items || data.movies || data.results || [];
-      const preparedItems = prepareDomainItems(rawItems, domain);
+      const preparedItems = prepareDomainItems(rawItems, domain, sort);
 
       setMovies((prev) => {
         if (!append) {
@@ -245,7 +382,7 @@ export default function DomainPage({ domain }) {
         }
 
         const combined = [...prev, ...preparedItems];
-        return prepareDomainItems(combined, domain);
+        return prepareDomainItems(combined, domain, sort);
       });
 
       setTotal(data.total || preparedItems.length || 0);
