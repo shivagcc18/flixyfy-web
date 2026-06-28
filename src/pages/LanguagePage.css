@@ -232,3 +232,55 @@
   cursor: wait;
   transform: none;
 }
+
+.language-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 28px auto 0;
+  max-width: 1180px;
+}
+
+.language-filter-row select,
+.domain-filter-pill {
+  min-width: 150px;
+  height: 44px;
+  border: 1px solid #20d9ff;
+  border-radius: 999px;
+  background: #121212;
+  color: #ffffff;
+  padding: 0 20px;
+  font-weight: 800;
+  outline: none;
+}
+
+.language-filter-row select {
+  cursor: pointer;
+}
+
+.domain-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.domain-filter-pill:hover,
+.language-filter-row select:hover {
+  border-color: #ffd500;
+}
+
+@media (max-width: 768px) {
+  .language-filter-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .language-filter-row select,
+  .domain-filter-pill {
+    min-width: 160px;
+    flex: 0 0 auto;
+  }
+}
