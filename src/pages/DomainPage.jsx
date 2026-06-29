@@ -13,7 +13,7 @@ const API_BASE =
   "https://flixyfy-api-production.up.railway.app";
 
 const PAGE_SIZE = 24;
-const FETCH_LIMIT = 5000;
+const FETCH_LIMIT = 100;
 
 const HISTORICAL_YEARS = [];
 for (let year = 1999; year >= 1960; year--) HISTORICAL_YEARS.push(String(year));
