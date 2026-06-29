@@ -439,12 +439,7 @@ export default function DomainPage({ domain }) {
       if (year) params.set("year", year);
       if (domain === "historical" && language) params.set("language", language);
 
-      if (availability === "ott") params.set("has_ott", "true");
-      if (availability === "free") {
-        params.set("has_ott", "true");
-        params.set("has_free_ott", "true");
-        params.set("is_free", "true");
-      }
+      if (availability && availability !== "all") params.set("availability", availability);
       if (provider) params.set("provider", provider);
 
       const res = await fetch(`${API_BASE}${config.apiPath}?${params.toString()}`);

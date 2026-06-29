@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import SkeletonRow from "../components/SkeletonRow";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -65,11 +64,10 @@ const PROVIDERS = [
 ];
 
 export default function Home() {
-  const navigate = useNavigate();
-
   const [sections, setSections] = useState({});
   const [results, setResults] = useState([]);
   const [query, setQuery] = useState("");
+  const [language, setLanguage] = useState("");
   const [year, setYear] = useState("");
   const [sort, setSort] = useState("popular");
   const [availability, setAvailability] = useState("");
@@ -100,7 +98,7 @@ export default function Home() {
     });
   }, []);
 
-  const showingFiltered = Boolean(query || year || sort !== "popular" || availability || provider);
+  const showingFiltered = Boolean(query || language || year || sort !== "popular" || availability || provider);
   const canLoadMore = showingFiltered && results.length < filterTotal;
 
   const loadHome = async () => {
@@ -125,13 +123,14 @@ export default function Home() {
     }
   };
 
-  const runGlobalSearch = async (searchText, selectedYear, selectedPage, append) => {
+  const runGlobalSearch = async (searchText, selectedLanguage, selectedYear, selectedPage, append) => {
     const params = new URLSearchParams();
     params.set("q", searchText);
     params.set("page", String(selectedPage));
     params.set("limit", String(PAGE_SIZE));
 
     if (selectedYear) params.set("year", selectedYear);
+    if (selectedLanguage) params.set("language", selectedLanguage);
 
     const res = await fetch(`${API_BASE}/api/v3/global-search?${params.toString()}`);
 
@@ -149,6 +148,7 @@ export default function Home() {
 
   const runFilter = async (
     searchText = "",
+    selectedLanguage = "",
     selectedYear = "",
     selectedSort = "popular",
     selectedAvailability = "",
@@ -164,11 +164,12 @@ export default function Home() {
       }
 
       if (searchText) {
-        await runGlobalSearch(searchText, selectedYear, selectedPage, append);
+        await runGlobalSearch(searchText, selectedLanguage, selectedYear, selectedPage, append);
       } else {
         const data = await getMovies({
           page: selectedPage,
           limit: PAGE_SIZE,
+          language: selectedLanguage || "",
           year: selectedYear || "",
           sort: selectedSort || "popular",
           availability: selectedAvailability || "",
@@ -200,18 +201,18 @@ export default function Home() {
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (showingFiltered) {
-        runFilter(query, year, sort, availability, provider, 1, false);
+        runFilter(query, language, year, sort, availability, provider, 1, false);
       }
     }, 250);
 
     return () => clearTimeout(timeout);
-  }, [year, sort, availability, provider]);
+  }, [language, year, sort, availability, provider]);
 
   const handleSearch = async (q) => {
     const clean = q.trim();
     setQuery(clean);
 
-    if (!clean && !year && sort === "popular" && !availability && !provider) {
+    if (!clean && !language && !year && sort === "popular" && !availability && !provider) {
       setResults([]);
       setFilterTotal(0);
       setPage(1);
@@ -219,21 +220,19 @@ export default function Home() {
       return;
     }
 
-    await runFilter(clean, year, sort, availability, provider, 1, false);
+    await runFilter(clean, language, year, sort, availability, provider, 1, false);
   };
 
   const handleLoadMore = async () => {
     if (loadingMore || !canLoadMore) return;
 
     trackLoadMore(page + 1);
-    await runFilter(query, year, sort, availability, provider, page + 1, true);
+    await runFilter(query, language, year, sort, availability, provider, page + 1, true);
   };
 
   const handleLanguageChange = (value) => {
-    if (!value) return;
-
-    trackLanguageOpen(value);
-    navigate(`/language/${value}`);
+    setLanguage(value);
+    trackLanguageOpen(value || "all");
   };
 
   const handleYearChange = (value) => {
@@ -262,9 +261,13 @@ export default function Home() {
   const providerLabel =
     PROVIDERS.find((item) => item.value === provider)?.label || "All Providers";
 
+  const languageLabel =
+    LANGUAGES.find((item) => item.slug === language)?.label || "All Indian Languages";
+
   const sortLabel = SORTS.find((s) => s.value === sort)?.label || "Popular";
 
   const titleParts = [];
+  if (language) titleParts.push(languageLabel);
   if (provider) titleParts.push(providerLabel);
   if (availability) titleParts.push(availabilityLabel);
   if (year) titleParts.push(year);
@@ -282,7 +285,7 @@ export default function Home() {
         <div className="home-filter-row home-filter-row-v2">
           <select
             className="year-dropdown language-dropdown-v2"
-            defaultValue=""
+            value={language}
             onChange={(e) => handleLanguageChange(e.target.value)}
           >
             {LANGUAGES.map((lang) => (
