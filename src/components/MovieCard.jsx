@@ -32,7 +32,7 @@ function PosterFallback({ movie, title }) {
         <span className="fallback-title">{title}</span>
 
         <span className="fallback-meta">
-          {[year, language].filter(Boolean).join(" • ")}
+          {[year, language].filter(Boolean).join(" / ")}
         </span>
       </div>
     </div>

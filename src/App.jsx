@@ -6,6 +6,7 @@ import MovieDetail from "./pages/MovieDetail";
 import LanguagePage from "./pages/LanguagePage";
 import DomainPage from "./pages/DomainPage";
 import DomainDetail from "./pages/DomainDetail";
+import HistoricalCombinationPage from "./pages/HistoricalCombinationPage";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="/hollywood/:slug" element={<DomainDetail domain="hollywood" />} />
 
         <Route path="/historical" element={<DomainPage domain="historical" />} />
+        <Route path="/historical/combination/:slug" element={<HistoricalCombinationPage />} />
         <Route path="/historical/:slug" element={<DomainDetail domain="historical" />} />
 
         <Route path="/about" element={<About />} />

@@ -1,0 +1,94 @@
+.historical-combo-page {
+  min-height: 100vh;
+  background: #111111;
+  color: #ffffff;
+}
+
+.historical-combo-hero {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 36px 24px 20px;
+}
+
+.historical-combo-back {
+  color: #25d9ff;
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 900;
+  margin-bottom: 18px;
+  text-decoration: none;
+}
+
+.historical-combo-hero h1 {
+  font-size: clamp(32px, 4vw, 56px);
+  font-weight: 950;
+  line-height: 1.05;
+  margin: 0 0 12px;
+}
+
+.historical-combo-hero p {
+  color: #cbd5e1;
+  font-size: 17px;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 860px;
+}
+
+.historical-combo-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.historical-combo-stats span {
+  border: 1px solid rgba(37, 217, 255, 0.42);
+  border-radius: 999px;
+  color: #e5f8ff;
+  font-size: 13px;
+  font-weight: 850;
+  min-height: 38px;
+  padding: 10px 15px;
+}
+
+.historical-combo-results {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 8px 16px 42px;
+}
+
+.historical-combo-results h2 {
+  font-size: 28px;
+  font-weight: 950;
+  margin: 18px 0;
+}
+
+.historical-combo-empty {
+  color: #cbd5e1;
+  font-size: 18px;
+}
+
+@media (hover: hover) {
+  .historical-combo-back:hover {
+    color: #ffffff;
+  }
+}
+
+@media (max-width: 720px) {
+  .historical-combo-hero {
+    padding: 28px 16px 14px;
+  }
+
+  .historical-combo-stats {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .historical-combo-results {
+    padding: 4px 12px 36px;
+  }
+
+  .historical-combo-results h2 {
+    font-size: 23px;
+  }
+}
