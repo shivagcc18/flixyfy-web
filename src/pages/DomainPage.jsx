@@ -14,7 +14,6 @@ const API_BASE =
   "https://flixyfy-api-production.up.railway.app";
 
 const PAGE_SIZE = 24;
-const FETCH_LIMIT = 100;
 
 const HISTORICAL_YEARS = [];
 for (let year = 1999; year >= 1960; year--) HISTORICAL_YEARS.push(String(year));
@@ -396,7 +395,6 @@ function domainConfig(domain) {
 export default function DomainPage({ domain }) {
   const config = useMemo(() => domainConfig(domain), [domain]);
 
-  const [allItems, setAllItems] = useState([]);
   const [movies, setMovies] = useState([]);
   const [query, setQuery] = useState("");
   const [year, setYear] = useState("");
@@ -420,20 +418,17 @@ export default function DomainPage({ domain }) {
     });
   }, [config, domain]);
 
-  const applyPrepared = (rawItems, nextPage = 1) => {
-    const prepared = prepareItems(rawItems, domain, sort, availability, provider);
-    setMovies(prepared.slice(0, nextPage * PAGE_SIZE));
-    setTotal(prepared.length);
-    setPage(nextPage);
-  };
-
-  const fetchMovies = async (searchText = query) => {
+  const fetchMovies = async (searchText = query, selectedPage = 1, append = false) => {
     try {
-      setLoading(true);
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
 
       const params = new URLSearchParams();
-      params.set("page", "1");
-      params.set("limit", String(FETCH_LIMIT));
+      params.set("page", String(selectedPage));
+      params.set("limit", String(PAGE_SIZE));
       params.set("sort", sort || "popular");
 
       if (searchText) params.set("q", searchText);
@@ -449,21 +444,20 @@ export default function DomainPage({ domain }) {
 
       const data = await res.json();
       const rawItems = data.items || data.movies || data.results || [];
-
-      setAllItems(rawItems);
       setServerTotal(data.total || rawItems.length || 0);
 
       const prepared = prepareItems(rawItems, domain, sort, availability, provider);
-      setMovies(prepared.slice(0, PAGE_SIZE));
-      setTotal(prepared.length);
-      setPage(1);
+      setMovies((prev) => (append ? [...prev, ...prepared] : prepared));
+      setTotal(data.total || prepared.length || 0);
+      setPage(selectedPage);
     } catch (err) {
       console.error(`${domain} API failed:`, err);
-      setAllItems([]);
-      setMovies([]);
-      setTotal(0);
-      setServerTotal(0);
-      setPage(1);
+      if (!append) {
+        setMovies([]);
+        setTotal(0);
+        setServerTotal(0);
+        setPage(1);
+      }
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -471,34 +465,30 @@ export default function DomainPage({ domain }) {
   };
 
   useEffect(() => {
-    setAllItems([]);
     setMovies([]);
     setPage(1);
-    fetchMovies(query);
+    fetchMovies(query, 1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [domain, year, sort, language, availability, provider]);
 
   const handleSearch = async (value) => {
     const clean = value.trim();
     setQuery(clean);
-    setAllItems([]);
     setMovies([]);
     setPage(1);
-    await fetchMovies(clean);
+    await fetchMovies(clean, 1, false);
   };
 
   const handleLoadMore = async () => {
     if (loadingMore || !canLoadMore) return;
 
-    setLoadingMore(true);
-    applyPrepared(allItems, page + 1);
-    setLoadingMore(false);
+    await fetchMovies(query, page + 1, true);
   };
 
   const countLabel =
     total === serverTotal || !serverTotal
       ? total
-      : `${total} shown from top ${Math.min(serverTotal, FETCH_LIMIT)}`;
+      : `${movies.length} shown`;
 
   return (
     <div className="domain-page">
