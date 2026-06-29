@@ -73,7 +73,7 @@ const SORTS = [
 const AVAILABILITY_OPTIONS = [
   { label: "All Movies", value: "all" },
   { label: "OTT Only", value: "ott" },
-  { label: "Free", value: "free" },
+  { label: "Free", value: "youtube" },
 ];
 
 const PROVIDERS = [
@@ -203,10 +203,10 @@ function sortLanguageItems(items, selectedSort) {
 }
 
 export default function LanguagePage() {
-  const { slug } = useParams();
+  const { language } = useParams();
   const navigate = useNavigate();
 
-  const languageSlug = useMemo(() => normalizeLanguageSlug(slug), [slug]);
+  const languageSlug = useMemo(() => normalizeLanguageSlug(language), [language]);
   const languageLabel = useMemo(() => getLanguageLabel(languageSlug), [languageSlug]);
 
   const [movies, setMovies] = useState([]);
@@ -246,14 +246,8 @@ export default function LanguagePage() {
       if (searchText) params.set("q", searchText);
       if (year) params.set("year", year);
 
-      if (availability === "ott") {
-        params.set("has_ott", "true");
-      }
-
-      if (availability === "free") {
-        params.set("has_ott", "true");
-        params.set("has_free_ott", "true");
-        params.set("is_free", "true");
+      if (availability !== "all") {
+        params.set("availability", availability);
       }
 
       if (provider) {
