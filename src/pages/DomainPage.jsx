@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import MovieGrid from "../components/MovieGrid";
@@ -512,6 +513,13 @@ export default function DomainPage({ domain }) {
       </section>
 
       <div className="domain-controls">
+        {domain === "historical" && (
+          <div className="domain-link-row">
+            <Link to="/historical/people">People</Link>
+            <Link to="/historical/combinations">Combinations</Link>
+          </div>
+        )}
+
         <SearchBar onSearch={handleSearch} large />
 
         <div className="domain-filter-row">
