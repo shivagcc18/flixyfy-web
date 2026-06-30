@@ -510,7 +510,14 @@ export default function DomainPage({ domain }) {
           </div>
         )}
 
-        <SearchBar onSearch={handleSearch} large />
+        <SearchBar
+          onSearch={handleSearch}
+          large
+          suggestionType="movies"
+          suggestionDomain={domain === "indian" ? "indian" : domain}
+          language={domain === "historical" ? language : ""}
+          placeholder={`Search ${config.title.toLowerCase()}...`}
+        />
 
         <div className="domain-filter-row">
           {domain === "historical" && (

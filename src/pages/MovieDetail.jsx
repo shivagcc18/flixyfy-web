@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getMovie } from "../api/watchindiaApi";
 import { trackProviderClick } from "../utils/analytics";
+import { getBestProviderUrl } from "../utils/providerLinks";
 import { setPageSeo, setJsonLd } from "../utils/seo";
 import Footer from "../components/Footer";
 
@@ -33,19 +34,6 @@ function providerLogo(providerKey, providerName) {
   };
 
   return logoMap[key] || null;
-}
-
-function getOttUrl(ott) {
-  return (
-    ott?.final_url ||
-    ott?.provider_deep_link ||
-    ott?.provider_search_url ||
-    ott?.fallback_search_url ||
-    ott?.homepage_url ||
-    ott?.provider_homepage_url ||
-    ott?.tmdb_watch_url ||
-    null
-  );
 }
 
 function getYoutubeUrl(yt) {
@@ -350,7 +338,7 @@ export default function MovieDetail() {
                   ott.button_label ||
                   "OTT";
                 const logo = providerLogo(ott.provider_key, providerName);
-                const url = getOttUrl(ott);
+                const url = getBestProviderUrl(ott);
 
                 return (
                   <a

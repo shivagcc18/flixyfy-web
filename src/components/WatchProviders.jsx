@@ -1,4 +1,5 @@
 import React from "react";
+import { getBestProviderUrl, openProviderUrl } from "../utils/providerLinks";
 import { trackProviderClick } from "../utils/analytics";
 
 function cleanProviderName(provider) {
@@ -18,16 +19,6 @@ function cleanProviderType(provider) {
     provider?.provider_type ||
     provider?.raw_type ||
     "available"
-  );
-}
-
-function getProviderUrl(provider) {
-  return (
-    provider?.final_url ||
-    provider?.fallback_search_url ||
-    provider?.homepage_url ||
-    provider?.deep_link ||
-    null
   );
 }
 
@@ -51,7 +42,7 @@ export default function WatchProviders({ providers = [], ottAll = [], movieTitle
         {list.map((provider, index) => {
           const name = cleanProviderName(provider);
           const type = cleanProviderType(provider);
-          const url = getProviderUrl(provider);
+          const url = getBestProviderUrl(provider);
 
           return (
             <button
@@ -60,9 +51,7 @@ export default function WatchProviders({ providers = [], ottAll = [], movieTitle
               onClick={() => {
                 trackProviderClick(name, movieTitle);
 
-                if (url) {
-                  window.open(url, "_blank", "noopener,noreferrer");
-                }
+                openProviderUrl(provider, movieTitle);
               }}
               style={{
                 cursor: url ? "pointer" : "default",

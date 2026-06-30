@@ -318,7 +318,14 @@ export default function LanguagePage() {
       <Navbar />
 
       <section className="language-hero">
-        <SearchBar onSearch={handleSearch} large />
+        <SearchBar
+          onSearch={handleSearch}
+          large
+          suggestionType="movies"
+          suggestionDomain="indian"
+          language={languageSlug}
+          placeholder={`Search ${languageLabel} movies...`}
+        />
 
         <div className="language-filter-row">
           <select

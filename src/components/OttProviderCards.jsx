@@ -1,4 +1,5 @@
 import "./OttProviderCards.css";
+import { getBestProviderUrl } from "../utils/providerLinks";
 
 const PROVIDER_LOGOS = {
   "Prime Video": "/ott/prime-video.png",
@@ -51,12 +52,13 @@ export default function OttProviderCards({ providers = [] }) {
           const name = item.provider_name;
           const type = normalizeType(item.provider_type);
           const logo = PROVIDER_LOGOS[name];
+          const url = getBestProviderUrl(item);
 
           return (
             <a
               key={`${name}-${index}`}
               className="ott-card"
-              href={item.provider_url || "#"}
+              href={url || "#"}
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Watch on ${name}`}

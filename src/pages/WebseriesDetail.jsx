@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
+import { getBestProviderUrl } from "../utils/providerLinks";
 import { setPageSeo } from "../utils/seo";
 
 const API_BASE =
@@ -104,17 +105,21 @@ export default function WebseriesDetail() {
 
             {providers.length > 0 && (
               <div style={providerWrapStyle}>
-                {providers.map((item, index) => (
-                  <a
-                    key={`${item.provider_key || item.provider_display_name}-${index}`}
-                    href={item.final_url || "#"}
-                    target={item.final_url ? "_blank" : undefined}
-                    rel={item.final_url ? "noopener noreferrer" : undefined}
-                    style={providerStyle}
-                  >
-                    {item.provider_display_name || item.button_label || "Watch"}
-                  </a>
-                ))}
+                {providers.map((item, index) => {
+                  const url = getBestProviderUrl(item);
+
+                  return (
+                    <a
+                      key={`${item.provider_key || item.provider_display_name}-${index}`}
+                      href={url || "#"}
+                      target={url ? "_blank" : undefined}
+                      rel={url ? "noopener noreferrer" : undefined}
+                      style={providerStyle}
+                    >
+                      {item.provider_display_name || item.button_label || "Watch"}
+                    </a>
+                  );
+                })}
               </div>
             )}
           </div>

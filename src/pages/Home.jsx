@@ -307,6 +307,14 @@ export default function Home() {
     LANGUAGES.find((item) => item.slug === language)?.label || "All Indian Languages";
 
   const sortLabel = SORTS.find((s) => s.value === sort)?.label || "Popular";
+  const searchPlaceholder =
+    searchType === "people"
+      ? "Search actors, directors, people..."
+      : searchType === "webseries"
+        ? "Search webseries..."
+        : searchType === "all"
+          ? "Search movies, people, webseries..."
+          : "Search movies...";
 
   const titleParts = [];
   if (language) titleParts.push(languageLabel);
@@ -389,7 +397,14 @@ export default function Home() {
       )}
 
       <div className="home-search-wrap">
-        <SearchBar onSearch={handleSearch} large />
+        <SearchBar
+          onSearch={handleSearch}
+          large
+          suggestionType={searchType}
+          suggestionScope={searchScope}
+          placeholder={searchPlaceholder}
+          focusKey={searchType}
+        />
         <div className="search-control-stack">
           <div className="search-scope-toggle" role="group" aria-label="Search type">
             {SEARCH_TYPES.map((item) => (

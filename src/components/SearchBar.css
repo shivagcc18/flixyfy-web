@@ -1,9 +1,21 @@
-.search-box {
+.search-shell {
   width: 100%;
   max-width: 760px;
+  margin: 22px auto 34px auto;
+  position: relative;
+  z-index: 20;
+}
+
+.search-shell-large {
+  max-width: 850px;
+  margin-top: 26px;
+}
+
+.search-box {
+  width: 100%;
   display: flex;
   align-items: center;
-  margin: 22px auto 34px auto;
+  margin: 0;
   background: #111827;
   border: 2px solid #00bfff;
   border-radius: 999px;
@@ -20,8 +32,7 @@
 }
 
 .search-box-large {
-  max-width: 850px;
-  margin-top: 26px;
+  max-width: none;
 }
 
 .search-box input {
@@ -53,9 +64,67 @@
   filter: brightness(1.18);
 }
 
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  background: #07111f;
+  border: 1px solid rgba(34, 211, 238, 0.45);
+  border-radius: 14px;
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.45),
+    0 0 28px rgba(34, 211, 238, 0.18);
+  overflow: hidden;
+}
+
+.search-suggestion {
+  width: 100%;
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-suggestion:hover,
+.search-suggestion.active {
+  background: rgba(34, 211, 238, 0.14);
+}
+
+.search-suggestion-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.search-suggestion-meta {
+  color: #a7f3ff;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 @media (max-width: 768px) {
   .search-box {
     width: calc(100% - 24px);
+    margin: 0 auto;
+  }
+
+  .search-shell {
+    width: 100%;
     margin: 18px auto 26px auto;
   }
 
@@ -71,6 +140,21 @@
     padding: 0 14px;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+  }
+
+  .search-suggestions {
+    left: 12px;
+    right: 12px;
+  }
+
+  .search-suggestion {
+    grid-template-columns: 1fr;
+    gap: 3px;
+    min-height: 52px;
+  }
+
+  .search-suggestion-meta {
+    font-size: 12px;
   }
 }
 

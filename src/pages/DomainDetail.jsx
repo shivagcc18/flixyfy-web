@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { getBestProviderUrl } from "../utils/providerLinks";
 import { setPageSeo } from "../utils/seo";
 import "./DomainDetail.css";
 
@@ -83,18 +84,6 @@ function regionLabel(region) {
   if (value) return value;
 
   return "";
-}
-
-function providerUrl(item) {
-  return (
-    item.final_url ||
-    item.deep_link ||
-    item.provider_deep_link ||
-    item.tmdb_watch_url ||
-    item.youtube_url ||
-    item.video_url ||
-    ""
-  );
 }
 
 function providerName(item) {
@@ -314,7 +303,7 @@ export default function DomainDetail({ domain }) {
 
                 <div className="provider-grid">
                   {availability.map((item, index) => {
-                    const url = providerUrl(item);
+                    const url = getBestProviderUrl(item) || item.youtube_url || item.video_url || "";
                     const name = providerName(item);
                     const img = logoUrl(item.logo_path);
                     const type = providerTypeLabel(item.provider_type);
