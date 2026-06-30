@@ -9,6 +9,7 @@ import DomainDetail from "./pages/DomainDetail";
 import HistoricalCombinationPage from "./pages/HistoricalCombinationPage";
 import HistoricalCombinationsPage from "./pages/HistoricalCombinationsPage";
 import HistoricalPeoplePage, { HistoricalPersonPage } from "./pages/HistoricalPeoplePage";
+import WebseriesDetail from "./pages/WebseriesDetail";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
@@ -50,6 +51,8 @@ export default function App() {
         <Route path="/historical/combinations" element={<HistoricalCombinationsPage />} />
         <Route path="/historical/combination/:slug" element={<HistoricalCombinationPage />} />
         <Route path="/historical/:slug" element={<DomainDetail domain="historical" />} />
+
+        <Route path="/webseries/:slug" element={<WebseriesDetail />} />
 
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />

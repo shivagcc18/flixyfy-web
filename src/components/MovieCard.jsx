@@ -4,6 +4,7 @@ import "./MovieCard.css";
 function getMovieUrl(movie) {
   if (movie.movie_url) return movie.movie_url;
 
+  if (movie.domain === "webseries") return `/webseries/${movie.slug}`;
   if (movie.domain === "hollywood") return `/hollywood/${movie.slug}`;
   if (movie.domain === "historical") return `/historical/${movie.slug}`;
 
@@ -12,6 +13,7 @@ function getMovieUrl(movie) {
 
 function getDomainLabel(movie) {
   if (movie.source_label) return movie.source_label;
+  if (movie.domain === "webseries") return "Webseries";
   if (movie.domain === "hollywood") return "Hollywood";
   if (movie.domain === "historical") return "Historical";
   return "";

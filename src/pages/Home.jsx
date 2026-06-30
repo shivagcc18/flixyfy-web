@@ -63,6 +63,12 @@ const PROVIDERS = [
   { label: "YouTube", value: "youtube" },
 ];
 
+const SEARCH_TYPES = [
+  { label: "Movies", value: "movies" },
+  { label: "Webseries", value: "webseries" },
+  { label: "All", value: "all" },
+];
+
 export default function Home() {
   const [sections, setSections] = useState({});
   const [results, setResults] = useState([]);
@@ -72,6 +78,8 @@ export default function Home() {
   const [sort, setSort] = useState("popular");
   const [availability, setAvailability] = useState("");
   const [provider, setProvider] = useState("");
+  const [searchType, setSearchType] = useState("movies");
+  const [searchScope, setSearchScope] = useState("indian");
   const [filterTotal, setFilterTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -123,11 +131,24 @@ export default function Home() {
     }
   };
 
-  const runGlobalSearch = async (searchText, selectedLanguage, selectedYear, selectedPage, append) => {
+  const runGlobalSearch = async (
+    searchText,
+    selectedLanguage,
+    selectedYear,
+    selectedType,
+    selectedScope,
+    selectedPage,
+    append
+  ) => {
     const params = new URLSearchParams();
     params.set("q", searchText);
     params.set("page", String(selectedPage));
     params.set("limit", String(PAGE_SIZE));
+    params.set("type", selectedType);
+
+    if (selectedScope === "indian") {
+      params.set("domain", "indian");
+    }
 
     if (selectedYear) params.set("year", selectedYear);
     if (selectedLanguage) params.set("language", selectedLanguage);
@@ -153,6 +174,8 @@ export default function Home() {
     selectedSort = "popular",
     selectedAvailability = "",
     selectedProvider = "",
+    selectedType = "movies",
+    selectedScope = "indian",
     selectedPage = 1,
     append = false
   ) => {
@@ -164,7 +187,15 @@ export default function Home() {
       }
 
       if (searchText) {
-        await runGlobalSearch(searchText, selectedLanguage, selectedYear, selectedPage, append);
+        await runGlobalSearch(
+          searchText,
+          selectedLanguage,
+          selectedYear,
+          selectedType,
+          selectedScope,
+          selectedPage,
+          append
+        );
       } else {
         const data = await getMovies({
           page: selectedPage,
@@ -201,12 +232,12 @@ export default function Home() {
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (showingFiltered) {
-        runFilter(query, language, year, sort, availability, provider, 1, false);
+        runFilter(query, language, year, sort, availability, provider, searchType, searchScope, 1, false);
       }
     }, 250);
 
     return () => clearTimeout(timeout);
-  }, [language, year, sort, availability, provider]);
+  }, [language, year, sort, availability, provider, searchType, searchScope]);
 
   const handleSearch = async (q) => {
     const clean = q.trim();
@@ -220,14 +251,14 @@ export default function Home() {
       return;
     }
 
-    await runFilter(clean, language, year, sort, availability, provider, 1, false);
+    await runFilter(clean, language, year, sort, availability, provider, searchType, searchScope, 1, false);
   };
 
   const handleLoadMore = async () => {
     if (loadingMore || !canLoadMore) return;
 
     trackLoadMore(page + 1);
-    await runFilter(query, language, year, sort, availability, provider, page + 1, true);
+    await runFilter(query, language, year, sort, availability, provider, searchType, searchScope, page + 1, true);
   };
 
   const handleLanguageChange = (value) => {
@@ -255,6 +286,16 @@ export default function Home() {
     trackFilter("provider", value || "all");
   };
 
+  const handleSearchScopeChange = (value) => {
+    setSearchScope(value);
+    trackFilter("search_scope", value);
+  };
+
+  const handleSearchTypeChange = (value) => {
+    setSearchType(value);
+    trackFilter("search_type", value);
+  };
+
   const availabilityLabel =
     AVAILABILITY.find((item) => item.value === availability)?.label || "All Movies";
 
@@ -274,7 +315,7 @@ export default function Home() {
   titleParts.push(sortLabel);
 
   const resultTitle = query
-    ? `Search Results for "${query}" (${filterTotal})`
+    ? `${searchScope === "global" ? "Global" : "Indian"} ${SEARCH_TYPES.find((item) => item.value === searchType)?.label || "Movies"} Search Results for "${query}" (${filterTotal})`
     : `${titleParts.join(" • ")} Movies (${filterTotal})`;
 
   return (
@@ -348,6 +389,39 @@ export default function Home() {
 
       <div className="home-search-wrap">
         <SearchBar onSearch={handleSearch} large />
+        {query && (
+          <div className="search-control-stack">
+            <div className="search-scope-toggle" role="group" aria-label="Search type">
+              {SEARCH_TYPES.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  className={`search-scope-btn ${searchType === item.value ? "active" : ""}`}
+                  onClick={() => handleSearchTypeChange(item.value)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="search-scope-toggle" role="group" aria-label="Search scope">
+              <button
+                type="button"
+                className={`search-scope-btn ${searchScope === "indian" ? "active" : ""}`}
+                onClick={() => handleSearchScopeChange("indian")}
+              >
+                Indian
+              </button>
+              <button
+                type="button"
+                className={`search-scope-btn ${searchScope === "global" ? "active" : ""}`}
+                onClick={() => handleSearchScopeChange("global")}
+              >
+                Global
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {showingFiltered ? (
