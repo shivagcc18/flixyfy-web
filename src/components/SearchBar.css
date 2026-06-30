@@ -55,6 +55,7 @@
 
 @media (max-width: 768px) {
   .search-box {
+    width: calc(100% - 24px);
     margin: 18px auto 26px auto;
   }
 
@@ -66,6 +67,21 @@
 
   .search-box button {
     height: 54px;
-    padding: 0 18px;
+    min-width: 86px;
+    padding: 0 14px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}
+
+@media (max-width: 380px) {
+  .search-box input {
+    font-size: 14px;
+    padding: 0 12px;
+  }
+
+  .search-box button {
+    min-width: 76px;
+    padding: 0 10px;
   }
 }

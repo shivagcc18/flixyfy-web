@@ -61,29 +61,45 @@
   gap: 10px;
   margin: 14px auto 0;
   padding: 0 14px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .search-scope-toggle {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 6px;
   margin: 0;
   width: fit-content;
+  max-width: 100%;
   padding: 4px;
   border: 1px solid #2f3b46;
   border-radius: 8px;
   background: #101820;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+}
+
+.search-scope-toggle::-webkit-scrollbar {
+  display: none;
 }
 
 .search-scope-btn {
+  flex: 0 0 auto;
   min-width: 92px;
-  min-height: 36px;
+  min-height: 44px;
   border: 0;
   border-radius: 6px;
   background: transparent;
   color: #d7e4ef;
   font-weight: 850;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .search-scope-btn.active {
@@ -130,6 +146,8 @@
   box-sizing: border-box;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-inline: contain;
 }
 
 .language-nav {
@@ -261,7 +279,8 @@
   padding: 16px 24px;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-x;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-inline: contain;
 }
 
 .language-dropdown-v2 {
@@ -313,13 +332,48 @@
 
 .home-filter-row-v2 select {
   flex: 0 0 auto;
+  min-height: 44px;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 @media (max-width: 760px) {
+  .home-search-wrap {
+    margin-bottom: 30px;
+  }
+
+  .search-control-stack {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    scrollbar-width: none;
+    overscroll-behavior-inline: contain;
+  }
+
+  .search-control-stack::-webkit-scrollbar {
+    display: none;
+  }
+
+  .search-scope-toggle {
+    flex: 0 0 auto;
+  }
+
+  .search-scope-btn {
+    min-width: 84px;
+    padding: 0 12px;
+  }
+
   .home-filter-row-v2 {
     padding: 14px 12px;
     gap: 10px;
+    scrollbar-width: none;
+  }
+
+  .home-filter-row-v2::-webkit-scrollbar {
+    display: none;
   }
 
   .language-dropdown-v2 {

@@ -4,8 +4,10 @@ import MovieCard from "./MovieCard";
 export default function MovieRow({ title, movies }) {
   const rowRef = useRef(null);
   const startX = useRef(0);
+  const startY = useRef(0);
   const startScrollLeft = useRef(0);
   const moved = useRef(false);
+  const draggingX = useRef(false);
 
   if (!movies || movies.length === 0) return null;
 
@@ -14,8 +16,10 @@ export default function MovieRow({ title, movies }) {
     if (!row) return;
 
     startX.current = e.touches[0].pageX;
+    startY.current = e.touches[0].pageY;
     startScrollLeft.current = row.scrollLeft;
     moved.current = false;
+    draggingX.current = false;
   }
 
   function onTouchMove(e) {
@@ -23,9 +27,17 @@ export default function MovieRow({ title, movies }) {
     if (!row) return;
 
     const x = e.touches[0].pageX;
+    const y = e.touches[0].pageY;
     const walk = startX.current - x;
+    const verticalWalk = startY.current - y;
 
-    if (Math.abs(walk) > 5) {
+    if (!draggingX.current && Math.abs(verticalWalk) > Math.abs(walk)) {
+      moved.current = false;
+      return;
+    }
+
+    if (Math.abs(walk) > 8 && Math.abs(walk) > Math.abs(verticalWalk) + 4) {
+      draggingX.current = true;
       moved.current = true;
       row.scrollLeft = startScrollLeft.current + walk;
     }
