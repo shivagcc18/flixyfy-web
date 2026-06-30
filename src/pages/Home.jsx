@@ -66,6 +66,7 @@ const PROVIDERS = [
 const SEARCH_TYPES = [
   { label: "Movies", value: "movies" },
   { label: "Webseries", value: "webseries" },
+  { label: "People", value: "people" },
   { label: "All", value: "all" },
 ];
 
@@ -389,39 +390,37 @@ export default function Home() {
 
       <div className="home-search-wrap">
         <SearchBar onSearch={handleSearch} large />
-        {query && (
-          <div className="search-control-stack">
-            <div className="search-scope-toggle" role="group" aria-label="Search type">
-              {SEARCH_TYPES.map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  className={`search-scope-btn ${searchType === item.value ? "active" : ""}`}
-                  onClick={() => handleSearchTypeChange(item.value)}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="search-scope-toggle" role="group" aria-label="Search scope">
+        <div className="search-control-stack">
+          <div className="search-scope-toggle" role="group" aria-label="Search type">
+            {SEARCH_TYPES.map((item) => (
               <button
+                key={item.value}
                 type="button"
-                className={`search-scope-btn ${searchScope === "indian" ? "active" : ""}`}
-                onClick={() => handleSearchScopeChange("indian")}
+                className={`search-scope-btn ${searchType === item.value ? "active" : ""}`}
+                onClick={() => handleSearchTypeChange(item.value)}
               >
-                Indian
+                {item.label}
               </button>
-              <button
-                type="button"
-                className={`search-scope-btn ${searchScope === "global" ? "active" : ""}`}
-                onClick={() => handleSearchScopeChange("global")}
-              >
-                Global
-              </button>
-            </div>
+            ))}
           </div>
-        )}
+
+          <div className="search-scope-toggle" role="group" aria-label="Search scope">
+            <button
+              type="button"
+              className={`search-scope-btn ${searchScope === "indian" ? "active" : ""}`}
+              onClick={() => handleSearchScopeChange("indian")}
+            >
+              Indian
+            </button>
+            <button
+              type="button"
+              className={`search-scope-btn ${searchScope === "global" ? "active" : ""}`}
+              onClick={() => handleSearchScopeChange("global")}
+            >
+              Global
+            </button>
+          </div>
+        </div>
       </div>
 
       {showingFiltered ? (

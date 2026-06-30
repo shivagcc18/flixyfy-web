@@ -4,6 +4,7 @@ import "./MovieCard.css";
 function getMovieUrl(movie) {
   if (movie.movie_url) return movie.movie_url;
 
+  if (movie.domain === "person") return `/historical/person/${movie.slug}`;
   if (movie.domain === "webseries") return `/webseries/${movie.slug}`;
   if (movie.domain === "hollywood") return `/hollywood/${movie.slug}`;
   if (movie.domain === "historical") return `/historical/${movie.slug}`;
@@ -13,6 +14,7 @@ function getMovieUrl(movie) {
 
 function getDomainLabel(movie) {
   if (movie.source_label) return movie.source_label;
+  if (movie.domain === "person") return "People";
   if (movie.domain === "webseries") return "Webseries";
   if (movie.domain === "hollywood") return "Hollywood";
   if (movie.domain === "historical") return "Historical";
@@ -48,6 +50,11 @@ export default function MovieCard({ movie }) {
   const poster = movie.poster_url || movie.poster || "";
   const url = getMovieUrl(movie);
   const label = getDomainLabel(movie);
+  const metaYear = movie.domain === "person" ? null : movie.release_year;
+  const metaText =
+    movie.domain === "person"
+      ? [movie.primary_role, movie.movie_count ? `${movie.movie_count} movies` : null].filter(Boolean).join(" / ")
+      : movie.primary_language;
 
   return (
     <Link to={url} className={`movie-card ${movie.domain || "modern"}`}>
@@ -73,8 +80,8 @@ export default function MovieCard({ movie }) {
         <h3 className="movie-card-title">{title}</h3>
 
         <div className="movie-card-meta">
-          {movie.release_year && <span>{movie.release_year}</span>}
-          {movie.primary_language && <span>{movie.primary_language}</span>}
+          {metaYear && <span>{metaYear}</span>}
+          {metaText && <span>{metaText}</span>}
         </div>
 
         {movie.ott_primary && <p className="movie-card-provider">{movie.ott_primary}</p>}
