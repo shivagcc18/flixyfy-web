@@ -52,6 +52,7 @@ export default function App() {
         <Route path="/historical/combination/:slug" element={<HistoricalCombinationPage />} />
         <Route path="/historical/:slug" element={<DomainDetail domain="historical" />} />
 
+        <Route path="/person/:slug" element={<HistoricalPersonPage mode="unified" />} />
         <Route path="/webseries/:slug" element={<WebseriesDetail />} />
 
         <Route path="/about" element={<About />} />

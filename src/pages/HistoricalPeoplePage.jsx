@@ -27,8 +27,9 @@ function PersonStats({ person, total }) {
   );
 }
 
-export function HistoricalPersonPage() {
+export function HistoricalPersonPage({ mode = "historical" }) {
   const { slug } = useParams();
+  const isUnified = mode === "unified";
   const [person, setPerson] = useState(null);
   const [movies, setMovies] = useState([]);
   const [total, setTotal] = useState(0);
@@ -43,9 +44,8 @@ export function HistoricalPersonPage() {
         setLoading(true);
         setError("");
 
-        const res = await fetch(
-          `${API_BASE}/api/v3/historical/person/${encodeURIComponent(slug)}?limit=160`
-        );
+        const apiPath = isUnified ? "person" : "historical/person";
+        const res = await fetch(`${API_BASE}/api/v3/${apiPath}/${encodeURIComponent(slug)}?limit=160`);
         if (!res.ok) throw new Error(`Person API failed: ${res.status}`);
 
         const data = await res.json();
@@ -63,7 +63,7 @@ export function HistoricalPersonPage() {
           description:
             nextPerson?.meta_description ||
             "Explore classic Indian filmography, roles, and YouTube full movie links where available.",
-          path: `/historical/person/${slug}`,
+          path: isUnified ? `/person/${slug}` : `/historical/person/${slug}`,
         });
       } catch (err) {
         if (cancelled) return;
@@ -82,7 +82,7 @@ export function HistoricalPersonPage() {
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, isUnified]);
 
   const title = person?.person_name ? `${person.person_name} Movies` : "Historical Person Movies";
 
@@ -92,7 +92,7 @@ export function HistoricalPersonPage() {
       <main>
         <section className="historical-people-hero">
           <Link className="historical-people-back" to="/historical/people">
-            Historical People
+            {isUnified ? "People" : "Historical People"}
           </Link>
           <h1>{title}</h1>
           {person?.meta_description && <p>{person.meta_description}</p>}
