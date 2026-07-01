@@ -142,7 +142,7 @@ export default function HistoricalPeoplePage() {
 
         const params = new URLSearchParams();
         params.set("limit", "72");
-        params.set("min_movies", "11");
+        params.set("min_movies", "50");
         if (query.trim()) params.set("q", query.trim());
 
         const res = await fetch(`${API_BASE}/api/v3/historical/people?${params.toString()}`);

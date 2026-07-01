@@ -45,7 +45,7 @@ const SORTS = [
 ];
 
 const AVAILABILITY = [
-  { label: "All Movies", value: "" },
+  { label: "All Titles", value: "" },
   { label: "OTT Available", value: "ott" },
   { label: "Free to Watch", value: "youtube" },
 ];

@@ -40,7 +40,7 @@ export default function HistoricalCombinationsPage() {
 
         const params = new URLSearchParams();
         params.set("limit", "72");
-        params.set("min_movies", "4");
+        params.set("min_movies", "5");
         if (query.trim()) params.set("q", query.trim());
 
         const res = await fetch(`${API_BASE}/api/v3/historical/combinations?${params.toString()}`);
