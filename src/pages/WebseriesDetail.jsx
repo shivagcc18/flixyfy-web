@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import { getBestProviderUrl } from "../utils/providerLinks";
+import { getProviderLogo } from "../utils/providerLogos";
 import { setPageSeo } from "../utils/seo";
 
 const API_BASE =
@@ -107,16 +108,39 @@ export default function WebseriesDetail() {
               <div style={providerWrapStyle}>
                 {providers.map((item, index) => {
                   const url = getBestProviderUrl(item);
+                  const providerName =
+                    item.provider_display_name ||
+                    item.provider ||
+                    item.provider_name ||
+                    item.button_label ||
+                    "Watch";
+                  const logo = getProviderLogo(item.provider_key, providerName);
 
                   return (
                     <a
-                      key={`${item.provider_key || item.provider_display_name}-${index}`}
+                      key={`${item.provider_key || providerName}-${index}`}
                       href={url || "#"}
                       target={url ? "_blank" : undefined}
                       rel={url ? "noopener noreferrer" : undefined}
-                      style={providerStyle}
+                      onClick={(e) => {
+                        if (!url) e.preventDefault();
+                      }}
+                      style={providerStyle(Boolean(url))}
                     >
-                      {item.provider_display_name || item.button_label || "Watch"}
+                      {logo ? (
+                        <img
+                          src={logo}
+                          alt={providerName}
+                          style={logoStyle}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <span style={fallbackIconStyle}>
+                          {providerName.slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                      <span>{providerName}</span>
                     </a>
                   );
                 })}
@@ -201,11 +225,36 @@ const providerWrapStyle = {
   marginTop: 22,
 };
 
-const providerStyle = {
-  color: "#071018",
-  background: "#20d9ff",
-  borderRadius: 6,
-  padding: "10px 14px",
-  textDecoration: "none",
-  fontWeight: 900,
+const logoStyle = {
+  width: 28,
+  height: 28,
+  objectFit: "contain",
 };
+
+const fallbackIconStyle = {
+  width: 28,
+  height: 28,
+  borderRadius: "50%",
+  background: "#34404b",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 12,
+  flex: "0 0 auto",
+};
+
+function providerStyle(active) {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 10,
+    color: "#fff",
+    background: "#202a33",
+    border: "1px solid #34404b",
+    borderRadius: 18,
+    padding: "10px 14px",
+    textDecoration: "none",
+    fontWeight: 900,
+    cursor: active ? "pointer" : "not-allowed",
+  };
+}

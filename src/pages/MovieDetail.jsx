@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { getMovie } from "../api/watchindiaApi";
 import { trackProviderClick } from "../utils/analytics";
 import { getBestProviderUrl } from "../utils/providerLinks";
+import { getProviderLogo } from "../utils/providerLogos";
 import { setPageSeo, setJsonLd } from "../utils/seo";
 import Footer from "../components/Footer";
 
@@ -11,29 +12,6 @@ function buildPosterUrl(path) {
   if (!path) return "/no-poster.png";
   if (path.startsWith("http")) return path;
   return `https://image.tmdb.org/t/p/w500${path}`;
-}
-
-function providerLogo(providerKey, providerName) {
-  const raw = providerKey || providerName || "";
-  const key = raw.toLowerCase().replace(/_/g, "-").replace(/\s+/g, "-");
-
-  const logoMap = {
-    "prime-video": "/ott/prime-video.png",
-    netflix: "/ott/netflix.png",
-    jiohotstar: "/ott/jiohotstar.png",
-    hotstar: "/ott/jiohotstar.png",
-    zee5: "/ott/zee5.png",
-    sonyliv: "/ott/sonyliv.png",
-    "sun-nxt": "/ott/sun-nxt.png",
-    aha: "/ott/aha.png",
-    "etv-win": "/ott/etv-win.png",
-    "vi-movies-and-tv": "/ott/VI_movies.png",
-    "google-play-movies": "/ott/Google.png",
-    "apple-tv-store": "/ott/AppleTV.png",
-    youtube: "/ott/youtube.png",
-  };
-
-  return logoMap[key] || null;
 }
 
 function getYoutubeUrl(yt) {
@@ -337,7 +315,7 @@ export default function MovieDetail() {
                   ott.provider ||
                   ott.button_label ||
                   "OTT";
-                const logo = providerLogo(ott.provider_key, providerName);
+                const logo = getProviderLogo(ott.provider_key, providerName);
                 const url = getBestProviderUrl(ott);
 
                 return (

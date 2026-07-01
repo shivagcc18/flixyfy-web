@@ -41,7 +41,7 @@ for (let year = 2026; year >= 2000; year--) {
 const SORTS = [
   { label: "Popular", value: "popular" },
   { label: "Latest", value: "latest" },
-  { label: "Rating", value: "rating" },
+  { label: "Top IMDb", value: "rating" },
 ];
 
 const AVAILABILITY = [
@@ -60,6 +60,17 @@ const PROVIDERS = [
   { label: "Aha", value: "aha" },
   { label: "Sun NXT", value: "sunnxt" },
   { label: "ETV Win", value: "etvwin" },
+  { label: "MX Player", value: "mx_player" },
+  { label: "Apple TV", value: "apple_tv" },
+  { label: "Disney+", value: "disney_plus" },
+  { label: "Hulu", value: "hulu" },
+  { label: "Max", value: "max" },
+  { label: "Rakuten Viki", value: "viki" },
+  { label: "Kocowa", value: "kocowa" },
+  { label: "TVING", value: "tving" },
+  { label: "Wavve", value: "wavve" },
+  { label: "Watcha", value: "watcha" },
+  { label: "Coupang Play", value: "coupang_play" },
   { label: "YouTube", value: "youtube" },
 ];
 
@@ -140,6 +151,9 @@ export default function Home() {
     selectedYear,
     selectedType,
     selectedScope,
+    selectedSort = "popular",
+    selectedAvailability = "",
+    selectedProvider = "",
     selectedPage,
     append
   ) => {
@@ -155,6 +169,9 @@ export default function Home() {
 
     if (selectedYear) params.set("year", selectedYear);
     if (selectedLanguage) params.set("language", selectedLanguage);
+    if (selectedSort) params.set("sort", selectedSort);
+    if (selectedAvailability) params.set("availability", selectedAvailability);
+    if (selectedProvider) params.set("provider", selectedProvider);
 
     const res = await fetch(`${API_BASE}/api/v3/global-search?${params.toString()}`);
 
@@ -196,6 +213,9 @@ export default function Home() {
           selectedYear,
           selectedType,
           selectedScope,
+          selectedSort,
+          selectedAvailability,
+          selectedProvider,
           selectedPage,
           append
         );
