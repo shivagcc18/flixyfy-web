@@ -107,7 +107,9 @@ export default function Home() {
     });
   }, []);
 
-  const showingFiltered = Boolean(query || language || year || sort !== "popular" || availability || provider);
+  const showingFiltered = Boolean(
+    query || language || year || sort !== "popular" || availability || provider || searchType !== "movies"
+  );
   const canLoadMore = showingFiltered && results.length < filterTotal;
 
   const loadHome = async () => {
@@ -187,7 +189,7 @@ export default function Home() {
         setLoading(true);
       }
 
-      if (searchText) {
+      if (searchText || selectedType !== "movies") {
         await runGlobalSearch(
           searchText,
           selectedLanguage,
@@ -313,8 +315,17 @@ export default function Home() {
       : searchType === "webseries"
         ? "Search webseries..."
         : searchType === "all"
-          ? "Search movies, people, webseries..."
+          ? "Search movies and webseries..."
           : "Search movies...";
+
+  const contentLabel =
+    searchType === "people"
+      ? "People"
+      : searchType === "webseries"
+        ? "Webseries"
+        : searchType === "all"
+          ? "Movies & Webseries"
+          : "Movies";
 
   const titleParts = [];
   if (language) titleParts.push(languageLabel);
@@ -324,8 +335,12 @@ export default function Home() {
   titleParts.push(sortLabel);
 
   const resultTitle = query
-    ? `${searchScope === "global" ? "Global" : "Indian"} ${SEARCH_TYPES.find((item) => item.value === searchType)?.label || "Movies"} Search Results for "${query}" (${filterTotal})`
+    ? `${searchScope === "global" ? "Global" : "Indian"} ${contentLabel} Search Results for "${query}" (${filterTotal})`
     : `${titleParts.join(" • ")} Movies (${filterTotal})`;
+
+  const displayResultTitle = query
+    ? resultTitle
+    : `${titleParts.join(" - ")} ${contentLabel} (${filterTotal})`;
 
   return (
     <div className="home-page">
@@ -440,12 +455,12 @@ export default function Home() {
 
       {showingFiltered ? (
         <section className="home-filter-results">
-          <h2>{loading ? "Loading movies..." : resultTitle}</h2>
+          <h2>{loading ? `Loading ${contentLabel.toLowerCase()}...` : displayResultTitle}</h2>
 
           {loading ? (
             <SkeletonRow />
           ) : results.length === 0 ? (
-            <p className="home-empty">No movies found.</p>
+            <p className="home-empty">No {contentLabel.toLowerCase()} found.</p>
           ) : (
             <>
               <MovieGrid movies={results} />
