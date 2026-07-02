@@ -211,6 +211,8 @@ export default function Home() {
 
     if (selectedType === "webseries") {
     params.set("region", selectedScope === "global" ? "global" : "indian");
+    } else if (selectedType === "webseries") {
+    params.set("region", selectedScope === "global" ? "global" : "indian");
     } else if (selectedScope === "indian") {
     params.set("domain", "indian");
     }

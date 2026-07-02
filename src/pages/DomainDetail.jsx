@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { getBestProviderUrl } from "../utils/providerLinks";
+import { getBestProviderUrl, providerUrl } from "../utils/providerLinks";
 import { setPageSeo } from "../utils/seo";
 import "./DomainDetail.css";
 
@@ -360,3 +360,4 @@ export default function DomainDetail({ domain }) {
     </div>
   );
 }
+
