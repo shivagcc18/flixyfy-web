@@ -25,6 +25,14 @@
       "destination": "/index.html"
     },
     {
+      "source": "/person/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/webseries/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/about",
       "destination": "/index.html"
     },
