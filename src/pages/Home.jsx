@@ -33,6 +33,21 @@ const LANGUAGES = [
   { label: "Assamese", slug: "assamese" },
 ];
 
+const PEOPLE_LANGUAGES = [
+  { label: "All Indian People", slug: "" },
+  { label: "Telugu / Tollywood", slug: "telugu" },
+  { label: "Hindi / Bollywood", slug: "hindi" },
+  { label: "Tamil / Kollywood", slug: "tamil" },
+  { label: "Kannada / Sandalwood", slug: "kannada" },
+  { label: "Malayalam / Mollywood", slug: "malayalam" },
+  { label: "Bengali", slug: "bengali" },
+  { label: "Marathi", slug: "marathi" },
+  { label: "Punjabi", slug: "punjabi" },
+  { label: "Gujarati", slug: "gujarati" },
+  { label: "Odia", slug: "odia" },
+  { label: "Assamese", slug: "assamese" },
+];
+
 const YEARS = [];
 for (let year = 2026; year >= 2000; year--) {
   YEARS.push(String(year));
@@ -118,8 +133,24 @@ export default function Home() {
     });
   }, []);
 
+  const showLanguageFilter = !(searchType === "webseries" && searchScope === "global");
+  const showYearFilter = searchType !== "people";
+  const showAvailabilityFilter = searchType !== "people";
+  const showProviderFilter = searchType !== "people";
+  const languageOptions = searchType === "people" ? PEOPLE_LANGUAGES : LANGUAGES;
+  const activeLanguage = showLanguageFilter ? language : "";
+  const activeYear = showYearFilter ? year : "";
+  const activeAvailability = showAvailabilityFilter ? availability : "";
+  const activeProvider = showProviderFilter ? provider : "";
+
   const showingFiltered = Boolean(
-    query || language || year || sort !== "popular" || availability || provider || searchType !== "movies"
+    query ||
+      activeLanguage ||
+      activeYear ||
+      sort !== "popular" ||
+      activeAvailability ||
+      activeProvider ||
+      searchType !== "movies"
   );
   const canLoadMore = showingFiltered && results.length < filterTotal;
 
@@ -167,11 +198,17 @@ export default function Home() {
       params.set("domain", "indian");
     }
 
-    if (selectedYear) params.set("year", selectedYear);
-    if (selectedLanguage) params.set("language", selectedLanguage);
+    const requestLanguage =
+      selectedType === "webseries" && selectedScope === "global" ? "" : selectedLanguage;
+    const requestYear = selectedType === "people" ? "" : selectedYear;
+    const requestAvailability = selectedType === "people" ? "" : selectedAvailability;
+    const requestProvider = selectedType === "people" ? "" : selectedProvider;
+
+    if (requestYear) params.set("year", requestYear);
+    if (requestLanguage) params.set("language", requestLanguage);
     if (selectedSort) params.set("sort", selectedSort);
-    if (selectedAvailability) params.set("availability", selectedAvailability);
-    if (selectedProvider) params.set("provider", selectedProvider);
+    if (requestAvailability) params.set("availability", requestAvailability);
+    if (requestProvider) params.set("provider", requestProvider);
 
     const res = await fetch(`${API_BASE}/api/v3/global-search?${params.toString()}`);
 
@@ -255,18 +292,29 @@ export default function Home() {
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (showingFiltered) {
-        runFilter(query, language, year, sort, availability, provider, searchType, searchScope, 1, false);
+        runFilter(
+          query,
+          activeLanguage,
+          activeYear,
+          sort,
+          activeAvailability,
+          activeProvider,
+          searchType,
+          searchScope,
+          1,
+          false
+        );
       }
     }, 250);
 
     return () => clearTimeout(timeout);
-  }, [language, year, sort, availability, provider, searchType, searchScope]);
+  }, [activeLanguage, activeYear, sort, activeAvailability, activeProvider, searchType, searchScope]);
 
   const handleSearch = async (q) => {
     const clean = q.trim();
     setQuery(clean);
 
-    if (!clean && !language && !year && sort === "popular" && !availability && !provider) {
+    if (!clean && !activeLanguage && !activeYear && sort === "popular" && !activeAvailability && !activeProvider) {
       setResults([]);
       setFilterTotal(0);
       setPage(1);
@@ -274,14 +322,36 @@ export default function Home() {
       return;
     }
 
-    await runFilter(clean, language, year, sort, availability, provider, searchType, searchScope, 1, false);
+    await runFilter(
+      clean,
+      activeLanguage,
+      activeYear,
+      sort,
+      activeAvailability,
+      activeProvider,
+      searchType,
+      searchScope,
+      1,
+      false
+    );
   };
 
   const handleLoadMore = async () => {
     if (loadingMore || !canLoadMore) return;
 
     trackLoadMore(page + 1);
-    await runFilter(query, language, year, sort, availability, provider, searchType, searchScope, page + 1, true);
+    await runFilter(
+      query,
+      activeLanguage,
+      activeYear,
+      sort,
+      activeAvailability,
+      activeProvider,
+      searchType,
+      searchScope,
+      page + 1,
+      true
+    );
   };
 
   const handleLanguageChange = (value) => {
@@ -323,10 +393,12 @@ export default function Home() {
     AVAILABILITY.find((item) => item.value === availability)?.label || "All Movies";
 
   const providerLabel =
-    PROVIDERS.find((item) => item.value === provider)?.label || "All Providers";
+    PROVIDERS.find((item) => item.value === activeProvider)?.label || "All Providers";
 
   const languageLabel =
-    LANGUAGES.find((item) => item.slug === language)?.label || "All Indian Languages";
+    languageOptions.find((item) => item.slug === activeLanguage)?.label ||
+    languageOptions[0]?.label ||
+    "All Indian Languages";
 
   const sortLabel = SORTS.find((s) => s.value === sort)?.label || "Popular";
   const searchPlaceholder =
@@ -348,10 +420,10 @@ export default function Home() {
           : "Movies";
 
   const titleParts = [];
-  if (language) titleParts.push(languageLabel);
-  if (provider) titleParts.push(providerLabel);
-  if (availability) titleParts.push(availabilityLabel);
-  if (year) titleParts.push(year);
+  if (activeLanguage) titleParts.push(languageLabel);
+  if (activeProvider) titleParts.push(providerLabel);
+  if (activeAvailability) titleParts.push(availabilityLabel);
+  if (activeYear) titleParts.push(activeYear);
   titleParts.push(sortLabel);
 
   const resultTitle = query
@@ -368,30 +440,34 @@ export default function Home() {
 
       {!query && (
         <div className="home-filter-row home-filter-row-v2">
-          <select
-            className="year-dropdown language-dropdown-v2"
-            value={language}
-            onChange={(e) => handleLanguageChange(e.target.value)}
-          >
-            {LANGUAGES.map((lang) => (
-              <option key={lang.slug || "all"} value={lang.slug}>
-                {lang.label}
-              </option>
-            ))}
-          </select>
+          {showLanguageFilter && (
+            <select
+              className="year-dropdown language-dropdown-v2"
+              value={language}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+            >
+              {languageOptions.map((lang) => (
+                <option key={lang.slug || "all"} value={lang.slug}>
+                  {lang.label}
+                </option>
+              ))}
+            </select>
+          )}
 
-          <select
-            className="year-dropdown"
-            value={year}
-            onChange={(e) => handleYearChange(e.target.value)}
-          >
-            <option value="">All Years</option>
-            {YEARS.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
+          {showYearFilter && (
+            <select
+              className="year-dropdown"
+              value={year}
+              onChange={(e) => handleYearChange(e.target.value)}
+            >
+              <option value="">All Years</option>
+              {YEARS.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          )}
 
           <select
             className="year-dropdown"
@@ -405,29 +481,33 @@ export default function Home() {
             ))}
           </select>
 
-          <select
-            className="year-dropdown"
-            value={availability}
-            onChange={(e) => handleAvailabilityChange(e.target.value)}
-          >
-            {AVAILABILITY.map((item) => (
-              <option key={item.value || "all"} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
+          {showAvailabilityFilter && (
+            <select
+              className="year-dropdown"
+              value={availability}
+              onChange={(e) => handleAvailabilityChange(e.target.value)}
+            >
+              {AVAILABILITY.map((item) => (
+                <option key={item.value || "all"} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          )}
 
-          <select
-            className="year-dropdown"
-            value={provider}
-            onChange={(e) => handleProviderChange(e.target.value)}
-          >
-            {PROVIDERS.map((item) => (
-              <option key={item.value || "all-provider"} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
+          {showProviderFilter && (
+            <select
+              className="year-dropdown"
+              value={provider}
+              onChange={(e) => handleProviderChange(e.target.value)}
+            >
+              {PROVIDERS.map((item) => (
+                <option key={item.value || "all-provider"} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       )}
 
