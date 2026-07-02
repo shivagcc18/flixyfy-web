@@ -1,0 +1,67 @@
+.watch-providers {
+  margin-top: 1.25rem;
+}
+
+.watch-providers h3 {
+  margin: 0 0 0.75rem;
+}
+
+.watch-provider-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.watch-provider-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 38px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  text-decoration: none;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.watch-provider-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.watch-provider-disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.watch-provider-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.watch-provider-fallback-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.watch-provider-name {
+  white-space: nowrap;
+}
+
+.watch-provider-fallback-label {
+  font-size: 0.68rem;
+  opacity: 0.7;
+}
+
+.watch-provider-empty {
+  opacity: 0.75;
+}

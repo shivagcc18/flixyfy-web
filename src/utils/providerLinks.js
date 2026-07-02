@@ -1,48 +1,86 @@
-function detectDevice() {
-  const ua = window.navigator.userAgent || "";
-  const platform = window.navigator.platform || "";
-  const touch = window.navigator.maxTouchPoints || 0;
-  const isAndroid = /Android/i.test(ua);
-  const isIOS = /iPhone|iPad|iPod/i.test(ua) || (platform === "MacIntel" && touch > 1);
-  const isTV = /TV|SmartTV|AppleTV|GoogleTV|Android TV|AFT|Roku|Tizen|Web0S|webOS/i.test(ua);
+// src/utils/providerLinks.js
 
-  if (isTV) return "tv";
-  if (isAndroid) return "android";
-  if (isIOS) return "ios";
-  return "web";
-}
+import { getProviderClickUrl, getProviderLinkType } from "./providerDirectLinks";
 
-export function getBestProviderUrl(provider = {}) {
-  const device = detectDevice();
+export function providerName(provider) {
+  if (!provider) return "";
 
-  const deviceUrl =
-    device === "android"
-      ? provider.android_url || provider.android_deep_link
-      : device === "ios"
-        ? provider.ios_url || provider.ios_deep_link
-        : device === "tv"
-          ? provider.tv_url || provider.tv_deep_link
-          : null;
+  if (typeof provider === "string") {
+    return provider;
+  }
 
   return (
-    deviceUrl ||
-    provider.web_url ||
-    provider.final_url ||
-    provider.provider_url ||
-    provider.fallback_search_url ||
-    provider.provider_search_url ||
-    provider.homepage_url ||
-    provider.deep_link ||
-    provider.provider_deep_link ||
-    null
+    provider.provider ||
+    provider.provider_name ||
+    provider.providerName ||
+    provider.normalized_provider_name ||
+    provider.name ||
+    provider.title ||
+    ""
   );
 }
 
-export function openProviderUrl(provider, fallbackTitle = "") {
-  const url = getBestProviderUrl(provider);
-  if (!url) return false;
+export function providerLogo(provider) {
+  if (!provider || typeof provider === "string") return "";
 
-  const target = String(url).replace("{q}", encodeURIComponent(fallbackTitle || ""));
-  window.open(target, "_blank", "noopener,noreferrer");
-  return true;
+  return (
+    provider.logo_url ||
+    provider.logoUrl ||
+    provider.provider_logo ||
+    provider.providerLogo ||
+    provider.logo ||
+    provider.icon ||
+    ""
+  );
+}
+
+export function providerUrl(provider, title = "") {
+  return getProviderClickUrl(provider, title);
+}
+
+export function getProviderUrl(provider, title = "") {
+  return getProviderClickUrl(provider, title);
+}
+
+export function getBestProviderUrl(provider, title = "") {
+  return getProviderClickUrl(provider, title);
+}
+
+export function getProviderLink(provider, title = "") {
+  return getProviderClickUrl(provider, title);
+}
+
+export function resolveProviderUrl(provider, title = "") {
+  return getProviderClickUrl(provider, title);
+}
+
+export function providerHref(provider, title = "") {
+  return getProviderClickUrl(provider, title);
+}
+
+export function providerLinkType(provider) {
+  return getProviderLinkType(provider);
+}
+
+export function normalizeProviderRows(providers, title = "") {
+  if (!Array.isArray(providers)) return [];
+
+  return providers
+    .map((provider) => {
+      const name = providerName(provider);
+      const url = getProviderClickUrl(provider, title);
+
+      if (!name && !url) return null;
+
+      return {
+        raw: provider,
+        name,
+        provider,
+        logo: providerLogo(provider),
+        url,
+        href: url,
+        link_type: getProviderLinkType(provider),
+      };
+    })
+    .filter(Boolean);
 }

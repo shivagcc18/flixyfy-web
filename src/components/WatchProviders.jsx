@@ -1,76 +1,105 @@
+// src/components/WatchProviders.jsx
+
 import React from "react";
-import { getBestProviderUrl, openProviderUrl } from "../utils/providerLinks";
-import { trackProviderClick } from "../utils/analytics";
+import {
+  normalizeProviderRows,
+  providerName,
+  providerLogo,
+  providerUrl,
+  providerLinkType,
+} from "../utils/providerLinks";
+import "./WatchProviders.css";
 
-function cleanProviderName(provider) {
-  return (
-    provider?.provider ||
-    provider?.provider_name ||
-    provider?.name ||
-    provider?.provider_key ||
-    "Watch"
-  );
+function fallbackInitial(name) {
+  const clean = String(name || "").trim();
+  return clean ? clean[0].toUpperCase() : "?";
 }
 
-function cleanProviderType(provider) {
-  return (
-    provider?.category ||
-    provider?.type ||
-    provider?.provider_type ||
-    provider?.raw_type ||
-    "available"
-  );
-}
+function ProviderLogo({ provider, name }) {
+  const logo = providerLogo(provider);
 
-export default function WatchProviders({ providers = [], ottAll = [], movieTitle = "" }) {
-  const list = Array.isArray(providers) && providers.length ? providers : ottAll;
-
-  if (!Array.isArray(list) || list.length === 0) {
+  if (logo) {
     return (
-      <div style={{ marginTop: "24px" }}>
-        <h2>Where to Watch</h2>
-        <p>OTT availability not added yet.</p>
-      </div>
+      <img
+        className="watch-provider-logo"
+        src={logo}
+        alt={name}
+        loading="lazy"
+        decoding="async"
+      />
+    );
+  }
+
+  return <span className="watch-provider-fallback-logo">{fallbackInitial(name)}</span>;
+}
+
+export default function WatchProviders({
+  providers = [],
+  title = "",
+  contentTitle = "",
+  heading = "Where to watch",
+  emptyText = "No provider links available yet.",
+  className = "",
+}) {
+  const displayTitle = contentTitle || title || "";
+  const normalized = normalizeProviderRows(providers, displayTitle);
+
+  if (!normalized.length) {
+    return (
+      <section className={`watch-providers ${className}`.trim()}>
+        <h3>{heading}</h3>
+        <p className="watch-provider-empty">{emptyText}</p>
+      </section>
     );
   }
 
   return (
-    <div style={{ marginTop: "24px" }}>
-      <h2>Where to Watch</h2>
+    <section className={`watch-providers ${className}`.trim()}>
+      <h3>{heading}</h3>
 
-      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-        {list.map((provider, index) => {
-          const name = cleanProviderName(provider);
-          const type = cleanProviderType(provider);
-          const url = getBestProviderUrl(provider);
+      <div className="watch-provider-list">
+        {normalized.map((item, index) => {
+          const raw = item.raw || item.provider;
+          const name = item.name || providerName(raw) || "Provider";
+          const url = item.url || providerUrl(raw, displayTitle);
+          const linkType = item.link_type || providerLinkType(raw);
+
+          const content = (
+            <>
+              <ProviderLogo provider={raw} name={name} />
+              <span className="watch-provider-name">{name}</span>
+              {linkType === "fallback" ? (
+                <span className="watch-provider-fallback-label">Fallback</span>
+              ) : null}
+            </>
+          );
+
+          if (!url) {
+            return (
+              <span
+                key={`${name}-${index}`}
+                className="watch-provider-chip watch-provider-disabled"
+                title="No provider link available"
+              >
+                {content}
+              </span>
+            );
+          }
 
           return (
-            <button
-              key={`${name}-${type}-${index}`}
-              type="button"
-              onClick={() => {
-                trackProviderClick(name, movieTitle);
-
-                openProviderUrl(provider, movieTitle);
-              }}
-              style={{
-                cursor: url ? "pointer" : "default",
-                background: "#111",
-                color: "#fff",
-                border: "1px solid #333",
-                borderRadius: "10px",
-                padding: "12px 16px",
-                minWidth: "140px",
-                textAlign: "left",
-              }}
-              title={url || "No provider link available"}
+            <a
+              key={`${name}-${index}`}
+              className="watch-provider-chip"
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={url}
             >
-              <strong>{name}</strong>
-              <div style={{ fontSize: "13px", opacity: 0.75 }}>{type}</div>
-            </button>
+              {content}
+            </a>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
