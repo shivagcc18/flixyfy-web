@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import MovieGrid from "../components/MovieGrid";
@@ -17,11 +17,69 @@ function roleLabel(value) {
   return text.slice(0, 1).toUpperCase() + text.slice(1);
 }
 
-function PersonStats({ person, total }) {
+function safeNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function firstNumber(values, fallback = 0) {
+  for (const value of values) {
+    const number = Number(value);
+    if (Number.isFinite(number)) return number;
+  }
+  return fallback;
+}
+
+function cleanLanguageName(value) {
+  const text = String(value || "").trim();
+  if (!text) return "Language";
+  return text.slice(0, 1).toUpperCase() + text.slice(1);
+}
+
+function getPrimaryMovieCount(person, responseData, total) {
+  return firstNumber(
+    [
+      person?.primary_language_movie_count,
+      responseData?.primary_language_movie_count,
+      person?.movie_count,
+      responseData?.total,
+      total,
+    ],
+    0
+  );
+}
+
+function getCareerMovieCount(person, responseData, primaryCount) {
+  return firstNumber(
+    [
+      person?.career_attached_movie_count,
+      responseData?.career_attached_movie_count,
+      person?.career_movie_count,
+      primaryCount,
+    ],
+    primaryCount
+  );
+}
+
+function PersonStats({ person, responseData, total }) {
+  const pageMovieCount = getPrimaryMovieCount(person, responseData, total);
+  const careerMovieCount = getCareerMovieCount(person, responseData, pageMovieCount);
+
+  const languageName = cleanLanguageName(
+    person?.primary_language_name || person?.primary_language_slug || responseData?.language
+  );
+
   return (
     <div className="historical-people-stats">
-      <span>{total || person?.movie_count || 0} movies</span>
-      <span>{person?.youtube_movie_count || 0} with YouTube</span>
+      <span>
+        {pageMovieCount} {languageName} movies
+      </span>
+
+      {careerMovieCount > pageMovieCount && (
+        <span>{careerMovieCount} total mapped movies</span>
+      )}
+
+      <span>{safeNumber(person?.youtube_movie_count)} with YouTube</span>
       <span>{roleLabel(person?.primary_role)}</span>
     </div>
   );
@@ -29,12 +87,24 @@ function PersonStats({ person, total }) {
 
 export function HistoricalPersonPage({ mode = "historical" }) {
   const { slug } = useParams();
+  const [searchParams] = useSearchParams();
+
   const isUnified = mode === "unified";
+  const languageParam = searchParams.get("language") || searchParams.get("lang") || "telugu";
+
   const [person, setPerson] = useState(null);
   const [movies, setMovies] = useState([]);
+  const [responseData, setResponseData] = useState(null);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const title = useMemo(() => {
+    if (person?.page_title) return person.page_title;
+    if (person?.person_name) return `${person.person_name} Movies`;
+    if (person?.display_name) return `${person.display_name} Movies`;
+    return isUnified ? "Person Movies" : "Historical Person Movies";
+  }, [person, isUnified]);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,24 +115,55 @@ export function HistoricalPersonPage({ mode = "historical" }) {
         setError("");
 
         const apiPath = isUnified ? "person" : "historical/person";
-        const res = await fetch(`${API_BASE}/api/v3/${apiPath}/${encodeURIComponent(slug)}?limit=160`);
+        const params = new URLSearchParams();
+        params.set("limit", "160");
+
+        if (isUnified) {
+          params.set("language", languageParam);
+        }
+
+        const res = await fetch(
+          `${API_BASE}/api/v3/${apiPath}/${encodeURIComponent(slug)}?${params.toString()}`
+        );
+
         if (!res.ok) throw new Error(`Person API failed: ${res.status}`);
 
         const data = await res.json();
         if (cancelled) return;
 
         const nextPerson = data.person || null;
-        const nextMovies = data.items || data.movies || [];
+
+        // Main visible filmography must be primary-language scoped.
+        // Backend already returns primary-language movies in `items`.
+        const nextMovies = Array.isArray(data.items)
+          ? data.items
+          : Array.isArray(data.primary_language_filmography)
+            ? data.primary_language_filmography
+            : Array.isArray(data.movies)
+              ? data.movies
+              : [];
+
+        const nextTotal = getPrimaryMovieCount(
+          nextPerson,
+          data,
+          data.total || nextMovies.length || 0
+        );
 
         setPerson(nextPerson);
         setMovies(nextMovies);
-        setTotal(data.total || nextMovies.length || 0);
+        setResponseData(data);
+        setTotal(nextTotal);
 
         setPageSeo({
-          title: nextPerson?.seo_title || `${nextPerson?.person_name || "Historical Person"} Movies`,
+          title:
+            nextPerson?.seo_title ||
+            nextPerson?.meta_title ||
+            nextPerson?.page_title ||
+            `${nextPerson?.person_name || nextPerson?.display_name || "Person"} Movies`,
           description:
             nextPerson?.meta_description ||
-            "Explore classic Indian filmography, roles, and YouTube full movie links where available.",
+            nextPerson?.page_summary ||
+            "Explore Indian filmography, roles, and YouTube full movie links where available.",
           path: isUnified ? `/person/${slug}` : `/historical/person/${slug}`,
         });
       } catch (err) {
@@ -71,6 +172,7 @@ export function HistoricalPersonPage({ mode = "historical" }) {
         setError("Person page is not available yet.");
         setPerson(null);
         setMovies([]);
+        setResponseData(null);
         setTotal(0);
       } finally {
         if (!cancelled) setLoading(false);
@@ -82,9 +184,7 @@ export function HistoricalPersonPage({ mode = "historical" }) {
     return () => {
       cancelled = true;
     };
-  }, [slug, isUnified]);
-
-  const title = person?.person_name ? `${person.person_name} Movies` : "Historical Person Movies";
+  }, [slug, isUnified, languageParam]);
 
   return (
     <div className="historical-people-page">
@@ -94,13 +194,21 @@ export function HistoricalPersonPage({ mode = "historical" }) {
           <Link className="historical-people-back" to="/historical/people">
             {isUnified ? "People" : "Historical People"}
           </Link>
+
           <h1>{title}</h1>
-          {person?.meta_description && <p>{person.meta_description}</p>}
-          {person && <PersonStats person={person} total={total} />}
+
+          {(person?.page_summary || person?.meta_description) && (
+            <p>{person.page_summary || person.meta_description}</p>
+          )}
+
+          {person && (
+            <PersonStats person={person} responseData={responseData} total={total} />
+          )}
         </section>
 
         <section className="historical-people-results">
           <h2>{loading ? "Loading..." : "Movies"}</h2>
+
           {loading ? (
             <SkeletonRow />
           ) : error ? (
@@ -176,8 +284,10 @@ export default function HistoricalPeoplePage() {
           <Link className="historical-people-back" to="/historical">
             Historical Movies
           </Link>
+
           <h1>Historical Movie People</h1>
           <p>Classic Indian actors, directors, producers, and music directors with filmography pages.</p>
+
           <input
             className="historical-people-search"
             value={query}
