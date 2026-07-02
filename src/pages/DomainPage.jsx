@@ -332,11 +332,13 @@ function getPopularScore(movie, index, domain) {
 function prepareItems(items, domain, sort, availability, provider) {
   if (!Array.isArray(items)) return [];
 
+  const apiFilteredProviders = domain === "hollywood" || domain === "indian";
+
   return [...items]
     .filter((movie) => {
       if (domain === "historical" && isBlockedHistorical(movie)) return false;
-      if (!matchesAvailability(movie, availability)) return false;
-      if (!matchesProvider(movie, provider)) return false;
+      if (!apiFilteredProviders && !matchesAvailability(movie, availability)) return false;
+      if (!apiFilteredProviders && !matchesProvider(movie, provider)) return false;
       return true;
     })
     .map((movie, index) => ({ movie, index }))
