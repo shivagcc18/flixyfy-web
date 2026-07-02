@@ -12,6 +12,7 @@ import { trackFilter, trackLanguageOpen, trackLoadMore } from "../utils/analytic
 import "./Home.css";
 
 const API_BASE =
+  import.meta.env.VITE_API_BASE ||
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
   "https://flixyfy-api-production.up.railway.app";
@@ -204,24 +205,24 @@ export default function Home() {
     append
   ) => {
     const params = new URLSearchParams();
-    params.set("q", searchText);
+    const cleanType = selectedType || "movies";
+    const cleanScope = selectedScope || "indian";
+
+    params.set("q", searchText || "");
     params.set("page", String(selectedPage));
     params.set("limit", String(PAGE_SIZE));
-    params.set("type", selectedType);
+    params.set("type", cleanType);
 
-    if (selectedType === "webseries") {
-    params.set("region", selectedScope === "global" ? "global" : "indian");
-    } else if (selectedType === "webseries") {
-    params.set("region", selectedScope === "global" ? "global" : "indian");
-    } else if (selectedScope === "indian") {
-    params.set("domain", "indian");
+    if (cleanType === "webseries") {
+      params.set("region", cleanScope === "global" ? "global" : "indian");
+    } else if (cleanScope === "indian") {
+      params.set("domain", "indian");
     }
 
-    const requestLanguage =
-      selectedType === "webseries" && selectedScope === "global" ? "" : selectedLanguage;
-    const requestYear = selectedType === "people" ? "" : selectedYear;
-    const requestAvailability = selectedType === "people" ? "" : selectedAvailability;
-    const requestProvider = selectedType === "people" ? "" : selectedProvider;
+    const requestLanguage = selectedLanguage || "";
+    const requestYear = cleanType === "people" ? "" : selectedYear;
+    const requestAvailability = cleanType === "people" ? "" : selectedAvailability;
+    const requestProvider = cleanType === "people" ? "" : selectedProvider;
 
     if (requestYear) params.set("year", requestYear);
     if (requestLanguage) params.set("language", requestLanguage);
