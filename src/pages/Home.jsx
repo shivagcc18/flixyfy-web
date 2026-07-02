@@ -33,6 +33,16 @@ const LANGUAGES = [
   { label: "Assamese", slug: "assamese" },
 ];
 
+const GLOBAL_WEBSERIES_LANGUAGES = [
+  { label: "All Global Languages", slug: "" },
+  { label: "English", slug: "en" },
+  { label: "Korean", slug: "ko" },
+  { label: "Japanese", slug: "ja" },
+  { label: "Spanish", slug: "es" },
+  { label: "French", slug: "fr" },
+  { label: "German", slug: "de" },
+];
+
 const PEOPLE_LANGUAGES = [
   { label: "All Indian People", slug: "" },
   { label: "Telugu / Tollywood", slug: "telugu" },
@@ -133,11 +143,16 @@ export default function Home() {
     });
   }, []);
 
-  const showLanguageFilter = !(searchType === "webseries" && searchScope === "global");
+  const showLanguageFilter = true;
   const showYearFilter = searchType !== "people";
   const showAvailabilityFilter = searchType !== "people";
   const showProviderFilter = searchType !== "people";
-  const languageOptions = searchType === "people" ? PEOPLE_LANGUAGES : LANGUAGES;
+  const languageOptions =
+  searchType === "people"
+    ? PEOPLE_LANGUAGES
+    : searchType === "webseries" && searchScope === "global"
+      ? GLOBAL_WEBSERIES_LANGUAGES
+      : LANGUAGES;
   const activeLanguage = showLanguageFilter ? language : "";
   const activeYear = showYearFilter ? year : "";
   const activeAvailability = showAvailabilityFilter ? availability : "";
@@ -194,8 +209,10 @@ export default function Home() {
     params.set("limit", String(PAGE_SIZE));
     params.set("type", selectedType);
 
-    if (selectedScope === "indian") {
-      params.set("domain", "indian");
+    if (selectedType === "webseries") {
+    params.set("region", selectedScope === "global" ? "global" : "indian");
+    } else if (selectedScope === "indian") {
+    params.set("domain", "indian");
     }
 
     const requestLanguage =
@@ -380,12 +397,17 @@ export default function Home() {
   };
 
   const handleSearchScopeChange = (value) => {
-    setSearchScope(value);
-    trackFilter("search_scope", value);
+  setSearchScope(value);
+  setLanguage("");
+  trackFilter("search_scope", value);
   };
 
   const handleSearchTypeChange = (value) => {
     setSearchType(value);
+    setLanguage("");
+    setYear("");
+    setAvailability("");
+    setProvider("");
     trackFilter("search_type", value);
   };
 
@@ -428,7 +450,7 @@ export default function Home() {
 
   const resultTitle = query
     ? `${searchScope === "global" ? "Global" : "Indian"} ${contentLabel} Search Results for "${query}" (${filterTotal})`
-    : `${titleParts.join(" • ")} Movies (${filterTotal})`;
+    : `${titleParts.join(" • ")} ${contentLabel} (${filterTotal})`;
 
   const displayResultTitle = query
     ? resultTitle

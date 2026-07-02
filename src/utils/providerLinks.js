@@ -2,6 +2,12 @@
 
 import { getProviderClickUrl, getProviderLinkType } from "./providerDirectLinks";
 
+function asArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  return [value];
+}
+
 export function providerName(provider) {
   if (!provider) return "";
 
@@ -42,10 +48,6 @@ export function getProviderUrl(provider, title = "") {
   return getProviderClickUrl(provider, title);
 }
 
-export function getBestProviderUrl(provider, title = "") {
-  return getProviderClickUrl(provider, title);
-}
-
 export function getProviderLink(provider, title = "") {
   return getProviderClickUrl(provider, title);
 }
@@ -62,10 +64,24 @@ export function providerLinkType(provider) {
   return getProviderLinkType(provider);
 }
 
-export function normalizeProviderRows(providers, title = "") {
-  if (!Array.isArray(providers)) return [];
+// Backward-compatible export used by MovieDetail, DomainDetail, WebseriesDetail.
+// Supports:
+//   getBestProviderUrl(provider, title)
+//   getBestProviderUrl(providersArray, title)
+//   getBestProviderUrl(movie.ott_all, movie.title)
+export function getBestProviderUrl(providerOrProviders, title = "") {
+  const providers = asArray(providerOrProviders);
 
-  return providers
+  for (const provider of providers) {
+    const url = getProviderClickUrl(provider, title);
+    if (url) return url;
+  }
+
+  return "";
+}
+
+export function normalizeProviderRows(providers, title = "") {
+  return asArray(providers)
     .map((provider) => {
       const name = providerName(provider);
       const url = getProviderClickUrl(provider, title);
