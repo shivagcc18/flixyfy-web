@@ -225,10 +225,16 @@ export default function Home() {
     const requestProvider = cleanType === "people" ? "" : selectedProvider;
 
     if (requestYear) params.set("year", requestYear);
-    if (requestLanguage) params.set("language", requestLanguage);
-    if (selectedSort) params.set("sort", selectedSort);
-    if (requestAvailability) params.set("availability", requestAvailability);
-    if (requestProvider) params.set("provider", requestProvider);
+
+    if (cleanType === "webseries" && cleanScope === "global" && selectedLanguage) {
+    params.set("language", selectedLanguage);
+    } else if (requestLanguage) {
+    params.set("language", requestLanguage);
+    }
+
+if (selectedSort) params.set("sort", selectedSort);
+if (requestAvailability) params.set("availability", requestAvailability);
+if (requestProvider) params.set("provider", requestProvider);
 
     const res = await fetch(`${API_BASE}/api/v3/global-search?${params.toString()}`);
 
