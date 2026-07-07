@@ -17,7 +17,7 @@ const API_BASE =
   import.meta.env.VITE_API_URL ||
   "https://flixyfy-api-production.up.railway.app";
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 25;
 
 const LANGUAGES = [
   { label: "All Indian Languages", slug: "" },
@@ -144,7 +144,24 @@ export default function Home() {
     });
   }, []);
 
-  const showLanguageFilter = true;
+  // FLIXYFY UI SYSTEM V2: keep Global free from People state.
+  useEffect(() => {
+    if (searchScope === "global" && searchType === "people") {
+      setSearchType("all");
+    }
+  }, [searchScope, searchType]);
+
+  // FLIXYFY FINAL LAYOUT V1: Global has no People tab.
+  useEffect(() => {
+    if (searchScope === "global" && searchType === "people") {
+      setSearchType("all");
+    }
+  }, [searchScope, searchType]);
+
+  const showLanguageFilter =
+    searchScope === "indian" ||
+    searchType === "people" ||
+    (searchType === "webseries" && searchScope === "global");
   const showYearFilter = searchType !== "people";
   const showAvailabilityFilter = searchType !== "people";
   const showProviderFilter = searchType !== "people";
@@ -465,8 +482,14 @@ if (requestProvider) params.set("provider", requestProvider);
     ? resultTitle
     : `${titleParts.join(" - ")} ${contentLabel} (${filterTotal})`;
 
+  const loadedResultCount = Math.min(results.length, filterTotal || results.length);
+  const showingResultText =
+    !loading && showingFiltered && filterTotal > 0
+      ? `Showing ${loadedResultCount} of ${filterTotal}`
+      : "";
+
   return (
-    <div className="home-page">
+    <div className={`home-page ${searchScope === "global" ? "home-global-scope" : "home-indian-scope"}`}>
       <Navbar />
 
       {!query && (
@@ -587,6 +610,9 @@ if (requestProvider) params.set("provider", requestProvider);
       {showingFiltered ? (
         <section className="home-filter-results">
           <h2>{loading ? `Loading ${contentLabel.toLowerCase()}...` : displayResultTitle}</h2>
+          {showingResultText && (
+            <p className="home-result-count-note">{showingResultText}</p>
+          )}
 
           {loading ? (
             <SkeletonRow />

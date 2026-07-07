@@ -1,8 +1,10 @@
 .navbar {
   width: 100%;
-  min-height: 102px;
-  background: #111111;
-  border-bottom: 1px solid #222222;
+  min-height: 82px;
+  background:
+    radial-gradient(circle at top center, rgba(32, 217, 255, 0.08), transparent 42%),
+    #111111;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -12,26 +14,27 @@
 .brand {
   color: #ffffff;
   text-decoration: none;
-  font-size: clamp(36px, 5vw, 54px);
+  font-size: clamp(34px, 4.2vw, 50px);
   font-weight: 950;
   letter-spacing: 0.08em;
   background: linear-gradient(90deg, #ff35d1, #ffffff, #20d9ff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  text-shadow: 0 0 28px rgba(32, 217, 255, 0.4);
+  text-shadow: 0 0 24px rgba(32, 217, 255, 0.34);
+  line-height: 1;
 }
 
 .navbar-links {
   position: absolute;
-  right: 22px;
-  bottom: 18px;
+  right: 20px;
+  bottom: 16px;
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .navbar-links a {
-  min-height: 36px;
+  min-height: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -39,23 +42,27 @@
   border-radius: 999px;
   padding: 0 14px;
   color: #ffffff;
-  background: #1e1e1e;
+  background: rgba(30, 30, 30, 0.92);
   text-decoration: none;
+  font-size: 15px;
   font-weight: 900;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  transition: all 0.18s ease;
 }
 
 .navbar-links a.active {
   border-color: #20d9ff;
   background: #20d9ff;
   color: #071018;
+  box-shadow: 0 0 18px rgba(32, 217, 255, 0.42);
 }
 
 @media (hover: hover) {
   .navbar-links a:hover {
     border-color: #20d9ff;
-    box-shadow: 0 0 16px rgba(32, 217, 255, 0.5);
+    box-shadow: 0 0 14px rgba(32, 217, 255, 0.44);
   }
 }
 
@@ -65,22 +72,118 @@
 
 @media (max-width: 760px) {
   .navbar {
-    min-height: 122px;
+    min-height: 106px;
     align-items: flex-start;
-    padding-top: 22px;
+    padding-top: 20px;
   }
 
   .navbar-links {
-    left: 12px;
-    right: 12px;
-    bottom: 14px;
+    left: 10px;
+    right: 10px;
+    bottom: 12px;
     justify-content: center;
     overflow-x: auto;
     padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .navbar-links::-webkit-scrollbar {
+    display: none;
   }
 
   .navbar-links a {
     flex: 0 0 auto;
-    min-width: 92px;
+    min-width: 88px;
+    min-height: 34px;
+    font-size: 14px;
   }
+}
+
+/* =========================
+   FLIXYFY UI SYSTEM V2
+   Premium top nav
+   ========================= */
+
+.navbar {
+  min-height: 76px;
+  background:
+    radial-gradient(circle at top center, rgba(34, 211, 238, 0.06), transparent 40%),
+    #101010;
+}
+
+.brand {
+  font-size: clamp(34px, 4vw, 48px);
+  letter-spacing: 0.08em;
+  filter: drop-shadow(0 0 14px rgba(32, 217, 255, 0.18));
+}
+
+.navbar-links {
+  right: 20px;
+  bottom: 14px;
+  gap: 8px;
+}
+
+.navbar-links a {
+  min-height: 32px;
+  padding: 0 13px;
+  font-size: 14px;
+  font-weight: 900;
+  border-color: rgba(255,255,255,0.14);
+  box-shadow: none;
+}
+
+.navbar-links a.active {
+  background: #20d9ff;
+  border-color: #20d9ff;
+  color: #051018;
+  box-shadow: 0 0 12px rgba(32, 217, 255, 0.3);
+}
+
+@media (max-width: 760px) {
+  .navbar {
+    min-height: 98px;
+  }
+
+  .navbar-links {
+    bottom: 10px;
+  }
+}
+/* =========================
+   FLIXYFY FINAL LAYOUT V1
+   Top nav
+   ========================= */
+
+.navbar {
+  min-height: 74px;
+  background:
+    radial-gradient(circle at top center, rgba(32, 217, 255, 0.055), transparent 40%),
+    #101010;
+}
+
+.brand {
+  font-size: clamp(34px, 4vw, 48px);
+  letter-spacing: 0.08em;
+  filter: drop-shadow(0 0 12px rgba(32, 217, 255, 0.16));
+}
+
+.navbar-links {
+  right: 20px;
+  bottom: 13px;
+  gap: 8px;
+}
+
+.navbar-links a {
+  min-height: 32px;
+  padding: 0 13px;
+  font-size: 14px;
+  font-weight: 900;
+  border-color: rgba(255,255,255,0.14);
+  box-shadow: none;
+}
+
+.navbar-links a.active {
+  background: #20d9ff;
+  border-color: #20d9ff;
+  color: #051018;
+  box-shadow: 0 0 10px rgba(32, 217, 255, 0.26);
 }

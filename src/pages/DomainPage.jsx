@@ -9,11 +9,12 @@ import { setPageSeo } from "../utils/seo";
 import "./DomainPage.css";
 
 const API_BASE =
+  import.meta.env.VITE_API_BASE ||
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
   "https://flixyfy-api-production.up.railway.app";
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 25;
 
 const HISTORICAL_YEARS = [];
 for (let year = 1999; year >= 1960; year--) HISTORICAL_YEARS.push(String(year));
@@ -65,6 +66,15 @@ const HOLLYWOOD_PROVIDERS = [
 const HISTORICAL_PROVIDERS = [
   { label: "All Providers", value: "" },
   { label: "YouTube", value: "youtube" },
+  { label: "ShemarooMe", value: "shemaroo" },
+  { label: "Prime Video", value: "prime_video" },
+  { label: "Aha", value: "aha" },
+  { label: "Sun NXT", value: "sunnxt" },
+  { label: "Eros Now", value: "eros_now" },
+  { label: "MX Player", value: "mx_player" },
+  { label: "ZEE5", value: "zee5" },
+  { label: "SonyLIV", value: "sonyliv" },
+  { label: "JioHotstar", value: "jiohotstar" },
 ];
 
 const PROVIDER_ALIASES = {
@@ -92,6 +102,14 @@ const PROVIDER_ALIASES = {
   kanopy: ["kanopy"],
   hoopla: ["hoopla"],
   crunchyroll: ["crunchyroll"],
+  shemaroo: ["shemaroo", "shemaroome", "shemaroo me"],
+  aha: ["aha"],
+  sunnxt: ["sun nxt", "sunnxt", "sun network"],
+  eros_now: ["eros", "eros now", "eros now select"],
+  mx_player: ["mx player", "mxplayer", "mx_player"],
+  zee5: ["zee5", "zee 5"],
+  sonyliv: ["sonyliv", "sony liv"],
+  jiohotstar: ["jiohotstar", "jio hotstar", "hotstar"],
 };
 
 const HISTORICAL_LANGUAGES = [
@@ -100,6 +118,22 @@ const HISTORICAL_LANGUAGES = [
   { label: "Tamil", value: "ta" },
   { label: "Telugu", value: "te" },
   { label: "Kannada", value: "kn" },
+];
+
+const GLOBAL_LANGUAGES = [
+  { label: "All Global Languages", value: "" },
+  { label: "English", value: "en" },
+  { label: "Korean", value: "ko" },
+  { label: "Japanese", value: "ja" },
+  { label: "Spanish", value: "es" },
+  { label: "French", value: "fr" },
+  { label: "German", value: "de" },
+];
+
+const GLOBAL_PAGE_TYPES = [
+  { label: "Movies", value: "movies" },
+  { label: "Webseries", value: "webseries" },
+  { label: "All", value: "all" },
 ];
 
 const HISTORICAL_BLOCKED_SLUGS = new Set([
@@ -385,12 +419,12 @@ function domainConfig(domain) {
   }
 
   return {
-    title: "Hollywood Movies",
-    subtitle: "Hollywood movies with streaming and rental availability across major providers.",
+    title: "Global Movies & Webseries",
+    subtitle: "Global movies and webseries with streaming and rental availability across major providers.",
     apiPath: "/api/v3/hollywood",
-    seoTitle: "Hollywood Movies Streaming Availability",
+    seoTitle: "Global Movies and Webseries Streaming Availability",
     seoDescription:
-      "Explore Hollywood movies and find where they are available to stream, rent, buy, or watch online.",
+      "Explore global movies and webseries and find where they are available to stream, rent, buy, or watch online.",
   };
 }
 
@@ -404,6 +438,7 @@ export default function DomainPage({ domain }) {
   const [language, setLanguage] = useState("");
   const [availability, setAvailability] = useState("all");
   const [provider, setProvider] = useState("");
+  const [globalContentType, setGlobalContentType] = useState("movies");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [serverTotal, setServerTotal] = useState(0);
@@ -435,12 +470,28 @@ export default function DomainPage({ domain }) {
 
       if (searchText) params.set("q", searchText);
       if (year) params.set("year", year);
-      if (domain === "historical" && language) params.set("language", language);
+
+      const isGlobalPage = domain === "hollywood";
+      const useGlobalSearch =
+        isGlobalPage && (globalContentType === "webseries" || globalContentType === "all");
+
+      if (domain === "historical" && language) {
+        params.set("language", language);
+      }
+
+      if (useGlobalSearch) {
+        params.set("type", globalContentType);
+        params.set("region", "global");
+        if (globalContentType === "webseries" && language) {
+          params.set("language", language);
+        }
+      }
 
       if (availability && availability !== "all") params.set("availability", availability);
       if (provider) params.set("provider", provider);
 
-      const res = await fetch(`${API_BASE}${config.apiPath}?${params.toString()}`);
+      const requestPath = useGlobalSearch ? "/api/v3/global-search" : config.apiPath;
+      const res = await fetch(`${API_BASE}${requestPath}?${params.toString()}`);
 
       if (!res.ok) throw new Error(`API failed: ${res.status}`);
 
@@ -448,7 +499,22 @@ export default function DomainPage({ domain }) {
       const rawItems = data.items || data.movies || data.results || [];
       setServerTotal(data.total || rawItems.length || 0);
 
-      const prepared = prepareItems(rawItems, domain, sort, availability, provider);
+      let prepared = prepareItems(rawItems, domain, sort, availability, provider);
+
+      // FLIXYFY_HISTORICAL_LIST_RENDER_FALLBACK_V1:
+      // Historical API can correctly return total while frontend-side filtering removes the first page.
+      // For default Historical page, never hide valid backend rows after a successful API response.
+      if (
+        domain === "historical" &&
+        Array.isArray(rawItems) &&
+        rawItems.length > 0 &&
+        prepared.length === 0 &&
+        (!availability || availability === "all") &&
+        !provider
+      ) {
+        prepared = rawItems.filter((movie) => !isBlockedHistorical(movie));
+      }
+
       setMovies((prev) => (append ? [...prev, ...prepared] : prepared));
       setTotal(data.total || prepared.length || 0);
       setPage(selectedPage);
@@ -471,7 +537,7 @@ export default function DomainPage({ domain }) {
     setPage(1);
     fetchMovies(query, 1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [domain, year, sort, language, availability, provider]);
+  }, [domain, year, sort, language, availability, provider, globalContentType]);
 
   const handleSearch = async (value) => {
     const clean = value.trim();
@@ -487,10 +553,33 @@ export default function DomainPage({ domain }) {
     await fetchMovies(query, page + 1, true);
   };
 
-  const countLabel =
-    total === serverTotal || !serverTotal
-      ? total
-      : `${movies.length} shown`;
+  const activeDomainTitle =
+    domain === "hollywood"
+      ? globalContentType === "webseries"
+        ? "Global Webseries"
+        : globalContentType === "all"
+          ? "Global Movies & Webseries"
+          : "Global Movies"
+      : config.title;
+
+  const activePlaceholder =
+    domain === "hollywood"
+      ? globalContentType === "webseries"
+        ? "Search global webseries..."
+        : globalContentType === "all"
+          ? "Search global movies and webseries..."
+          : "Search global movies..."
+      : `Search ${config.title.toLowerCase()}...`;
+
+  const showGlobalLanguage =
+    domain === "hollywood" && globalContentType === "webseries";
+
+  const countLabel = total || serverTotal || movies.length || 0;
+  const loadedDomainCount = Math.min(movies.length, countLabel || movies.length);
+  const showingResultText =
+    !loading && countLabel > 0
+      ? `Showing ${loadedDomainCount} of ${countLabel}`
+      : "";
 
   return (
     <div className="domain-page">
@@ -512,16 +601,46 @@ export default function DomainPage({ domain }) {
           </div>
         )}
 
+        {domain === "hollywood" && (
+          <div className="domain-type-toggle" role="group" aria-label="Global content type">
+            {GLOBAL_PAGE_TYPES.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                className={`domain-type-btn ${globalContentType === item.value ? "active" : ""}`}
+                onClick={() => {
+                  setGlobalContentType(item.value);
+                  setLanguage("");
+                  setMovies([]);
+                  setPage(1);
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         <SearchBar
           onSearch={handleSearch}
           large
-          suggestionType="movies"
-          suggestionDomain={domain === "indian" ? "indian" : domain}
+          suggestionType={domain === "hollywood" ? globalContentType : "movies"}
+          suggestionDomain={domain === "hollywood" ? "" : domain === "indian" ? "indian" : domain}
           language={domain === "historical" ? language : ""}
-          placeholder={`Search ${config.title.toLowerCase()}...`}
+          placeholder={activePlaceholder}
         />
 
         <div className="domain-filter-row">
+          {showGlobalLanguage && (
+            <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+              {GLOBAL_LANGUAGES.map((item) => (
+                <option key={item.value || "all-global"} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          )}
+
           {domain === "historical" && (
             <select value={language} onChange={(e) => setLanguage(e.target.value)}>
               {HISTORICAL_LANGUAGES.map((item) => (
@@ -573,8 +692,11 @@ export default function DomainPage({ domain }) {
             ? "Loading..."
             : query
             ? `Search Results for "${query}" (${countLabel})`
-            : `${config.title} (${countLabel})`}
+            : `${activeDomainTitle} (${countLabel})`}
         </h2>
+        {showingResultText && (
+          <p className="domain-result-count-note">{showingResultText}</p>
+        )}
 
         {loading ? (
           <SkeletonRow />

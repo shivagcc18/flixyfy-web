@@ -8,9 +8,30 @@ import { setPageSeo } from "../utils/seo";
 import "./HistoricalPeoplePage.css";
 
 const API_BASE =
+  import.meta.env.VITE_API_BASE ||
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
   "https://flixyfy-api-production.up.railway.app";
+
+const PEOPLE_ROW_LIMIT = 25;
+const PEOPLE_SEARCH_LIMIT = 72;
+
+const LANGUAGE_ROWS = [
+  { key: "popular", title: "Popular Historical People", language: "", minMovies: 50 },
+  { key: "hi", title: "Hindi Historical People", language: "hi", minMovies: 25 },
+  { key: "te", title: "Telugu Historical People", language: "te", minMovies: 25 },
+  { key: "ta", title: "Tamil Historical People", language: "ta", minMovies: 25 },
+  { key: "kn", title: "Kannada Historical People", language: "kn", minMovies: 20 },
+  { key: "ml", title: "Malayalam Historical People", language: "ml", minMovies: 20 },
+];
+
+const LANGUAGE_ALIASES = {
+  hi: ["hi", "hindi"],
+  te: ["te", "telugu"],
+  ta: ["ta", "tamil"],
+  kn: ["kn", "kannada"],
+  ml: ["ml", "malayalam"],
+};
 
 function roleLabel(value) {
   const text = String(value || "film person").replace(/_/g, " ");
@@ -61,6 +82,100 @@ function getCareerMovieCount(person, responseData, primaryCount) {
   );
 }
 
+function personName(person) {
+  return (
+    person?.person_name ||
+    person?.display_name ||
+    person?.name ||
+    person?.title ||
+    "Person"
+  );
+}
+
+function personSlug(person) {
+  return (
+    person?.person_slug ||
+    person?.slug ||
+    String(personName(person)).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+  );
+}
+
+function normalizeImageUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  if (raw.startsWith("/")) return `https://image.tmdb.org/t/p/w342${raw}`;
+  return raw;
+}
+
+function personImage(person) {
+  return normalizeImageUrl(
+    person?.profile_url ||
+      person?.profile_image_url ||
+      person?.profile_path ||
+      person?.poster_url ||
+      person?.image_url ||
+      person?.photo_url ||
+      person?.avatar_url
+  );
+}
+
+function personInitials(person) {
+  return personName(person)
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("");
+}
+
+function personLanguageText(person) {
+  return [
+    person?.primary_language_slug,
+    person?.primary_language_name,
+    person?.language_slug,
+    person?.language_name,
+    person?.primary_language,
+    person?.language,
+  ]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase())
+    .join(" ");
+}
+
+function filterPeopleByLanguage(items, language) {
+  if (!language) return items;
+  const aliases = LANGUAGE_ALIASES[language] || [language];
+  const hasLanguageData = items.some((person) => personLanguageText(person));
+  if (!hasLanguageData) return items;
+
+  return items.filter((person) => {
+    const text = personLanguageText(person);
+    return aliases.some((alias) => text.includes(alias));
+  });
+}
+
+async function fetchHistoricalPeople({ query = "", language = "", limit = PEOPLE_ROW_LIMIT, minMovies = 20 }) {
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  params.set("min_movies", String(minMovies));
+
+  if (query.trim()) params.set("q", query.trim());
+  if (language) params.set("language", language);
+
+  const response = await fetch(`${API_BASE}/api/v3/historical/people?${params.toString()}`);
+  if (!response.ok) throw new Error(`People API failed: ${response.status}`);
+
+  const data = await response.json();
+  const rawItems = Array.isArray(data.items) ? data.items : [];
+  const items = filterPeopleByLanguage(rawItems, language).slice(0, limit);
+
+  return {
+    items,
+    total: safeNumber(data.total, rawItems.length || items.length),
+  };
+}
+
 function PersonStats({ person, responseData, total }) {
   const pageMovieCount = getPrimaryMovieCount(person, responseData, total);
   const careerMovieCount = getCareerMovieCount(person, responseData, pageMovieCount);
@@ -82,6 +197,57 @@ function PersonStats({ person, responseData, total }) {
       <span>{safeNumber(person?.youtube_movie_count)} with YouTube</span>
       <span>{roleLabel(person?.primary_role)}</span>
     </div>
+  );
+}
+
+function PersonPosterCard({ person }) {
+  const name = personName(person);
+  const slug = personSlug(person);
+  const image = personImage(person);
+  const movieCount = safeNumber(person?.movie_count || person?.primary_language_movie_count);
+  const youtubeCount = safeNumber(person?.youtube_movie_count);
+  const role = roleLabel(person?.primary_role);
+
+  return (
+    <Link className="historical-person-poster-card" to={`/historical/person/${slug}`}>
+      <div className="historical-person-poster-frame">
+        {image ? (
+          <img src={image} alt={name} loading="lazy" decoding="async" />
+        ) : (
+          <div className="historical-person-initials" aria-hidden="true">
+            {personInitials(person)}
+          </div>
+        )}
+      </div>
+
+      <div className="historical-person-card-body">
+        <h3>{name}</h3>
+        <p>{role}</p>
+        <span>
+          {movieCount} movies
+          {youtubeCount ? ` • ${youtubeCount} YouTube` : ""}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function PeopleRow({ title, people, total }) {
+  if (!people?.length) return null;
+
+  return (
+    <section className="historical-people-row-section">
+      <div className="historical-people-row-heading">
+        <h2>{title} ({total || people.length})</h2>
+        <p>Showing {Math.min(people.length, PEOPLE_ROW_LIMIT)} of {total || people.length}</p>
+      </div>
+
+      <div className="historical-people-card-row">
+        {people.slice(0, PEOPLE_ROW_LIMIT).map((person) => (
+          <PersonPosterCard person={person} key={personSlug(person)} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -132,9 +298,6 @@ export function HistoricalPersonPage({ mode = "historical" }) {
         if (cancelled) return;
 
         const nextPerson = data.person || null;
-
-        // Main visible filmography must be primary-language scoped.
-        // Backend already returns primary-language movies in `items`.
         const nextMovies = Array.isArray(data.items)
           ? data.items
           : Array.isArray(data.primary_language_filmography)
@@ -187,10 +350,10 @@ export function HistoricalPersonPage({ mode = "historical" }) {
   }, [slug, isUnified, languageParam]);
 
   return (
-    <div className="historical-people-page">
+    <div className="historical-people-page historical-person-detail-page">
       <Navbar />
       <main>
-        <section className="historical-people-hero">
+        <section className="historical-person-detail-hero">
           <Link className="historical-people-back" to="/historical/people">
             {isUnified ? "People" : "Historical People"}
           </Link>
@@ -207,7 +370,7 @@ export function HistoricalPersonPage({ mode = "historical" }) {
         </section>
 
         <section className="historical-people-results">
-          <h2>{loading ? "Loading..." : "Movies"}</h2>
+          <h2>{loading ? "Loading..." : `Movies (${total || movies.length})`}</h2>
 
           {loading ? (
             <SkeletonRow />
@@ -226,10 +389,13 @@ export function HistoricalPersonPage({ mode = "historical" }) {
 }
 
 export default function HistoricalPeoplePage() {
-  const [people, setPeople] = useState([]);
+  const [rows, setRows] = useState([]);
+  const [searchResults, setSearchResults] = useState({ items: [], total: 0 });
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const cleanQuery = query.trim();
 
   useEffect(() => {
     setPageSeo({
@@ -248,22 +414,44 @@ export default function HistoricalPeoplePage() {
         setLoading(true);
         setError("");
 
-        const params = new URLSearchParams();
-        params.set("limit", "72");
-        params.set("min_movies", "50");
-        if (query.trim()) params.set("q", query.trim());
+        if (cleanQuery) {
+          const searchData = await fetchHistoricalPeople({
+            query: cleanQuery,
+            limit: PEOPLE_SEARCH_LIMIT,
+            minMovies: 5,
+          });
 
-        const res = await fetch(`${API_BASE}/api/v3/historical/people?${params.toString()}`);
-        if (!res.ok) throw new Error(`People API failed: ${res.status}`);
+          if (cancelled) return;
+          setSearchResults(searchData);
+          setRows([]);
+          return;
+        }
 
-        const data = await res.json();
+        const nextRows = await Promise.all(
+          LANGUAGE_ROWS.map(async (row) => {
+            const data = await fetchHistoricalPeople({
+              language: row.language,
+              limit: PEOPLE_ROW_LIMIT,
+              minMovies: row.minMovies,
+            });
+
+            return {
+              ...row,
+              people: data.items,
+              total: data.total,
+            };
+          })
+        );
+
         if (cancelled) return;
-        setPeople(data.items || []);
+        setRows(nextRows.filter((row) => row.people?.length));
+        setSearchResults({ items: [], total: 0 });
       } catch (err) {
         if (cancelled) return;
         console.error("Historical people API failed:", err);
         setError("People list is not available yet.");
-        setPeople([]);
+        setRows([]);
+        setSearchResults({ items: [], total: 0 });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -274,49 +462,62 @@ export default function HistoricalPeoplePage() {
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [query]);
+  }, [cleanQuery]);
 
   return (
     <div className="historical-people-page">
       <Navbar />
       <main>
-        <section className="historical-people-hero">
-          <Link className="historical-people-back" to="/historical">
-            Historical Movies
-          </Link>
+        <section className="historical-people-controls-v2">
+          <div className="historical-people-tabs-v2">
+            <Link to="/historical">Movies</Link>
+            <Link to="/historical/combinations">Combinations</Link>
+          </div>
 
-          <h1>Historical Movie People</h1>
-          <p>Classic Indian actors, directors, producers, and music directors with filmography pages.</p>
-
-          <input
-            className="historical-people-search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search people..."
-            aria-label="Search historical people"
-          />
+          <form className="historical-people-search-shell" onSubmit={(event) => event.preventDefault()}>
+            <input
+              className="historical-people-search-input"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search historical people..."
+              aria-label="Search historical people"
+            />
+            <button type="submit">Search</button>
+          </form>
         </section>
 
-        <section className="historical-people-list">
+        <section className="historical-people-results-v2">
           {loading ? (
             <SkeletonRow />
           ) : error ? (
             <p className="historical-people-empty">{error}</p>
-          ) : people.length === 0 ? (
+          ) : cleanQuery ? (
+            <>
+              <div className="historical-people-row-heading">
+                <h2>People Search Results ({searchResults.total || searchResults.items.length})</h2>
+                <p>Showing {searchResults.items.length} of {searchResults.total || searchResults.items.length}</p>
+              </div>
+
+              {searchResults.items.length === 0 ? (
+                <p className="historical-people-empty">No people found.</p>
+              ) : (
+                <div className="historical-people-search-grid">
+                  {searchResults.items.map((person) => (
+                    <PersonPosterCard person={person} key={personSlug(person)} />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : rows.length === 0 ? (
             <p className="historical-people-empty">No people found.</p>
           ) : (
-            people.map((person) => (
-              <Link
-                className="historical-person-card"
-                to={`/historical/person/${person.person_slug}`}
-                key={person.person_slug}
-              >
-                <span className="historical-person-name">{person.person_name}</span>
-                <span className="historical-person-role">{roleLabel(person.primary_role)}</span>
-                <span className="historical-person-meta">
-                  {person.movie_count} movies / {person.youtube_movie_count} YouTube
-                </span>
-              </Link>
+            rows.map((row) => (
+              <PeopleRow
+                key={row.key}
+                title={row.title}
+                people={row.people}
+                total={row.total}
+              />
             ))
           )}
         </section>
