@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -412,7 +412,7 @@ function domainConfig(domain) {
       title: "Historical Indian Movies",
       subtitle: "Classic Indian movies from 1960 to 1999 with YouTube full-movie availability where found.",
       apiPath: "/api/v3/historical",
-      seoTitle: "Historical Indian Movies 1960–1999",
+      seoTitle: "Historical Indian Movies 1960â€“1999",
       seoDescription:
         "Explore classic Indian movies from 1960 to 1999 with historical metadata and free YouTube full-movie links where available.",
     };
@@ -726,3 +726,4 @@ export default function DomainPage({ domain }) {
     </div>
   );
 }
+
