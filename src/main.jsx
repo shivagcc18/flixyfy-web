@@ -10,6 +10,12 @@ import { installProviderFetchPatch } from "./utils/providerFetchPatch";
 
 initAnalytics();
 
+// FLIXYFY_FRONTEND_HOME_PROVIDER_FILTER_V6_INSTALL
+try {
+  installProviderFetchPatch();
+} catch (err) {
+  console.warn('FLIXYFY provider fetch patch disabled', err);
+}
 // FLIXYFY_PROVIDER_FILTER_V5_FINAL
 installProviderFetchPatch();
 ReactDOM.createRoot(document.getElementById("root")).render(
