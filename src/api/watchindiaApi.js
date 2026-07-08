@@ -1,4 +1,5 @@
-﻿import API_BASE_URL from "../config/api";
+import API_BASE_URL from "../config/api";
+import { normalizeProviderForApi } from "../utils/providerFetchPatch";
 
 const API_V3 = `${API_BASE_URL}/api/v3`;
 

@@ -9,6 +9,7 @@ import MovieGrid from "../components/MovieGrid";
 import { getHome, getMovies } from "../api/watchindiaApi";
 import { setPageSeo, setJsonLd } from "../utils/seo";
 import { trackFilter, trackLanguageOpen, trackLoadMore } from "../utils/analytics";
+import { normalizeProviderForApi, providerValueForState, providerFromCurrentUrl } from "../utils/providerFetchPatch";
 import "./Home.css";
 
 const API_BASE =
@@ -79,15 +80,15 @@ const AVAILABILITY = [
 const PROVIDERS = [
   { label: "All Providers", value: "" },
   { label: "Netflix", value: "netflix" },
-  { label: "Prime Video", value: "prime" },
+  { label: "Prime Video", value: "prime_video" },
   { label: "JioHotstar", value: "jiohotstar" },
   { label: "ZEE5", value: "zee5" },
   { label: "SonyLIV", value: "sonyliv" },
   { label: "Aha", value: "aha" },
-  { label: "Sun NXT", value: "sunnxt" },
-  { label: "ETV Win", value: "etvwin" },
+  { label: "Sun NXT", value: "sun_nxt" },
+  { label: "ETV Win", value: "etv_win" },
   { label: "MX Player", value: "mx_player" },
-  { label: "Apple TV", value: "apple_tv" },
+  { label: "Apple TV", value: "apple_tv_store" },
   { label: "Disney+", value: "disney_plus" },
   { label: "Hulu", value: "hulu" },
   { label: "Max", value: "max" },
@@ -115,7 +116,7 @@ export default function Home() {
   const [year, setYear] = useState("");
   const [sort, setSort] = useState("popular");
   const [availability, setAvailability] = useState("");
-  const [provider, setProvider] = useState("");
+  const [provider, setProvider] = useState(() => providerFromCurrentUrl());
   const [searchType, setSearchType] = useState("movies");
   const [searchScope, setSearchScope] = useState("indian");
   const [filterTotal, setFilterTotal] = useState(0);
@@ -174,7 +175,7 @@ export default function Home() {
   const activeLanguage = showLanguageFilter ? language : "";
   const activeYear = showYearFilter ? year : "";
   const activeAvailability = showAvailabilityFilter ? availability : "";
-  const activeProvider = showProviderFilter ? provider : "";
+  const activeProvider = showProviderFilter ? providerValueForState(provider) : "";
 
   const showingFiltered = Boolean(
     query ||
@@ -420,14 +421,21 @@ if (requestProvider) {
   };
 
   const handleProviderChange = (value) => {
-    setProvider(value);
-    trackFilter("provider", value || "all");
-  };
+    const normalizedProvider = providerValueForState(value);
+    setProvider(normalizedProvider);
+    trackFilter("provider", normalizedProvider || "all");
 
-  const handleSearchScopeChange = (value) => {
-  setSearchScope(value);
-  setLanguage("");
-  trackFilter("search_scope", value);
+    try {
+      const url = new URL(window.location.href);
+      if (normalizedProvider) {
+        url.searchParams.set("provider", normalizedProvider);
+      } else {
+        url.searchParams.delete("provider");
+      }
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    } catch (_) {
+      // URL sync is noncritical.
+    }
   };
 
   const handleSearchTypeChange = (value) => {
@@ -588,23 +596,6 @@ if (requestProvider) {
                 {item.label}
               </button>
             ))}
-          </div>
-
-          <div className="search-scope-toggle" role="group" aria-label="Search scope">
-            <button
-              type="button"
-              className={`search-scope-btn ${searchScope === "indian" ? "active" : ""}`}
-              onClick={() => handleSearchScopeChange("indian")}
-            >
-              Indian
-            </button>
-            <button
-              type="button"
-              className={`search-scope-btn ${searchScope === "global" ? "active" : ""}`}
-              onClick={() => handleSearchScopeChange("global")}
-            >
-              Global
-            </button>
           </div>
         </div>
       </div>
