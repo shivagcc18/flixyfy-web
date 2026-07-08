@@ -251,7 +251,10 @@ export default function LanguagePage() {
       }
 
       if (provider) {
-        params.set("provider", provider);
+        {
+          const providerForApi = normalizeProviderForApi(provider);
+          if (providerForApi && providerForApi !== "all") params.set("provider", providerForApi);
+        }
       }
 
       const url = `${API_BASE}/api/v3/language/${languageSlug}?${params.toString()}`;

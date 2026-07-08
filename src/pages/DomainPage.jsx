@@ -488,8 +488,10 @@ export default function DomainPage({ domain }) {
       }
 
       if (availability && availability !== "all") params.set("availability", availability);
-      if (provider) params.set("provider", provider);
-
+      if (provider) {
+        const providerForApi = normalizeProviderForApi(provider);
+        if (providerForApi && providerForApi !== "all") params.set("provider", providerForApi);
+      }
       const requestPath = useGlobalSearch ? "/api/v3/global-search" : config.apiPath;
       const res = await fetch(`${API_BASE}${requestPath}?${params.toString()}`);
 

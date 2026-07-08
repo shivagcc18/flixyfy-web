@@ -251,8 +251,10 @@ export default function Home() {
 
 if (selectedSort) params.set("sort", selectedSort);
 if (requestAvailability) params.set("availability", requestAvailability);
-if (requestProvider) params.set("provider", requestProvider);
-
+if (requestProvider) {
+  const providerForApi = normalizeProviderForApi(requestProvider);
+  if (providerForApi && providerForApi !== "all") params.set("provider", providerForApi);
+}
     const res = await fetch(`${API_BASE}/api/v3/global-search?${params.toString()}`);
 
     if (!res.ok) {

@@ -75,7 +75,10 @@ export function getMovies({
   if (year) params.set("year", year);
   if (hasOtt !== "") params.set("has_ott", hasOtt);
   if (isFree !== "") params.set("is_free", isFree);
-  if (provider) params.set("provider", provider);
+  if (provider) {
+    const providerForApi = normalizeProviderForApi(provider);
+    if (providerForApi && providerForApi !== "all") params.set("provider", providerForApi);
+  }
   if (availability) params.set("availability", availability);
 
   return apiGet(`/movies?${params.toString()}`);
