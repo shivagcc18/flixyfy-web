@@ -1,7 +1,7 @@
 import YouTubeLinksSection from "../components/YouTubeLinksSection";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getMovie } from "../api/watchindiaApi";
+import { getMovie } from "../api/flixyfyApi";
 import { trackProviderClick } from "../utils/analytics";
 import { getBestProviderUrl } from "../utils/providerLinks";
 import { getProviderLogo } from "../utils/providerLogos";

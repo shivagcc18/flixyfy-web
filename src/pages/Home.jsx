@@ -6,7 +6,7 @@ import Row from "../components/Row";
 import SearchBar from "../components/SearchBar";
 import MovieGrid from "../components/MovieGrid";
 
-import { getHome, getMovies } from "../api/watchindiaApi";
+import { getHome, getMovies } from "../api/flixyfyApi";
 import { setPageSeo, setJsonLd } from "../utils/seo";
 import { trackFilter, trackLanguageOpen, trackLoadMore } from "../utils/analytics";
 import { normalizeProviderForApi, providerValueForState, providerFromCurrentUrl } from "../utils/providerFetchPatch";
