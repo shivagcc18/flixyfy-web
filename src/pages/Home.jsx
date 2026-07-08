@@ -27,6 +27,24 @@ const API_BASE =
   import.meta.env.VITE_API_URL ||
   "https://flixyfy-api-production.up.railway.app";
 
+// FLIXYFY_HOME_PROVIDER_FETCH_HARDEN_V15
+// Some Vercel environments can define the API base as either root, /api, or /api/v3.
+// Home provider filters must always hit exactly /api/v3/movies.
+function normalizeApiRoot(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\/api\/v3$/i, "")
+    .replace(/\/api$/i, "");
+}
+
+const API_ROOT_CANDIDATES = Array.from(
+  new Set([
+    normalizeApiRoot(API_BASE),
+    "https://flixyfy-api-production.up.railway.app",
+  ].filter(Boolean))
+);
+
 const PAGE_SIZE = 25;
 
 const LANGUAGES = [
@@ -138,18 +156,53 @@ function getTotal(data, items) {
 }
 
 async function fetchApi(path) {
-  const url = `${API_BASE}/api/v3${path}`;
-  const res = await fetch(url, {
-    cache: "no-store",
-    headers: { Accept: "application/json" },
-  });
+  const cleanPath = String(path || "").startsWith("/") ? String(path || "") : `/${path}`;
+  const urls = API_ROOT_CANDIDATES.map((root) => `${root}/api/v3${cleanPath}`);
+  const errors = [];
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`API ${res.status}: ${url} ${text.slice(0, 300)}`);
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        errors.push(`API ${res.status}: ${url} ${text.slice(0, 180)}`);
+        continue;
+      }
+
+      const data = await res.json();
+
+      if (typeof window !== "undefined") {
+        window.__FLIXYFY_HOME_DEBUG__ = {
+          version: "FLIXYFY_HOME_PROVIDER_FETCH_HARDEN_V15",
+          ok: true,
+          url,
+          total: data?.total,
+          items_len: Array.isArray(data?.items) ? data.items.length : null,
+          ts: new Date().toISOString(),
+        };
+      }
+
+      return data;
+    } catch (err) {
+      errors.push(`${url} :: ${err?.message || String(err)}`);
+    }
   }
 
-  return res.json();
+  if (typeof window !== "undefined") {
+    window.__FLIXYFY_HOME_DEBUG__ = {
+      version: "FLIXYFY_HOME_PROVIDER_FETCH_HARDEN_V15",
+      ok: false,
+      path: cleanPath,
+      errors,
+      ts: new Date().toISOString(),
+    };
+  }
+
+  throw new Error(errors.join(" | "));
 }
 
 function buildMoviesPath({
@@ -201,6 +254,7 @@ export default function Home() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [filterError, setFilterError] = useState("");
 
   useEffect(() => {
     setPageSeo({
@@ -403,6 +457,8 @@ export default function Home() {
     append = false
   ) => {
     try {
+      setFilterError("");
+
       if (append) {
         setLoadingMore(true);
       } else {
@@ -438,6 +494,7 @@ export default function Home() {
       if (!append) {
         setResults([]);
         setFilterTotal(0);
+        setFilterError(err?.message || String(err));
       }
     } finally {
       setLoading(false);
@@ -736,7 +793,14 @@ export default function Home() {
           {loading ? (
             <SkeletonRow />
           ) : results.length === 0 ? (
-            <p className="home-empty">No {contentLabel.toLowerCase()} found.</p>
+            <>
+              <p className="home-empty">No {contentLabel.toLowerCase()} found.</p>
+              {filterError && (
+                <p className="home-empty" style={{ opacity: 0.7, fontSize: "12px" }}>
+                  Provider fetch debug: {filterError.slice(0, 260)}
+                </p>
+              )}
+            </>
           ) : (
             <>
               <MovieGrid movies={results} />
