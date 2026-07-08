@@ -1,91 +1,69 @@
-// FLIXYFY_FRONTEND_HOME_PROVIDER_FILTER_V6
-// Frontend-only provider filter repair.
-// Production serving remains v5. This file does not reference or create serving tables.
+// FLIXYFY_HOME_PROVIDER_FILTER_BRIDGE_V7
+// Frontend-only bridge. No DB write. No DDL. v5 serving rule remains backend-side.
 
-const PROVIDER_ALIAS = {
+const PROVIDER_ALIAS_MAP = {
   "": "all",
   all: "all",
   "all providers": "all",
-  "all_provider": "all",
-  "all_providers": "all",
-
+  provider: "all",
   youtube: "youtube",
   yt: "youtube",
-
   netflix: "netflix",
-
   prime: "prime_video",
-  primevideo: "prime_video",
   "prime video": "prime_video",
-  prime_video: "prime_video",
+  primevideo: "prime_video",
   amazonprime: "prime_video",
   "amazon prime": "prime_video",
-  amazon_prime: "prime_video",
+  "amazon prime video": "prime_video",
   amazon_prime_video: "prime_video",
   amazon_prime_video_with_ads: "prime_video",
-
-  hotstar: "jiohotstar",
   jiohotstar: "jiohotstar",
+  hotstar: "jiohotstar",
   "jio hotstar": "jiohotstar",
-  disneyhotstar: "jiohotstar",
-  disney_hotstar: "jiohotstar",
-
+  disney: "jiohotstar",
+  "disney+": "jiohotstar",
   zee5: "zee5",
   sonyliv: "sonyliv",
   "sony liv": "sonyliv",
   aha: "aha",
-
-  sunnxt: "sun_nxt",
   "sun nxt": "sun_nxt",
+  sunnxt: "sun_nxt",
   sun_nxt: "sun_nxt",
-
-  mxplayer: "mx_player",
-  "mx player": "mx_player",
-  mx_player: "mx_player",
-  amazon_mx_player: "mx_player",
-
   shemaroome: "shemaroome",
   "shemaroo me": "shemaroome",
-
-  appletv: "apple_tv_store",
+  "mx player": "mx_player",
+  mxplayer: "mx_player",
+  mx_player: "mx_player",
+  "eros now": "eros_now",
+  eros_now: "eros_now",
   "apple tv": "apple_tv_store",
-  apple_tv: "apple_tv_store",
+  appletv: "apple_tv_store",
   appletvstore: "apple_tv_store",
+  apple_tv: "apple_tv_store",
   apple_tv_store: "apple_tv_store",
-
-  amazonvideo: "amazon_video",
   "amazon video": "amazon_video",
+  amazonvideo: "amazon_video",
   amazon_video: "amazon_video",
-
-  disneyplus: "disney_plus",
-  "disney+": "disney_plus",
-  "disney plus": "disney_plus",
-  disney_plus: "disney_plus",
-
+  "google tv": "google_tv",
+  googletv: "google_tv",
+  google_tv: "google_tv",
+  "google play": "google_play_movies",
+  googleplay: "google_play_movies",
+  google_play: "google_play_movies",
+  google_play_movies: "google_play_movies",
   hulu: "hulu",
   max: "max",
   tubi: "tubi_tv",
+  "tubi tv": "tubi_tv",
   tubi_tv: "tubi_tv",
   plex: "plex",
   peacock: "peacock",
-  paramount: "paramount_plus",
   "paramount+": "paramount_plus",
-  paramount_plus: "paramount_plus",
-  rakutenviki: "rakuten_viki",
-  "rakuten viki": "rakuten_viki",
-  rakuten_viki: "rakuten_viki",
-  kocowa: "kocowa",
-  tving: "tving",
-  wavve: "wavve",
-  watcha: "watcha",
-  "google play": "google_tv",
-  googleplay: "google_tv",
-  google_tv: "google_tv",
-  fandango: "fandango_at_home",
-  fandango_at_home: "fandango_at_home"
+  paramount: "paramount_plus",
+  paramount_plus: "paramount_plus"
 };
 
-const PROVIDER_LABEL = {
+const PROVIDER_DISPLAY = {
   youtube: "YouTube",
   netflix: "Netflix",
   prime_video: "Prime Video",
@@ -94,186 +72,271 @@ const PROVIDER_LABEL = {
   sonyliv: "SonyLIV",
   aha: "Aha",
   sun_nxt: "Sun NXT",
-  mx_player: "MX Player",
   shemaroome: "ShemarooMe",
+  mx_player: "MX Player",
+  eros_now: "Eros Now",
   apple_tv_store: "Apple TV",
   amazon_video: "Amazon Video",
-  disney_plus: "Disney+",
+  google_tv: "Google TV",
+  google_play_movies: "Google Play",
   hulu: "Hulu",
   max: "Max",
   tubi_tv: "Tubi",
   plex: "Plex",
   peacock: "Peacock",
-  paramount_plus: "Paramount+",
-  rakuten_viki: "Rakuten Viki",
-  kocowa: "Kocowa",
-  tving: "TVING",
-  wavve: "Wavve",
-  watcha: "Watcha",
-  google_tv: "Google TV",
-  fandango_at_home: "Fandango"
+  paramount_plus: "Paramount+"
 };
 
 export function normalizeProviderForApi(value) {
-  const raw = String(value ?? "all").trim();
-  const key = raw.toLowerCase().replace(/&/g, "and").replace(/[.]/g, "").replace(/\s+/g, "_");
-  const spaced = raw.toLowerCase().trim().replace(/\s+/g, " ");
-  return PROVIDER_ALIAS[raw] || PROVIDER_ALIAS[spaced] || PROVIDER_ALIAS[key] || key.replace(/[^a-z0-9_+]/g, "_");
+  const raw = String(value || "all")
+    .trim()
+    .toLowerCase()
+    .replace(/%20/g, " ")
+    .replace(/[+]+/g, " ")
+    .replace(/[–—]/g, "-")
+    .replace(/\s+/g, " ");
+
+  if (Object.prototype.hasOwnProperty.call(PROVIDER_ALIAS_MAP, raw)) {
+    return PROVIDER_ALIAS_MAP[raw];
+  }
+
+  const compact = raw.replace(/[\s\-]+/g, "_");
+  if (Object.prototype.hasOwnProperty.call(PROVIDER_ALIAS_MAP, compact)) {
+    return PROVIDER_ALIAS_MAP[compact];
+  }
+
+  return compact || "all";
 }
 
-function providerLabel(provider) {
-  return PROVIDER_LABEL[provider] || String(provider || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function isProviderAll(provider) {
+function providerDisplayName(provider) {
   const key = normalizeProviderForApi(provider);
-  return !key || key === "all" || key === "all_providers";
+  return PROVIDER_DISPLAY[key] || String(provider || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function cloneHeaders(headers) {
-  const out = new Headers(headers || {});
-  out.set("content-type", "application/json; charset=utf-8");
-  out.set("x-flixyfy-provider-home-patch", VERSION);
-  return out;
-}
-
-function normalizeUrlProviderParams(url) {
-  const rawProvider = url.searchParams.get("provider") || url.searchParams.get("provider_key");
-  if (!rawProvider) return null;
-
-  const provider = normalizeProviderForApi(rawProvider);
-  url.searchParams.delete("provider_key");
-
-  if (isProviderAll(provider)) {
-    url.searchParams.delete("provider");
+function providerFromLocation() {
+  if (typeof window === "undefined") return "all";
+  try {
+    const params = new URLSearchParams(window.location.search || "");
+    return normalizeProviderForApi(params.get("provider") || params.get("provider_key") || "all");
+  } catch (_err) {
     return "all";
   }
-
-  url.searchParams.set("provider", provider);
-  return provider;
 }
 
-function providerHomePayload(provider, moviesPayload) {
-  const items = Array.isArray(moviesPayload?.items) ? moviesPayload.items : [];
-  const total = Number(moviesPayload?.total || items.length || 0);
-  const page = Number(moviesPayload?.page || 1);
-  const limit = Number(moviesPayload?.limit || items.length || 24) || 24;
-  const label = providerLabel(provider);
-
-  const section = {
-    key: "provider_popular",
-    slug: "provider_popular",
-    title: `${label} - Popular Movies`,
-    label: `${label} - Popular Movies`,
-    items,
-    movies: items,
-    data: items,
-    total
-  };
-
-  return {
-    provider,
-    provider_label: label,
-    provider_filtered: true,
-    source: moviesPayload?.source || "frontend_provider_home_bridge_v5",
-    source_domain: moviesPayload?.source_domain || moviesPayload?.domain || "current",
-    domain: moviesPayload?.domain || "current",
-    total,
-    count: total,
-    page,
-    limit,
-    pages: Number(moviesPayload?.pages || Math.max(1, Math.ceil(total / Math.max(1, limit)))),
-    items,
-    movies: items,
-    results: items,
-    trending: items,
-    popular: items,
-    latest: items,
-    free: items,
-    hindi: items,
-    telugu: items,
-    tamil: items,
-    sections: [section],
-    provider_section: section
-  };
-}
-
-function shouldBridgeHome(url, provider) {
-  if (!provider || isProviderAll(provider)) return false;
-  return url.pathname === "/api/v3/home" || url.pathname.endsWith("/api/v3/home");
-}
-
-function buildMoviesUrlFromHome(url, provider) {
-  const next = new URL(url.href);
-  next.pathname = next.pathname.replace(/\/api\/v3\/home$/, "/api/v3/movies");
-  next.searchParams.set("provider", provider);
-  next.searchParams.delete("provider_key");
-  if (!next.searchParams.get("limit")) next.searchParams.set("limit", "24");
-  if (!next.searchParams.get("page")) next.searchParams.set("page", "1");
-  return next;
-}
-
-async function fetchProviderHome(originalFetch, url, init, provider) {
-  const moviesUrl = buildMoviesUrlFromHome(url, provider);
-  const response = await originalFetch(moviesUrl.toString(), init);
-
-  if (!response || !response.ok) return response;
-
-  let data;
-  try {
-    data = await response.clone().json();
-  } catch (_err) {
-    return response;
-  }
-
-  const payload = providerHomePayload(provider, data);
-  return new Response(JSON.stringify(payload), {
-    status: 200,
-    statusText: "OK",
-    headers: cloneHeaders(response.headers)
-  });
-}
-
-function toUrl(input) {
+function urlFromFetchInput(input) {
+  if (typeof window === "undefined") return null;
   try {
     if (typeof input === "string") return new URL(input, window.location.origin);
-    if (input instanceof URL) return new URL(input.href);
-    if (typeof Request !== "undefined" && input instanceof Request) return new URL(input.url, window.location.origin);
+    if (input && typeof input.url === "string") return new URL(input.url, window.location.origin);
   } catch (_err) {
     return null;
   }
   return null;
 }
 
-function rebuildInput(input, url) {
+function rebuildFetchInput(input, url) {
   if (typeof input === "string") return url.toString();
-  if (input instanceof URL) return url;
-  if (typeof Request !== "undefined" && input instanceof Request) {
+  if (input && typeof Request !== "undefined" && input instanceof Request) {
     return new Request(url.toString(), input);
   }
-  return input;
+  return url.toString();
+}
+
+function isFlixyfyApiPath(url) {
+  return /\/api\/v3\//.test(url.pathname || "");
+}
+
+function getRequestProvider(url) {
+  const direct = normalizeProviderForApi(url.searchParams.get("provider") || url.searchParams.get("provider_key") || "all");
+  if (direct && direct !== "all") return direct;
+  const fromLocation = providerFromLocation();
+  return fromLocation && fromLocation !== "all" ? fromLocation : "all";
+}
+
+function carryCommonParams(sourceUrl, targetUrl) {
+  const keys = ["language", "language_slug", "year", "sort", "availability", "type", "page", "limit", "q"];
+  for (const key of keys) {
+    const value = sourceUrl.searchParams.get(key);
+    if (value !== null && value !== "") targetUrl.searchParams.set(key, value);
+  }
+}
+
+function buildMoviesProviderUrl(sourceUrl, provider) {
+  const url = new URL(sourceUrl.toString());
+  url.pathname = "/api/v3/movies";
+  url.search = "";
+  carryCommonParams(sourceUrl, url);
+  url.searchParams.set("provider", provider);
+  url.searchParams.set("provider_key", provider);
+  if (!url.searchParams.get("limit")) url.searchParams.set("limit", "24");
+  if (!url.searchParams.get("page")) url.searchParams.set("page", "1");
+  return url;
+}
+
+function buildHomePayloadFromMovies(provider, moviesJson) {
+  const items = Array.isArray(moviesJson?.items) ? moviesJson.items : [];
+  const total = Number(moviesJson?.total || items.length || 0);
+  const label = providerDisplayName(provider);
+
+  const sectionObject = {
+    popular: items,
+    trending: items,
+    latest: items,
+    free: items,
+    hindi: items,
+    telugu: items,
+    tamil: items,
+    movies: items,
+    provider: items
+  };
+
+  const sectionArray = [
+    { key: "popular", slug: "popular", title: `${label} - Popular Movies`, items },
+    { key: "provider", slug: "provider", title: `${label} Movies`, items },
+    { key: "trending", slug: "trending", title: `${label} Trending`, items }
+  ];
+
+  return {
+    provider_filtered: true,
+    provider,
+    provider_key: provider,
+    provider_label: label,
+    total,
+    count: items.length,
+    page: moviesJson?.page || 1,
+    pages: moviesJson?.pages || 1,
+    limit: moviesJson?.limit || items.length || 24,
+    items,
+    movies: items,
+    results: items,
+    popular: items,
+    trending: items,
+    latest: items,
+    free: items,
+    hindi: items,
+    telugu: items,
+    tamil: items,
+    sections: sectionObject,
+    section_list: sectionArray,
+    rows: sectionArray,
+    data: {
+      items,
+      movies: items,
+      popular: items,
+      trending: items,
+      sections: sectionObject,
+      total
+    },
+    source: "home_provider_bridge_v7_movies_endpoint"
+  };
+}
+
+function jsonResponse(payload, baseResponse) {
+  const headers = new Headers(baseResponse?.headers || {});
+  headers.set("content-type", "application/json; charset=utf-8");
+  headers.set("x-flixyfy-home-provider-bridge", "v7");
+  return new Response(JSON.stringify(payload), {
+    status: baseResponse?.status || 200,
+    statusText: baseResponse?.statusText || "OK",
+    headers
+  });
+}
+
+async function fetchHomeProviderPayload(originalFetch, input, init, url, provider) {
+  const moviesUrl = buildMoviesProviderUrl(url, provider);
+  const response = await originalFetch(rebuildFetchInput(input, moviesUrl), init);
+  const clone = response.clone();
+  let payload;
+  try {
+    const moviesJson = await clone.json();
+    payload = buildHomePayloadFromMovies(provider, moviesJson);
+  } catch (_err) {
+    return response;
+  }
+  return jsonResponse(payload, response);
+}
+
+function maybeInjectProviderIntoUrl(input, url) {
+  const provider = getRequestProvider(url);
+  if (!provider || provider === "all") return null;
+
+  if (!isFlixyfyApiPath(url)) return null;
+  const path = url.pathname || "";
+  const eligible = path.endsWith("/api/v3/home") || path.endsWith("/api/v3/movies") || path.endsWith("/api/v3/search");
+  if (!eligible) return null;
+
+  if (url.searchParams.get("provider") || url.searchParams.get("provider_key")) return null;
+
+  const next = new URL(url.toString());
+  next.searchParams.set("provider", provider);
+  next.searchParams.set("provider_key", provider);
+  return rebuildFetchInput(input, next);
+}
+
+function optionProviderKey(option) {
+  return normalizeProviderForApi(option?.value || option?.textContent || option?.label || "all");
+}
+
+function syncProviderSelectFromUrlOnce() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  const provider = providerFromLocation();
+  if (!provider || provider === "all") return;
+
+  const selects = Array.from(document.querySelectorAll("select"));
+  for (const select of selects) {
+    const options = Array.from(select.options || []);
+    const hasProviderOptions = options.some((option) => optionProviderKey(option) === provider) &&
+      options.some((option) => optionProviderKey(option) === "all");
+
+    if (!hasProviderOptions) continue;
+
+    const match = options.find((option) => optionProviderKey(option) === provider);
+    if (!match) continue;
+
+    if (select.value !== match.value) {
+      select.value = match.value;
+      select.dispatchEvent(new Event("input", { bubbles: true }));
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+}
+
+function scheduleProviderUrlSync() {
+  if (typeof window === "undefined") return;
+  const delays = [0, 100, 350, 900, 1800];
+  for (const delay of delays) {
+    window.setTimeout(syncProviderSelectFromUrlOnce, delay);
+  }
 }
 
 export function installProviderFetchPatch() {
   if (typeof window === "undefined" || typeof window.fetch !== "function") return;
-  if (window.__FLIXYFY_PROVIDER_FETCH_PATCH_V6_INSTALLED__) return;
+  if (window.__FLIXYFY_HOME_PROVIDER_FILTER_BRIDGE_V7_INSTALLED__) {
+    scheduleProviderUrlSync();
+    return;
+  }
 
   const originalFetch = window.fetch.bind(window);
 
   window.fetch = async function flixyfyProviderFetch(input, init) {
-    const url = toUrl(input);
-    if (!url || !url.pathname.includes("/api/v3/")) {
-      return originalFetch(input, init);
+    const url = urlFromFetchInput(input);
+    if (!url) return originalFetch(input, init);
+
+    const path = url.pathname || "";
+    const provider = getRequestProvider(url);
+
+    if (path.endsWith("/api/v3/home") && provider && provider !== "all") {
+      return fetchHomeProviderPayload(originalFetch, input, init, url, provider);
     }
 
-    const provider = normalizeUrlProviderParams(url);
+    const injectedInput = maybeInjectProviderIntoUrl(input, url);
+    if (injectedInput) return originalFetch(injectedInput, init);
 
-    if (shouldBridgeHome(url, provider)) {
-      return fetchProviderHome(originalFetch, url, init, provider);
-    }
-
-    return originalFetch(rebuildInput(input, url), init);
+    return originalFetch(input, init);
   };
 
-  window.__FLIXYFY_PROVIDER_FETCH_PATCH_V6_INSTALLED__ = true;
+  window.__FLIXYFY_HOME_PROVIDER_FILTER_BRIDGE_V7_INSTALLED__ = true;
+  scheduleProviderUrlSync();
 }
+
+export default installProviderFetchPatch;

@@ -7,6 +7,15 @@ import "./index.css";
 import { initAnalytics } from "./utils/analytics";
 import { installProviderFetchPatch } from "./utils/providerFetchPatch";
 
+// FLIXYFY_HOME_PROVIDER_FILTER_BRIDGE_V7_INSTALL
+try {
+  installProviderFetchPatch();
+} catch (error) {
+  console.warn("FLIXYFY_HOME_PROVIDER_FILTER_BRIDGE_V7_INSTALL_ERROR", error);
+}
+// END_FLIXYFY_HOME_PROVIDER_FILTER_BRIDGE_V7_INSTALL
+
+
 
 initAnalytics();
 
