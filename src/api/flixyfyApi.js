@@ -70,7 +70,11 @@ export function getMovies({
 
   params.set("page", page);
   params.set("limit", limit);
-  params.set("sort", sort);
+  // FLIXYFY_PROVIDER_SORT_POPULAR_OMIT_V13
+  // Backend default is already popular. Sending sort=popular with provider filters can return zero,
+  // so only send explicit non-default sorts.
+  const cleanSort = String(sort || "").trim();
+  if (cleanSort && cleanSort !== "popular") params.set("sort", cleanSort);
 
   if (language) params.set("language", language);
   if (year) params.set("year", year);

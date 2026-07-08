@@ -250,7 +250,8 @@ export default function Home() {
     params.set("language", requestLanguage);
     }
 
-if (selectedSort) params.set("sort", selectedSort);
+// FLIXYFY_GLOBAL_SEARCH_SORT_POPULAR_OMIT_V13
+if (selectedSort && selectedSort !== "popular") params.set("sort", selectedSort);
 if (requestAvailability) params.set("availability", requestAvailability);
 if (requestProvider) {
   const providerForApi = normalizeProviderForApi(requestProvider);
