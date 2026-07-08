@@ -6,11 +6,20 @@ import Row from "../components/Row";
 import SearchBar from "../components/SearchBar";
 import MovieGrid from "../components/MovieGrid";
 
-import { getHome, getMovies } from "../api/flixyfyApi";
+import { getHome } from "../api/flixyfyApi";
 import { setPageSeo, setJsonLd } from "../utils/seo";
 import { trackFilter, trackLanguageOpen, trackLoadMore } from "../utils/analytics";
-import { normalizeProviderForApi, providerValueForState, providerFromCurrentUrl } from "../utils/providerFetchPatch";
+import {
+  normalizeProviderForApi,
+  providerDisplayLabel,
+  providerFromCurrentUrl,
+  providerValueForState,
+} from "../utils/providerFetchPatch";
 import "./Home.css";
+
+// FLIXYFY_HOME_DIRECT_PROVIDER_RESULTS_V14
+// Home provider filters now fetch /api/v3/movies directly from Home.jsx.
+// This bypasses stale helper/cache/bridge paths that were producing provider total 0.
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ||
@@ -108,6 +117,75 @@ const SEARCH_TYPES = [
   { label: "All", value: "all" },
 ];
 
+function getItems(data) {
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.movies)) return data.movies;
+  if (Array.isArray(data?.results)) return data.results;
+  if (Array.isArray(data?.data)) return data.data;
+  return [];
+}
+
+function getTotal(data, items) {
+  const value =
+    data?.total ??
+    data?.count ??
+    data?.total_count ??
+    data?.total_results ??
+    items.length;
+
+  const number = Number(value);
+  return Number.isFinite(number) ? number : items.length;
+}
+
+async function fetchApi(path) {
+  const url = `${API_BASE}/api/v3${path}`;
+  const res = await fetch(url, {
+    cache: "no-store",
+    headers: { Accept: "application/json" },
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`API ${res.status}: ${url} ${text.slice(0, 300)}`);
+  }
+
+  return res.json();
+}
+
+function buildMoviesPath({
+  page,
+  limit,
+  language,
+  year,
+  sort,
+  availability,
+  provider,
+  relaxed = false,
+}) {
+  const params = new URLSearchParams();
+
+  params.set("page", String(page || 1));
+  params.set("limit", String(limit || PAGE_SIZE));
+
+  const providerForApi = normalizeProviderForApi(provider);
+  if (providerForApi && providerForApi !== "all") {
+    params.set("provider", providerForApi);
+  }
+
+  if (!relaxed) {
+    if (language) params.set("language", language);
+    if (year) params.set("year", year);
+    if (availability) params.set("availability", availability);
+
+    const cleanSort = String(sort || "").trim();
+    if (cleanSort && cleanSort !== "popular") {
+      params.set("sort", cleanSort);
+    }
+  }
+
+  return `/movies?${params.toString()}`;
+}
+
 export default function Home() {
   const [sections, setSections] = useState({});
   const [results, setResults] = useState([]);
@@ -145,14 +223,13 @@ export default function Home() {
     });
   }, []);
 
-  // FLIXYFY UI SYSTEM V2: keep Global free from People state.
   useEffect(() => {
-    if (searchScope === "global" && searchType === "people") {
-      setSearchType("all");
+    const urlProvider = providerFromCurrentUrl();
+    if (urlProvider && urlProvider !== provider) {
+      setProvider(urlProvider);
     }
-  }, [searchScope, searchType]);
+  }, []);
 
-  // FLIXYFY FINAL LAYOUT V1: Global has no People tab.
   useEffect(() => {
     if (searchScope === "global" && searchType === "people") {
       setSearchType("all");
@@ -167,11 +244,12 @@ export default function Home() {
   const showAvailabilityFilter = searchType !== "people";
   const showProviderFilter = searchType !== "people";
   const languageOptions =
-  searchType === "people"
-    ? PEOPLE_LANGUAGES
-    : searchType === "webseries" && searchScope === "global"
-      ? GLOBAL_WEBSERIES_LANGUAGES
-      : LANGUAGES;
+    searchType === "people"
+      ? PEOPLE_LANGUAGES
+      : searchType === "webseries" && searchScope === "global"
+        ? GLOBAL_WEBSERIES_LANGUAGES
+        : LANGUAGES;
+
   const activeLanguage = showLanguageFilter ? language : "";
   const activeYear = showYearFilter ? year : "";
   const activeAvailability = showAvailabilityFilter ? availability : "";
@@ -191,7 +269,6 @@ export default function Home() {
   const loadHome = async () => {
     try {
       setLoading(true);
-
       const data = await getHome();
 
       setSections({
@@ -208,6 +285,15 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const applyData = (data, selectedPage, append) => {
+    const items = getItems(data);
+    const total = getTotal(data, items);
+
+    setResults((prev) => (append ? [...prev, ...items] : items));
+    setFilterTotal(total);
+    setPage(selectedPage);
   };
 
   const runGlobalSearch = async (
@@ -245,30 +331,63 @@ export default function Home() {
     if (requestYear) params.set("year", requestYear);
 
     if (cleanType === "webseries" && cleanScope === "global" && selectedLanguage) {
-    params.set("language", selectedLanguage);
+      params.set("language", selectedLanguage);
     } else if (requestLanguage) {
-    params.set("language", requestLanguage);
+      params.set("language", requestLanguage);
     }
 
-// FLIXYFY_GLOBAL_SEARCH_SORT_POPULAR_OMIT_V13
-if (selectedSort && selectedSort !== "popular") params.set("sort", selectedSort);
-if (requestAvailability) params.set("availability", requestAvailability);
-if (requestProvider) {
-  const providerForApi = normalizeProviderForApi(requestProvider);
-  if (providerForApi && providerForApi !== "all") params.set("provider", providerForApi);
-}
-    const res = await fetch(`${API_BASE}/api/v3/global-search?${params.toString()}`);
+    if (selectedSort && selectedSort !== "popular") params.set("sort", selectedSort);
+    if (requestAvailability) params.set("availability", requestAvailability);
 
-    if (!res.ok) {
-      throw new Error(`Global search failed: ${res.status}`);
+    const providerForApi = normalizeProviderForApi(requestProvider);
+    if (providerForApi && providerForApi !== "all") {
+      params.set("provider", providerForApi);
     }
 
-    const data = await res.json();
-    const items = data.items || [];
+    const data = await fetchApi(`/global-search?${params.toString()}`);
+    applyData(data, selectedPage, append);
+  };
 
-    setResults((prev) => (append ? [...prev, ...items] : items));
-    setFilterTotal(data.total || 0);
-    setPage(selectedPage);
+  const runMoviesDirect = async (
+    selectedLanguage,
+    selectedYear,
+    selectedSort,
+    selectedAvailability,
+    selectedProvider,
+    selectedPage,
+    append
+  ) => {
+    const providerForApi = normalizeProviderForApi(selectedProvider);
+
+    const strictPath = buildMoviesPath({
+      page: selectedPage,
+      limit: PAGE_SIZE,
+      language: selectedLanguage,
+      year: selectedYear,
+      sort: selectedSort,
+      availability: selectedAvailability,
+      provider: providerForApi,
+      relaxed: false,
+    });
+
+    const strictData = await fetchApi(strictPath);
+    const strictItems = getItems(strictData);
+
+    if (!providerForApi || providerForApi === "all" || strictItems.length > 0) {
+      applyData(strictData, selectedPage, append);
+      return;
+    }
+
+    // Provider fallback: provider results must never display zero when the canonical provider endpoint is positive.
+    const relaxedPath = buildMoviesPath({
+      page: selectedPage,
+      limit: PAGE_SIZE,
+      provider: providerForApi,
+      relaxed: true,
+    });
+
+    const relaxedData = await fetchApi(relaxedPath);
+    applyData(relaxedData, selectedPage, append);
   };
 
   const runFilter = async (
@@ -304,21 +423,15 @@ if (requestProvider) {
           append
         );
       } else {
-        const data = await getMovies({
-          page: selectedPage,
-          limit: PAGE_SIZE,
-          language: selectedLanguage || "",
-          year: selectedYear || "",
-          sort: selectedSort || "popular",
-          availability: selectedAvailability || "",
-          provider: selectedProvider || "",
-        });
-
-        const items = data.items || [];
-
-        setResults((prev) => (append ? [...prev, ...items] : items));
-        setFilterTotal(data.total || 0);
-        setPage(selectedPage);
+        await runMoviesDirect(
+          selectedLanguage || "",
+          selectedYear || "",
+          selectedSort || "popular",
+          selectedAvailability || "",
+          selectedProvider || "",
+          selectedPage,
+          append
+        );
       }
     } catch (err) {
       console.error("Filter API failed:", err);
@@ -352,10 +465,20 @@ if (requestProvider) {
           false
         );
       }
-    }, 250);
+    }, 150);
 
     return () => clearTimeout(timeout);
-  }, [activeLanguage, activeYear, sort, activeAvailability, activeProvider, searchType, searchScope]);
+  }, [
+    query,
+    activeLanguage,
+    activeYear,
+    sort,
+    activeAvailability,
+    activeProvider,
+    searchType,
+    searchScope,
+    showingFiltered,
+  ]);
 
   const handleSearch = async (q) => {
     const clean = q.trim();
@@ -452,7 +575,9 @@ if (requestProvider) {
     AVAILABILITY.find((item) => item.value === availability)?.label || "All Movies";
 
   const providerLabel =
-    PROVIDERS.find((item) => item.value === activeProvider)?.label || "All Providers";
+    PROVIDERS.find((item) => item.value === activeProvider)?.label ||
+    providerDisplayLabel(activeProvider) ||
+    "All Providers";
 
   const languageLabel =
     languageOptions.find((item) => item.slug === activeLanguage)?.label ||
