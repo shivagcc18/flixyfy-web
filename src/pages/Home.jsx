@@ -608,6 +608,7 @@ export default function Home() {
   };
 
   const handleAvailabilityChange = (value) => {
+    if (String(value || "").toLowerCase().includes("free")) { setProvider("youtube"); syncProviderToUrl("youtube"); }
     setAvailability(value);
     trackFilter("availability", value || "all");
   };
