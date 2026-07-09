@@ -159,18 +159,10 @@ async function fetchApiUncached(cleanPath) {
 
   for (const url of urls) {
     try {
-      const res = await fetch(url, {
+      const data = await fetchFlixyfyJson(url, {
         cache: "no-store",
         headers: { Accept: "application/json" },
       });
-
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        errors.push(`API ${res.status}: ${url} ${text.slice(0, 180)}`);
-        continue;
-      }
-
-      const data = await res.json();
 
       if (typeof window !== "undefined") {
         window.__FLIXYFY_HOME_DEBUG__ = {
@@ -345,7 +337,7 @@ export default function Home() {
       const data = await getHome();
 
       setSections({
-        "Popular Movies": data.trending || [],
+        "Indian Movies": data.trending || [],
         Latest: data.latest || [],
         "Free to Watch": data.free || [],
         "Hindi Movies": data.hindi || [],

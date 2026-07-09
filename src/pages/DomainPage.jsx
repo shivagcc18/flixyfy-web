@@ -6,7 +6,7 @@ import MovieGrid from "../components/MovieGrid";
 import SkeletonRow from "../components/SkeletonRow";
 import SearchBar from "../components/SearchBar";
 import { setPageSeo } from "../utils/seo";
-import { fetchFlixyfyJson, normalizeProviderForApi, providerFromCurrentUrl, providerValueForState, syncProviderToUrl } from "../utils/providerFetchPatch";
+import { fetchFlixyfyJson, normalizeProviderForApi, providerDisplayLabel, providerFromCurrentUrl, providerValueForState, syncProviderToUrl } from "../utils/providerFetchPatch";
 import "./DomainPage.css";
 
 const API_BASE =
@@ -40,7 +40,7 @@ const HOLLYWOOD_PROVIDERS = [
   { label: "All Providers", value: "" },
   { label: "Netflix", value: "netflix" },
   { label: "Prime Video", value: "prime_video" },
-  { label: "Apple TV", value: "apple_tv" },
+  { label: "Apple TV", value: "apple_tv_store" },
   { label: "Disney+", value: "disney_plus" },
   { label: "Max", value: "max" },
   { label: "Hulu", value: "hulu" },
@@ -70,7 +70,7 @@ const HISTORICAL_PROVIDERS = [
   { label: "ShemarooMe", value: "shemaroo" },
   { label: "Prime Video", value: "prime_video" },
   { label: "Aha", value: "aha" },
-  { label: "Sun NXT", value: "sunnxt" },
+  { label: "Sun NXT", value: "sun_nxt" },
   { label: "Eros Now", value: "eros_now" },
   { label: "MX Player", value: "mx_player" },
   { label: "ZEE5", value: "zee5" },
@@ -367,7 +367,7 @@ function getPopularScore(movie, index, domain) {
 function prepareItems(items, domain, sort, availability, provider) {
   if (!Array.isArray(items)) return [];
 
-  const apiFilteredProviders = ["hollywood", "indian", "historical", "webseries"].includes(domain);
+  const apiFilteredProviders = ["indian", "current", "movies", "hollywood", "global", "historical", "webseries", "web-series", "series"].includes(domain);
 
   return [...items]
     .filter((movie) => {
