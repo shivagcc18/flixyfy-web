@@ -1,44 +1,123 @@
-
-// FLIXYFY_FILTER_RESTORE_WEBseries_SPEED_V5
-// Runtime helpers only. Keeps real React filters; hides only duplicate All Titles/All Movies select.
-// Adds cached GET reads, provider normalization, Indian heading count, Free-to-watch -> YouTube default.
+// FLIXYFY_FILTER_RESTORE_V6_EXACT
+// Runtime UI stabilizer + provider normalization + cached JSON reads.
+// Purpose:
+// - Restore only behavior, not destructive JSX changes.
+// - Hide only duplicate All Titles / All Movies select.
+// - Keep Language / Year / Sort / Provider filters visible.
+// - Free to Watch selects YouTube provider.
+// - Home heading is Indian Movies (full count).
+// - Small GET cache/dedupe for faster repeat clicks.
 
 const PROVIDER_ALIASES = {
-  "": "all", all: "all", "all provider": "all", "all providers": "all", all_provider: "all", all_providers: "all",
-  youtube: "youtube", yt: "youtube", "you tube": "youtube",
+  "": "all",
+  all: "all",
+  "all provider": "all",
+  "all providers": "all",
+  all_provider: "all",
+  all_providers: "all",
+  youtube: "youtube",
+  "you tube": "youtube",
+  yt: "youtube",
   netflix: "netflix",
-  prime: "prime_video", "prime video": "prime_video", primevideo: "prime_video", prime_video: "prime_video", "amazon prime": "prime_video", "amazon prime video": "prime_video", amazon_prime_video: "prime_video", amazon_prime_video_with_ads: "prime_video",
-  jiohotstar: "jiohotstar", "jio hotstar": "jiohotstar", hotstar: "jiohotstar", "disney hotstar": "jiohotstar",
-  zee5: "zee5", "zee 5": "zee5",
-  sonyliv: "sonyliv", "sony liv": "sonyliv",
+  prime: "prime_video",
+  "prime video": "prime_video",
+  primevideo: "prime_video",
+  prime_video: "prime_video",
+  "amazon prime": "prime_video",
+  "amazon prime video": "prime_video",
+  amazon_prime_video: "prime_video",
+  amazon_prime_video_with_ads: "prime_video",
+  jiohotstar: "jiohotstar",
+  "jio hotstar": "jiohotstar",
+  hotstar: "jiohotstar",
+  "disney hotstar": "jiohotstar",
+  zee5: "zee5",
+  "zee 5": "zee5",
+  sonyliv: "sonyliv",
+  "sony liv": "sonyliv",
   aha: "aha",
-  sunnxt: "sun_nxt", "sun nxt": "sun_nxt", sun_nxt: "sun_nxt",
-  etvwin: "etv_win", "etv win": "etv_win", etv_win: "etv_win",
-  mxplayer: "mx_player", "mx player": "mx_player", mx_player: "mx_player", amazon_mx_player: "mx_player",
-  shemaroome: "shemaroome", "shemaroo me": "shemaroome",
-  "eros now": "eros_now", eros_now: "eros_now",
-  "apple tv": "apple_tv_store", appletv: "apple_tv_store", apple_tv: "apple_tv_store", "apple tv store": "apple_tv_store", apple_tv_store: "apple_tv_store", itunes: "apple_tv_store",
-  "amazon video": "amazon_video", amazon_video: "amazon_video",
-  "google tv": "google_tv", google_tv: "google_tv", "google play": "google_tv",
-  disney: "disney_plus", "disney+": "disney_plus", "disney plus": "disney_plus", disney_plus: "disney_plus",
-  hulu: "hulu", max: "max", "hbo max": "max", hbo_max: "max", plex: "plex",
-  viki: "viki", "rakuten viki": "viki", kocowa: "kocowa", tving: "tving", wavve: "wavve", watcha: "watcha",
-  "coupang play": "coupang_play", coupang_play: "coupang_play",
-  tubi: "tubi_tv", "tubi tv": "tubi_tv", tubi_tv: "tubi_tv",
+  sunnxt: "sun_nxt",
+  "sun nxt": "sun_nxt",
+  sun_nxt: "sun_nxt",
+  etvwin: "etv_win",
+  "etv win": "etv_win",
+  etv_win: "etv_win",
+  mxplayer: "mx_player",
+  "mx player": "mx_player",
+  mx_player: "mx_player",
+  "apple tv": "apple_tv_store",
+  apple_tv: "apple_tv_store",
+  "apple tv store": "apple_tv_store",
+  apple_tv_store: "apple_tv_store",
+  itunes: "apple_tv_store",
+  "amazon video": "amazon_video",
+  amazon_video: "amazon_video",
+  "google tv": "google_tv",
+  google_tv: "google_tv",
+  "google play": "google_tv",
+  disney: "disney_plus",
+  "disney+": "disney_plus",
+  "disney plus": "disney_plus",
+  disney_plus: "disney_plus",
+  hulu: "hulu",
+  max: "max",
+  "hbo max": "max",
+  hbo_max: "max",
+  plex: "plex",
+  viki: "viki",
+  "rakuten viki": "viki",
+  kocowa: "kocowa",
+  tving: "tving",
+  wavve: "wavve",
+  watcha: "watcha",
+  "coupang play": "coupang_play",
+  coupang_play: "coupang_play",
+  tubi: "tubi_tv",
+  "tubi tv": "tubi_tv",
+  tubi_tv: "tubi_tv"
 };
 
 const PROVIDER_LABELS = {
-  all: "All Providers", youtube: "YouTube", netflix: "Netflix", prime_video: "Prime Video", jiohotstar: "JioHotstar", zee5: "ZEE5", sonyliv: "SonyLIV", aha: "Aha", sun_nxt: "Sun NXT", etv_win: "ETV Win", mx_player: "MX Player", shemaroome: "ShemarooMe", eros_now: "Eros Now", apple_tv_store: "Apple TV", amazon_video: "Amazon Video", google_tv: "Google TV", disney_plus: "Disney+", hulu: "Hulu", max: "Max", plex: "Plex", viki: "Rakuten Viki", kocowa: "Kocowa", tving: "TVING", wavve: "Wavve", watcha: "Watcha", coupang_play: "Coupang Play", tubi_tv: "Tubi",
+  all: "All Providers",
+  youtube: "YouTube",
+  netflix: "Netflix",
+  prime_video: "Prime Video",
+  jiohotstar: "JioHotstar",
+  zee5: "ZEE5",
+  sonyliv: "SonyLIV",
+  aha: "Aha",
+  sun_nxt: "Sun NXT",
+  etv_win: "ETV Win",
+  mx_player: "MX Player",
+  apple_tv_store: "Apple TV",
+  amazon_video: "Amazon Video",
+  google_tv: "Google TV",
+  disney_plus: "Disney+",
+  hulu: "Hulu",
+  max: "Max",
+  plex: "Plex",
+  viki: "Rakuten Viki",
+  kocowa: "Kocowa",
+  tving: "TVING",
+  wavve: "Wavve",
+  watcha: "Watcha",
+  coupang_play: "Coupang Play",
+  tubi_tv: "Tubi"
 };
 
 const CACHE = new Map();
 const INFLIGHT = new Map();
 const DEFAULT_TTL_MS = 60000;
 const DEFAULT_TIMEOUT_MS = 12000;
-const API_BASE = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_BASE_URL) || "https://flixyfy-api-production.up.railway.app";
 
 function clean(value) {
-  return String(value || "").trim().toLowerCase().replace(/[+]/g, " plus ").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[+]/g, " plus ")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function normalizeProviderForApi(value) {
@@ -89,7 +168,12 @@ export async function fetchFlixyfyJson(url, options = {}) {
 
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), Number(options.timeoutMs || DEFAULT_TIMEOUT_MS));
-  const promise = fetch(url, { cache: "no-store", headers: { Accept: "application/json", ...(options.headers || {}) }, signal: controller.signal })
+
+  const promise = fetch(url, {
+    cache: "no-store",
+    headers: { Accept: "application/json", ...(options.headers || {}) },
+    signal: controller.signal
+  })
     .then(async (res) => {
       if (!res.ok) {
         const text = await res.text().catch(() => "");
@@ -101,100 +185,120 @@ export async function fetchFlixyfyJson(url, options = {}) {
       CACHE.set(key, { data, expiresAt: Date.now() + Number(options.ttlMs || DEFAULT_TTL_MS) });
       return data;
     })
-    .finally(() => { window.clearTimeout(timer); INFLIGHT.delete(key); });
+    .finally(() => {
+      window.clearTimeout(timer);
+      INFLIGHT.delete(key);
+    });
+
   INFLIGHT.set(key, promise);
   return promise;
 }
 
-function selectText(select) {
-  return Array.from(select?.options || []).map((o) => `${o.value || ""} ${o.textContent || ""}`).join(" ").toLowerCase();
-}
-
 function selectedText(select) {
   const option = select?.selectedOptions?.[0];
-  return `${option?.value || ""} ${option?.textContent || ""}`.toLowerCase();
+  return `${select?.value || ""} ${option?.value || ""} ${option?.textContent || ""}`.toLowerCase().trim();
 }
 
-function isDuplicateTitleSelect(select) {
-  const text = selectText(select);
-  return (text.includes("all titles") || text.includes("all movies")) && (text.includes("free") || text.includes("ott") || text.includes("streaming"));
+function optionTexts(select) {
+  return Array.from(select?.options || []).map((option) => `${option.value || ""} ${option.textContent || ""}`.toLowerCase());
 }
 
-function isProviderSelect(select) {
-  const text = selectText(select);
-  return text.includes("netflix") && (text.includes("prime") || text.includes("youtube") || text.includes("zee5"));
+function isDuplicateTypeSelect(select) {
+  if (!select || select.tagName !== "SELECT") return false;
+  const opts = optionTexts(select);
+  const hasTitleOption = opts.some((x) => x.includes("all titles") || x.includes("all movies"));
+  const hasProviderOption = opts.some((x) => normalizeProviderForApi(x) === "netflix" || normalizeProviderForApi(x) === "youtube");
+  const hasYearOption = opts.some((x) => x.includes("all years"));
+  const hasLanguageOption = opts.some((x) => x.includes("all indian languages"));
+  return hasTitleOption && !hasProviderOption && !hasYearOption && !hasLanguageOption;
 }
 
 function hideDuplicateTitleFilter() {
   document.querySelectorAll("select").forEach((select) => {
-    if (!isDuplicateTitleSelect(select)) return;
-    const wrapper = select.closest("label, .filter, .filter-control, .filter-select, .select-wrap, .controls select") || select.parentElement || select;
-    wrapper.style.display = "none";
-    wrapper.setAttribute("data-flixyfy-hidden-duplicate-title-filter", "true");
+    if (!isDuplicateTypeSelect(select)) return;
+    select.setAttribute("data-flixyfy-hidden-duplicate-title-filter", "true");
+    select.style.display = "none";
+    select.style.visibility = "hidden";
+    select.style.pointerEvents = "none";
+    const wrapper = select.closest(".filter-control, .filter-select, .home-filter, .domain-filter, label");
+    if (wrapper && wrapper !== document.body) {
+      wrapper.setAttribute("data-flixyfy-hidden-duplicate-title-filter", "true");
+      wrapper.style.display = "none";
+      wrapper.style.visibility = "hidden";
+      wrapper.style.pointerEvents = "none";
+    }
   });
 }
 
-function forceYoutubeProvider() {
+function isProviderSelect(select) {
+  if (!select || select.tagName !== "SELECT") return false;
+  const opts = optionTexts(select);
+  return opts.some((x) => normalizeProviderForApi(x) === "youtube")
+    && opts.some((x) => normalizeProviderForApi(x) === "netflix");
+}
+
+function isFreeSelect(select) {
+  if (!select || select.tagName !== "SELECT") return false;
+  if (isProviderSelect(select)) return false;
+  const text = selectedText(select);
+  return text.includes("free") || text.includes("free to watch") || text.includes("youtube only");
+}
+
+function setProviderToYouTube() {
   const providerSelect = Array.from(document.querySelectorAll("select")).find(isProviderSelect);
   if (!providerSelect) return;
   const youtubeOption = Array.from(providerSelect.options || []).find((option) => normalizeProviderForApi(option.value || option.textContent) === "youtube");
-  if (!youtubeOption || providerSelect.value === youtubeOption.value) return;
-  providerSelect.value = youtubeOption.value;
-  providerSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  if (!youtubeOption) return;
+  if (providerSelect.value !== youtubeOption.value) {
+    providerSelect.value = youtubeOption.value;
+    providerSelect.dispatchEvent(new Event("change", { bubbles: true }));
+  }
 }
 
-function syncFreeToWatchProvider() {
-  const freeSelected = Array.from(document.querySelectorAll("select")).some((select) => {
-    if (isProviderSelect(select)) return false;
-    const text = selectedText(select);
-    return text.includes("free") || text.includes("free to watch");
-  });
-  if (freeSelected) window.setTimeout(forceYoutubeProvider, 0);
-}
+async function fixIndianHeadingCount() {
+  const path = window.location.pathname.replace(/\/+$/, "");
+  if (path !== "") return;
+  const headings = Array.from(document.querySelectorAll("h1,h2,h3"));
+  const target = headings.find((h) => /^(popular movies|indian movies)(\s*\(|$)/i.test((h.textContent || "").trim()));
+  if (!target) return;
+  if (/Indian Movies\s*\(\s*[\d,]+\s*\)/i.test(target.textContent || "")) return;
 
-let headingTimer = null;
-function updateIndianHeadingCount() {
-  window.clearTimeout(headingTimer);
-  headingTimer = window.setTimeout(async () => {
-    const path = window.location.pathname.replace(/\/$/, "");
-    if (path && path !== "/" && path !== "/indian") return;
-    const headings = Array.from(document.querySelectorAll("h1,h2,h3"));
-    const heading = headings.find((h) => /^indian movies(\s*\(|$)/i.test((h.textContent || "").trim()));
-    if (!heading) return;
-    const activeTabText = (document.querySelector(".active, [aria-selected='true']")?.textContent || "").toLowerCase();
-    if (activeTabText && !activeTabText.includes("movie") && !/^indian movies/i.test(heading.textContent || "")) return;
-    const providerSelect = Array.from(document.querySelectorAll("select")).find(isProviderSelect);
-    const provider = providerValueForState(providerSelect?.value || providerFromCurrentUrl());
-    const url = new URL(`${API_BASE}/api/v3/movies`);
-    url.searchParams.set("page", "1");
-    url.searchParams.set("limit", "1");
-    if (provider) url.searchParams.set("provider", provider);
-    const data = await fetchFlixyfyJson(url.toString(), { ttlMs: 120000, timeoutMs: 10000 }).catch(() => null);
+  try {
+    const data = await fetchFlixyfyJson("https://flixyfy-api-production.up.railway.app/api/v3/movies?page=1&limit=1", { ttlMs: 300000, timeoutMs: 8000 });
     const total = Number(data?.total || 0);
-    if (!total) return;
-    const label = provider ? `${providerDisplayLabel(provider)} - Indian Movies` : "Indian Movies";
-    heading.textContent = `${label} (${total.toLocaleString("en-IN")})`;
-  }, 120);
+    target.textContent = total > 0 ? `Indian Movies (${total.toLocaleString("en-IN")})` : "Indian Movies";
+  } catch (_) {
+    target.textContent = "Indian Movies";
+  }
 }
 
-function runDomFixes() {
+function runUiStabilizer() {
   hideDuplicateTitleFilter();
-  syncFreeToWatchProvider();
-  updateIndianHeadingCount();
+  fixIndianHeadingCount();
 }
 
 export function installProviderFetchPatch() {
-  if (typeof document === "undefined") return { active: false, version: "v5" };
-  if (window.__FLIXYFY_PROVIDER_PATCH_V5__) return { active: false, version: "v5" };
-  window.__FLIXYFY_PROVIDER_PATCH_V5__ = true;
-  document.addEventListener("change", () => window.setTimeout(runDomFixes, 0), true);
-  window.addEventListener("popstate", () => window.setTimeout(runDomFixes, 0));
-  const observer = new MutationObserver(() => runDomFixes());
+  if (typeof document === "undefined") return { active: false, version: "restore-v6" };
+  if (window.__FLIXYFY_FILTER_RESTORE_V6__) return { active: false, version: "restore-v6" };
+  window.__FLIXYFY_FILTER_RESTORE_V6__ = true;
+
+  runUiStabilizer();
+  window.setTimeout(runUiStabilizer, 50);
+  window.setTimeout(runUiStabilizer, 300);
+  window.setTimeout(runUiStabilizer, 1000);
+
+  const observer = new MutationObserver(() => runUiStabilizer());
   observer.observe(document.documentElement, { childList: true, subtree: true });
-  window.setTimeout(runDomFixes, 0);
-  window.setTimeout(runDomFixes, 500);
-  window.setTimeout(runDomFixes, 1500);
-  return { active: true, version: "v5" };
+
+  document.addEventListener("change", (event) => {
+    const target = event.target;
+    if (target && target.tagName === "SELECT" && isFreeSelect(target)) {
+      window.setTimeout(setProviderToYouTube, 0);
+    }
+    window.setTimeout(runUiStabilizer, 0);
+  }, true);
+
+  return { active: true, version: "restore-v6" };
 }
 
 export default installProviderFetchPatch;
