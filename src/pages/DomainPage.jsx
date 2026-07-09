@@ -6,6 +6,7 @@ import MovieGrid from "../components/MovieGrid";
 import SkeletonRow from "../components/SkeletonRow";
 import SearchBar from "../components/SearchBar";
 import { setPageSeo } from "../utils/seo";
+import { fetchFlixyfyJson, normalizeProviderForApi, providerFromCurrentUrl, providerValueForState, syncProviderToUrl } from "../utils/providerFetchPatch";
 import "./DomainPage.css";
 
 const API_BASE =
@@ -366,7 +367,7 @@ function getPopularScore(movie, index, domain) {
 function prepareItems(items, domain, sort, availability, provider) {
   if (!Array.isArray(items)) return [];
 
-  const apiFilteredProviders = domain === "hollywood" || domain === "indian";
+  const apiFilteredProviders = ["hollywood", "indian", "historical", "webseries"].includes(domain);
 
   return [...items]
     .filter((movie) => {
@@ -437,7 +438,7 @@ export default function DomainPage({ domain }) {
   const [sort, setSort] = useState("popular");
   const [language, setLanguage] = useState("");
   const [availability, setAvailability] = useState("all");
-  const [provider, setProvider] = useState("");
+  const [provider, setProvider] = useState(() => providerFromCurrentUrl());
   const [globalContentType, setGlobalContentType] = useState("movies");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -678,7 +679,7 @@ export default function DomainPage({ domain }) {
             ))}
           </select>
 
-          <select value={provider} onChange={(e) => setProvider(e.target.value)}>
+          <select value={provider} onChange={(e) => { const clean = providerValueForState(e.target.value); setProvider(clean); syncProviderToUrl(clean); }}>
             {getProvidersForDomain(domain).map((item) => (
               <option key={item.value || "all"} value={item.value}>
                 {item.label}

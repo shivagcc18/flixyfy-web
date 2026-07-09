@@ -9,12 +9,7 @@ import MovieGrid from "../components/MovieGrid";
 import { getHome } from "../api/flixyfyApi";
 import { setPageSeo, setJsonLd } from "../utils/seo";
 import { trackFilter, trackLanguageOpen, trackLoadMore } from "../utils/analytics";
-import {
-  normalizeProviderForApi,
-  providerDisplayLabel,
-  providerFromCurrentUrl,
-  providerValueForState,
-} from "../utils/providerFetchPatch";
+import { fetchFlixyfyJson, normalizeProviderForApi, providerDisplayLabel, providerFromCurrentUrl, providerValueForState, syncProviderToUrl } from "../utils/providerFetchPatch";
 import "./Home.css";
 
 // FLIXYFY_HOME_DIRECT_PROVIDER_RESULTS_V14
@@ -46,6 +41,9 @@ const API_ROOT_CANDIDATES = Array.from(
 );
 
 const PAGE_SIZE = 25;
+const FILTER_CACHE_TTL = 60 * 1000;
+const filterResponseCache = new Map();
+const pendingFilterRequests = new Map();
 
 const LANGUAGES = [
   { label: "All Indian Languages", slug: "" },
@@ -155,8 +153,7 @@ function getTotal(data, items) {
   return Number.isFinite(number) ? number : items.length;
 }
 
-async function fetchApi(path) {
-  const cleanPath = String(path || "").startsWith("/") ? String(path || "") : `/${path}`;
+async function fetchApiUncached(cleanPath) {
   const urls = API_ROOT_CANDIDATES.map((root) => `${root}/api/v3${cleanPath}`);
   const errors = [];
 
@@ -203,6 +200,28 @@ async function fetchApi(path) {
   }
 
   throw new Error(errors.join(" | "));
+}
+
+async function fetchApi(path) {
+  const cleanPath = String(path || "").startsWith("/") ? String(path || "") : `/${path}`;
+  const cached = filterResponseCache.get(cleanPath);
+  if (cached && Date.now() - cached.createdAt < FILTER_CACHE_TTL) {
+    return cached.data;
+  }
+
+  if (pendingFilterRequests.has(cleanPath)) {
+    return pendingFilterRequests.get(cleanPath);
+  }
+
+  const request = fetchApiUncached(cleanPath)
+    .then((data) => {
+      filterResponseCache.set(cleanPath, { data, createdAt: Date.now() });
+      return data;
+    })
+    .finally(() => pendingFilterRequests.delete(cleanPath));
+
+  pendingFilterRequests.set(cleanPath, request);
+  return request;
 }
 
 function buildMoviesPath({
@@ -797,7 +816,7 @@ export default function Home() {
               <p className="home-empty">No {contentLabel.toLowerCase()} found.</p>
               {filterError && (
                 <p className="home-empty" style={{ opacity: 0.7, fontSize: "12px" }}>
-                  Provider fetch debug: {filterError.slice(0, 260)}
+                  Results could not be loaded. Please try again.
                 </p>
               )}
             </>
