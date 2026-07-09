@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import "./index.css";
 import { initAnalytics } from "./utils/analytics";
+import { installProviderFetchPatch } from "./utils/providerFetchPatch";
 
 initAnalytics();
 
@@ -14,3 +15,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     </BrowserRouter>
   </React.StrictMode>
 );
+
+installProviderFetchPatch();
