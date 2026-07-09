@@ -119,11 +119,11 @@ function providerRank(item) {
   return regionRank * 10000 + typeRank * 1000 + priority;
 }
 
-function cleanProviders(items) {
+function cleanProviders(items, title = "") {
   if (!Array.isArray(items)) return [];
 
   const sorted = [...items]
-    .filter((item) => item && providerUrl(item))
+    .filter((item) => item && providerUrl(item, title))
     .sort((a, b) => providerRank(a) - providerRank(b));
 
   const seen = new Set();
@@ -221,7 +221,8 @@ export default function DomainDetail({ domain }) {
   }, [apiPath, domain, slug]);
 
   const availability = cleanProviders(
-    movie?.availability || movie?.ott_all || movie?.watch_providers || []
+    movie?.availability || movie?.ott_all || movie?.watch_providers || [],
+    movie?.title || ""
   );
 
   const youtube = cleanYoutube(movie?.youtube_full_movies || []);
@@ -303,7 +304,7 @@ export default function DomainDetail({ domain }) {
 
                 <div className="provider-grid">
                   {availability.map((item, index) => {
-                    const url = getBestProviderUrl(item) || item.youtube_url || item.video_url || "";
+                    const url = getBestProviderUrl(item, movie?.title || "") || item.youtube_url || item.video_url || "";
                     const name = providerName(item);
                     const img = logoUrl(item.logo_path);
                     const type = providerTypeLabel(item.provider_type);

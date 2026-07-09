@@ -45,6 +45,7 @@ function normalizeProvider(value) {
   return cleanText(value)
     .toLowerCase()
     .replace(/\+/g, " plus ")
+    .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -75,9 +76,13 @@ function providerNameFrom(input) {
   }
 
   return (
+    input.provider_display_name ||
+    input.providerDisplayName ||
     input.provider ||
     input.provider_name ||
     input.providerName ||
+    input.provider_key ||
+    input.providerKey ||
     input.normalized_provider_name ||
     input.name ||
     input.title ||
@@ -91,6 +96,9 @@ function directUrlFrom(input) {
   return (
     input.direct_deep_link ||
     input.deep_link ||
+    input.provider_deep_link ||
+    input.final_url ||
+    input.finalUrl ||
     input.provider_url ||
     input.providerUrl ||
     input.watch_url ||
