@@ -22,6 +22,14 @@ const PROVIDER_HOME = {
   "vi movies and tv": "https://www.myvi.in/vi-movies-and-tv",
   "lionsgate play": "https://www.lionsgateplay.com",
   "apple tv": "https://tv.apple.com",
+  "apple tv store": "https://tv.apple.com",
+  "amazon video": "https://www.amazon.com/video",
+  "google tv": "https://play.google.com/store/movies",
+  "google play": "https://play.google.com/store/movies",
+  "google play movies": "https://play.google.com/store/movies",
+  "fandango at home": "https://www.fandangoathome.com",
+  fandango: "https://www.fandangoathome.com",
+  "rakuten tv": "https://www.rakuten.tv",
   hulu: "https://www.hulu.com",
   "hbo max": "https://www.max.com",
   max: "https://www.max.com",
@@ -144,6 +152,22 @@ function buildSearchUrl(providerName, title) {
     return `https://www.primevideo.com/search?phrase=${q}`;
   }
 
+  if (provider.includes("amazon video")) {
+    return `https://www.amazon.com/s?k=${q}&i=instant-video`;
+  }
+
+  if (provider.includes("apple tv")) {
+    return `https://tv.apple.com/search?term=${q}`;
+  }
+
+  if (provider.includes("google tv") || provider.includes("google play")) {
+    return `https://play.google.com/store/search?q=${q}&c=movies`;
+  }
+
+  if (provider.includes("fandango")) {
+    return `https://www.fandangoathome.com/search?q=${q}`;
+  }
+
   if (provider.includes("zee5") || provider.includes("zee 5")) {
     return `https://www.zee5.com/search?q=${q}`;
   }
@@ -162,6 +186,10 @@ function buildSearchUrl(providerName, title) {
 
   if (provider.includes("viki") || provider.includes("rakuten viki")) {
     return `https://www.viki.com/search?q=${q}`;
+  }
+
+  if (provider.includes("rakuten tv")) {
+    return `https://www.rakuten.tv/search?q=${q}`;
   }
 
   return PROVIDER_HOME[provider] || "";
