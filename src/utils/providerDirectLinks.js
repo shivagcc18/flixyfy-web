@@ -30,6 +30,7 @@ const PROVIDER_HOME = {
   "fandango at home": "https://www.fandangoathome.com",
   fandango: "https://www.fandangoathome.com",
   "rakuten tv": "https://www.rakuten.tv",
+  "sky store": "https://www.skystore.com",
   hulu: "https://www.hulu.com",
   "hbo max": "https://www.max.com",
   max: "https://www.max.com",
@@ -190,6 +191,10 @@ function buildSearchUrl(providerName, title) {
 
   if (provider.includes("rakuten tv")) {
     return `https://www.rakuten.tv/search?q=${q}`;
+  }
+
+  if (provider.includes("sky store")) {
+    return `https://www.skystore.com/search?keyword=${q}`;
   }
 
   return PROVIDER_HOME[provider] || "";
