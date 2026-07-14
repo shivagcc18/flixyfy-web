@@ -6,10 +6,7 @@ import { getBestProviderUrl } from "../utils/providerLinks";
 import { getProviderLogo } from "../utils/providerLogos";
 import { setPageSeo } from "../utils/seo";
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-production.up.railway.app";
+const API_BASE = "https://flixyfy-api-fresh-production.up.railway.app";
 
 function imageUrl(path) {
   if (!path) return "/no-poster.png";
@@ -31,7 +28,7 @@ export default function WebseriesDetail() {
         setLoading(true);
         setError("");
 
-        const res = await fetch(`${API_BASE}/api/v3/webseries/${encodeURIComponent(slug)}`);
+        const res = await fetch(`${API_BASE}/api/v4/webseries/${encodeURIComponent(slug)}`);
         if (!res.ok) throw new Error(`Webseries API failed: ${res.status}`);
 
         const data = await res.json();

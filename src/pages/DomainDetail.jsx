@@ -3,13 +3,11 @@ import { Link, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { getBestProviderUrl, providerUrl } from "../utils/providerLinks";
+import { getProviderLogo } from "../utils/providerLogos";
 import { setPageSeo } from "../utils/seo";
 import "./DomainDetail.css";
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-production.up.railway.app";
+const API_BASE = "https://flixyfy-api-fresh-production.up.railway.app";
 
 const LOCAL_LOGO_BASE = "/provider-logos";
 
@@ -172,7 +170,7 @@ export default function DomainDetail({ domain }) {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const apiPath = useMemo(() => `/api/v3/${domain}/${slug}`, [domain, slug]);
+  const apiPath = useMemo(() => `/api/v4/${domain}/${slug}`, [domain, slug]);
 
   useEffect(() => {
     let mounted = true;
@@ -306,7 +304,9 @@ export default function DomainDetail({ domain }) {
                   {availability.map((item, index) => {
                     const url = getBestProviderUrl(item, movie?.title || "") || item.youtube_url || item.video_url || "";
                     const name = providerName(item);
-                    const img = logoUrl(item.logo_path);
+                    const img =
+                      logoUrl(item.logo_path) ||
+                      getProviderLogo(item.provider_key || item.provider, name);
                     const type = providerTypeLabel(item.provider_type);
                     const region = regionLabel(item.region);
 

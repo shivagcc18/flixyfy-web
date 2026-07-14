@@ -1,7 +1,7 @@
 import API_BASE_URL from "../config/api";
 import { normalizeProviderForApi } from "../utils/providerFetchPatch";
 
-const API_V3 = `${API_BASE_URL}/api/v3`;
+const API_V4 = `${API_BASE_URL}/api/v4`;
 
 const cache = new Map();
 const pendingRequests = new Map();
@@ -20,7 +20,7 @@ async function apiGet(path) {
     return pendingRequests.get(path);
   }
 
-  const request = fetch(`${API_V3}${path}`)
+  const request = fetch(`${API_V4}${path}`)
     .then(async (res) => {
       if (!res.ok) {
         const text = await res.text();

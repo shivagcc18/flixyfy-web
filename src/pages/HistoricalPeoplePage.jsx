@@ -7,22 +7,18 @@ import SkeletonRow from "../components/SkeletonRow";
 import { setPageSeo } from "../utils/seo";
 import "./HistoricalPeoplePage.css";
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE ||
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-production.up.railway.app";
+const API_BASE = "https://flixyfy-api-fresh-production.up.railway.app";
 
-const PEOPLE_ROW_LIMIT = 25;
+const PEOPLE_ROW_LIMIT = 36;
 const PEOPLE_SEARCH_LIMIT = 72;
 
 const LANGUAGE_ROWS = [
-  { key: "popular", title: "Popular Historical People", language: "", minMovies: 50 },
-  { key: "hi", title: "Hindi Historical People", language: "hi", minMovies: 25 },
-  { key: "te", title: "Telugu Historical People", language: "te", minMovies: 25 },
-  { key: "ta", title: "Tamil Historical People", language: "ta", minMovies: 25 },
-  { key: "kn", title: "Kannada Historical People", language: "kn", minMovies: 20 },
-  { key: "ml", title: "Malayalam Historical People", language: "ml", minMovies: 20 },
+  { key: "popular", title: "Popular Historical People", language: "", minMovies: 1 },
+  { key: "hi", title: "Hindi Historical People", language: "hi", minMovies: 1 },
+  { key: "te", title: "Telugu Historical People", language: "te", minMovies: 1 },
+  { key: "ta", title: "Tamil Historical People", language: "ta", minMovies: 1 },
+  { key: "kn", title: "Kannada Historical People", language: "kn", minMovies: 1 },
+  { key: "ml", title: "Malayalam Historical People", language: "ml", minMovies: 1 },
 ];
 
 const LANGUAGE_ALIASES = {
@@ -155,7 +151,7 @@ function filterPeopleByLanguage(items, language) {
   });
 }
 
-async function fetchHistoricalPeople({ query = "", language = "", limit = PEOPLE_ROW_LIMIT, minMovies = 20 }) {
+async function fetchHistoricalPeople({ query = "", language = "", limit = PEOPLE_ROW_LIMIT, minMovies = 1 }) {
   const params = new URLSearchParams();
   params.set("limit", String(limit));
   params.set("min_movies", String(minMovies));
@@ -163,7 +159,7 @@ async function fetchHistoricalPeople({ query = "", language = "", limit = PEOPLE
   if (query.trim()) params.set("q", query.trim());
   if (language) params.set("language", language);
 
-  const response = await fetch(`${API_BASE}/api/v3/historical/people?${params.toString()}`);
+  const response = await fetch(`${API_BASE}/api/v4/historical/people?${params.toString()}`);
   if (!response.ok) throw new Error(`People API failed: ${response.status}`);
 
   const data = await response.json();
@@ -289,7 +285,7 @@ export function HistoricalPersonPage({ mode = "historical" }) {
         }
 
         const res = await fetch(
-          `${API_BASE}/api/v3/${apiPath}/${encodeURIComponent(slug)}?${params.toString()}`
+          `${API_BASE}/api/v4/${apiPath}/${encodeURIComponent(slug)}?${params.toString()}`
         );
 
         if (!res.ok) throw new Error(`Person API failed: ${res.status}`);

@@ -13,22 +13,19 @@ import { fetchFlixyfyJson, normalizeProviderForApi, providerDisplayLabel, provid
 import "./Home.css";
 
 // FLIXYFY_HOME_DIRECT_PROVIDER_RESULTS_V14
-// Home provider filters now fetch /api/v3/movies directly from Home.jsx.
+// Home provider filters now fetch /api/v4/movies directly from Home.jsx.
 // This bypasses stale helper/cache/bridge paths that were producing provider total 0.
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE ||
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-production.up.railway.app";
+const API_BASE = "https://flixyfy-api-fresh-production.up.railway.app";
 
 // FLIXYFY_HOME_PROVIDER_FETCH_HARDEN_V15
-// Some Vercel environments can define the API base as either root, /api, or /api/v3.
-// Home provider filters must always hit exactly /api/v3/movies.
+// Some Vercel environments can define the API base as either root, /api, or an old API prefix.
+// Home provider filters must always hit exactly /api/v4/movies.
 function normalizeApiRoot(value) {
   return String(value || "")
     .trim()
     .replace(/\/+$/, "")
+    .replace(/\/api\/v4$/i, "")
     .replace(/\/api\/v3$/i, "")
     .replace(/\/api$/i, "");
 }
@@ -36,7 +33,7 @@ function normalizeApiRoot(value) {
 const API_ROOT_CANDIDATES = Array.from(
   new Set([
     normalizeApiRoot(API_BASE),
-    "https://flixyfy-api-production.up.railway.app",
+    "https://flixyfy-api-fresh-production.up.railway.app",
   ].filter(Boolean))
 );
 
@@ -154,7 +151,7 @@ function getTotal(data, items) {
 }
 
 async function fetchApiUncached(cleanPath) {
-  const urls = API_ROOT_CANDIDATES.map((root) => `${root}/api/v3${cleanPath}`);
+  const urls = API_ROOT_CANDIDATES.map((root) => `${root}/api/v4${cleanPath}`);
   const errors = [];
 
   for (const url of urls) {
@@ -250,6 +247,11 @@ function buildMoviesPath({
   return `/movies?${params.toString()}`;
 }
 
+function buildDomainPath(path, params) {
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
+
 export default function Home() {
   const [sections, setSections] = useState({});
   const [results, setResults] = useState([]);
@@ -336,13 +338,25 @@ export default function Home() {
       setLoading(true);
       const data = await getHome();
 
+      const indianMovies =
+        getItems(data?.current) ||
+        getItems(data?.indian_movies) ||
+        getItems(data) ||
+        [];
+      const popularMovies = data.popular_movies || data.movies || data.trending || indianMovies;
+      const latestMovies = data.latest_movies || data.latest || indianMovies;
+      const freeMovies = data.free || [];
+      const hindiMovies = data.hindi || [];
+      const teluguMovies = data.telugu || [];
+      const tamilMovies = data.tamil || [];
+
       setSections({
-        "Indian Movies": data.trending || [],
-        Latest: data.latest || [],
-        "Free to Watch": data.free || [],
-        "Hindi Movies": data.hindi || [],
-        "Telugu Movies": data.telugu || [],
-        "Tamil Movies": data.tamil || [],
+        "Indian Movies": popularMovies.length ? popularMovies : indianMovies,
+        Latest: latestMovies,
+        "Free to Watch": freeMovies,
+        "Hindi Movies": hindiMovies,
+        "Telugu Movies": teluguMovies,
+        "Tamil Movies": tamilMovies,
       });
     } catch (err) {
       console.error("Home API failed:", err);
@@ -409,7 +423,27 @@ export default function Home() {
       params.set("provider", providerForApi);
     }
 
-    const data = await fetchApi(`/global-search?${params.toString()}`);
+    let requestPath = "/search";
+
+    if (!searchText) {
+      if (cleanType === "webseries") {
+        requestPath = "/webseries";
+        params.delete("q");
+        params.delete("type");
+        params.delete("region");
+      } else if (cleanType === "movies") {
+        requestPath = cleanScope === "global" ? "/hollywood" : "/movies";
+        params.delete("q");
+        params.delete("type");
+        params.delete("region");
+        params.delete("domain");
+      }
+    } else if (cleanType === "webseries") {
+      params.set("domain", "webseries");
+      params.delete("region");
+    }
+
+    const data = await fetchApi(buildDomainPath(requestPath, params));
     applyData(data, selectedPage, append);
   };
 

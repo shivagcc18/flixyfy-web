@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -9,11 +9,7 @@ import { setPageSeo } from "../utils/seo";
 import { fetchFlixyfyJson, normalizeProviderForApi, providerDisplayLabel, providerFromCurrentUrl, providerValueForState, syncProviderToUrl } from "../utils/providerFetchPatch";
 import "./DomainPage.css";
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE ||
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-production.up.railway.app";
+const API_BASE = "https://flixyfy-api-fresh-production.up.railway.app";
 
 const PAGE_SIZE = 25;
 
@@ -412,7 +408,7 @@ function domainConfig(domain) {
     return {
       title: "Historical Indian Movies",
       subtitle: "Classic Indian movies from 1960 to 1999 with YouTube full-movie availability where found.",
-      apiPath: "/api/v3/historical",
+      apiPath: "/api/v4/historical",
       seoTitle: "Historical Indian Movies 1960â€“1999",
       seoDescription:
         "Explore classic Indian movies from 1960 to 1999 with historical metadata and free YouTube full-movie links where available.",
@@ -422,7 +418,7 @@ function domainConfig(domain) {
   return {
     title: "Global Movies & Webseries",
     subtitle: "Global movies and webseries with streaming and rental availability across major providers.",
-    apiPath: "/api/v3/hollywood",
+    apiPath: "/api/v4/hollywood",
     seoTitle: "Global Movies and Webseries Streaming Availability",
     seoDescription:
       "Explore global movies and webseries and find where they are available to stream, rent, buy, or watch online.",
@@ -493,7 +489,18 @@ export default function DomainPage({ domain }) {
         const providerForApi = normalizeProviderForApi(provider);
         if (providerForApi && providerForApi !== "all") params.set("provider", providerForApi);
       }
-      const requestPath = useGlobalSearch ? "/api/v3/global-search" : config.apiPath;
+      let requestPath = config.apiPath;
+      if (useGlobalSearch) {
+        requestPath = searchText ? "/api/v4/search" : "/api/v4/webseries";
+        if (!searchText) {
+          params.delete("q");
+          params.delete("type");
+          params.delete("region");
+        } else if (globalContentType === "webseries") {
+          params.set("domain", "webseries");
+          params.delete("region");
+        }
+      }
       const res = await fetch(`${API_BASE}${requestPath}?${params.toString()}`);
 
       if (!res.ok) throw new Error(`API failed: ${res.status}`);
