@@ -1,7 +1,7 @@
 import API_BASE_URL from "../config/api";
 import { normalizeProviderForApi } from "../utils/providerFetchPatch";
 
-const API_V3 = `${API_BASE_URL}/api/v3`;
+const API_V3 = `${API_BASE_URL}/api/v4`;
 const API_V4 = `${API_BASE_URL}/api/v4`;
 
 const cache = new Map();

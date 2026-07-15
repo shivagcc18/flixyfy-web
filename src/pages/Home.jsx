@@ -13,18 +13,18 @@ import { fetchFlixyfyJson, normalizeProviderForApi, providerDisplayLabel, provid
 import "./Home.css";
 
 // FLIXYFY_HOME_DIRECT_PROVIDER_RESULTS_V14
-// Home provider filters now fetch /api/v3/movies directly from Home.jsx.
+// Home provider filters now fetch /api/v4/movies directly from Home.jsx.
 // This bypasses stale helper/cache/bridge paths that were producing provider total 0.
 
 const API_BASE =
   import.meta.env.VITE_API_BASE ||
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-production.up.railway.app";
+  "https://flixyfy-api-fresh-production.up.railway.app";
 
 // FLIXYFY_HOME_PROVIDER_FETCH_HARDEN_V15
-// Some Vercel environments can define the API base as either root, /api, or /api/v3.
-// Home provider filters must always hit exactly /api/v3/movies.
+// Some Vercel environments can define the API base as either root, /api, or /api/v4.
+// Home provider filters must always hit exactly /api/v4/movies.
 function normalizeApiRoot(value) {
   return String(value || "")
     .trim()
@@ -36,7 +36,7 @@ function normalizeApiRoot(value) {
 const API_ROOT_CANDIDATES = Array.from(
   new Set([
     normalizeApiRoot(API_BASE),
-    "https://flixyfy-api-production.up.railway.app",
+    "https://flixyfy-api-fresh-production.up.railway.app",
   ].filter(Boolean))
 );
 
@@ -154,7 +154,7 @@ function getTotal(data, items) {
 }
 
 async function fetchApiUncached(cleanPath) {
-  const urls = API_ROOT_CANDIDATES.map((root) => `${root}/api/v3${cleanPath}`);
+  const urls = API_ROOT_CANDIDATES.map((root) => `${root}/api/v4${cleanPath}`);
   const errors = [];
 
   for (const url of urls) {

@@ -11,7 +11,7 @@ import "./LanguagePage.css";
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-production.up.railway.app";
+  "https://flixyfy-api-fresh-production.up.railway.app";
 
 const PAGE_SIZE = 24;
 
@@ -257,7 +257,7 @@ export default function LanguagePage() {
         }
       }
 
-      const url = `${API_BASE}/api/v3/language/${languageSlug}?${params.toString()}`;
+      const url = `${API_BASE}/api/v4/language/${languageSlug}?${params.toString()}`;
       const res = await fetch(url);
 
       if (!res.ok) {

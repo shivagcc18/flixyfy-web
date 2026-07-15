@@ -9,7 +9,7 @@ import "./DomainDetail.css";
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-production.up.railway.app";
+  "https://flixyfy-api-fresh-production.up.railway.app";
 
 const LOCAL_LOGO_BASE = "/provider-logos";
 
@@ -172,7 +172,7 @@ export default function DomainDetail({ domain }) {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const apiPath = useMemo(() => `/api/v3/${domain}/${slug}`, [domain, slug]);
+  const apiPath = useMemo(() => `/api/v4/${domain}/${slug}`, [domain, slug]);
 
   useEffect(() => {
     let mounted = true;

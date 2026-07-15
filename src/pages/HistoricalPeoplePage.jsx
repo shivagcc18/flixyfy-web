@@ -11,7 +11,7 @@ const API_BASE =
   import.meta.env.VITE_API_BASE ||
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-production.up.railway.app";
+  "https://flixyfy-api-fresh-production.up.railway.app";
 
 const PEOPLE_ROW_LIMIT = 25;
 const PEOPLE_SEARCH_LIMIT = 72;
