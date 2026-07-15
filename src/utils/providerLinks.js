@@ -15,15 +15,23 @@ export function providerName(provider) {
     return provider;
   }
 
-  return (
-    provider.provider ||
-    provider.provider_name ||
-    provider.providerName ||
-    provider.normalized_provider_name ||
-    provider.name ||
-    provider.title ||
-    ""
-  );
+  const candidates = [
+    provider.provider_display_name,
+    provider.providerDisplayName,
+    provider.provider_name,
+    provider.providerName,
+    provider.normalized_provider_name,
+    provider.provider_key,
+    provider.providerKey,
+    provider.provider,
+    provider.name,
+    provider.title,
+  ];
+
+  return candidates.find((value) => {
+    const normalized = String(value || "").trim().toLowerCase();
+    return normalized && !["ott", "provider", "streaming"].includes(normalized);
+  }) || "";
 }
 
 export function providerLogo(provider) {

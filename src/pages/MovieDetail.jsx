@@ -169,6 +169,110 @@ function buildMovieForYoutubeSection(movie) {
   };
 }
 
+function cleanProviderText(value) {
+  return String(value || "").trim();
+}
+
+function normalizeProviderKey(value) {
+  return cleanProviderText(value)
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/\+/g, " plus ")
+    .replace(/[_\s]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+const PROVIDER_LABELS = {
+  youtube: "YouTube",
+  zee5: "ZEE5",
+  netflix: "Netflix",
+  "prime-video": "Prime Video",
+  "amazon-prime-video": "Prime Video",
+  jiohotstar: "JioHotstar",
+  hotstar: "JioHotstar",
+  sonyliv: "SonyLIV",
+  "sony-liv": "SonyLIV",
+  aha: "Aha",
+  "sun-nxt": "Sun NXT",
+  sunnxt: "Sun NXT",
+  "etv-win": "ETV Win",
+  etvwin: "ETV Win",
+  "apple-tv": "Apple TV",
+  "apple-tv-store": "Apple TV",
+  "google-tv": "Google TV",
+  "google-play": "Google TV",
+  "google-play-movies": "Google TV",
+};
+
+function isGenericProviderName(value) {
+  const normalized = normalizeProviderKey(value);
+  return !normalized || normalized === "ott" || normalized === "provider" || normalized === "streaming";
+}
+
+function labelFromProviderKey(value) {
+  const key = normalizeProviderKey(value);
+  if (!key) return "";
+  return PROVIDER_LABELS[key] || key.split("-").map((part) => part ? part[0].toUpperCase() + part.slice(1) : "").join(" ");
+}
+
+function providerDisplayName(ott) {
+  const candidates = [
+    ott?.provider_display_name,
+    ott?.provider_name,
+    ott?.providerName,
+    ott?.normalized_provider_name,
+    labelFromProviderKey(ott?.provider_key),
+    ott?.provider,
+    ott?.button_label,
+  ];
+
+  return candidates.find((value) => !isGenericProviderName(value)) || "OTT";
+}
+
+function isBadWatchUrl(url) {
+  const value = cleanProviderText(url).toLowerCase();
+  return value.includes("themoviedb.org/") || value.includes("justwatch.com/");
+}
+
+function normalizeOttProviders(movie) {
+  const rows = Array.isArray(movie?.ott_all) ? movie.ott_all : [];
+  const seen = new Set();
+  const title = movie?.title || "";
+
+  return rows
+    .map((ott) => {
+      const name = providerDisplayName(ott);
+      const providerKey = normalizeProviderKey(ott?.provider_key || name);
+      const normalized = {
+        ...ott,
+        provider_key: ott?.provider_key || providerKey,
+        provider_display_name: name,
+        provider_name: name,
+        provider: name,
+      };
+      const resolvedUrl = getBestProviderUrl(normalized, title);
+      const url = isBadWatchUrl(resolvedUrl) ? "" : resolvedUrl;
+
+      return {
+        ...normalized,
+        provider_key: providerKey || normalized.provider_key,
+        display_name: name,
+        logo: getProviderLogo(providerKey || normalized.provider_key, name),
+        url,
+      };
+    })
+    .filter((ott) => !isGenericProviderName(ott.display_name))
+    .filter((ott) => {
+      const key = normalizeProviderKey(ott.provider_key || ott.display_name);
+      const dedupeKey = key || normalizeProviderKey(ott.display_name);
+      if (!dedupeKey) return false;
+      if (seen.has(dedupeKey)) return false;
+      seen.add(dedupeKey);
+      return true;
+    });
+}
+
 export default function MovieDetail() {
   const { slug } = useParams();
   const [movie, setMovie] = useState(null);
@@ -242,6 +346,7 @@ export default function MovieDetail() {
     () => buildMovieForYoutubeSection(movie),
     [movie]
   );
+  const ottProviders = useMemo(() => normalizeOttProviders(movie), [movie]);
 
   if (error) {
     return (
@@ -307,16 +412,12 @@ export default function MovieDetail() {
 
           <h2 style={sectionTitleStyle}>Available on OTT</h2>
 
-          {movie.ott_all && movie.ott_all.length > 0 ? (
+          {ottProviders.length > 0 ? (
             <div style={buttonWrapStyle}>
-              {movie.ott_all.map((ott, index) => {
-                const providerName =
-                  ott.provider_display_name ||
-                  ott.provider ||
-                  ott.button_label ||
-                  "OTT";
-                const logo = getProviderLogo(ott.provider_key, providerName);
-                const url = getBestProviderUrl(ott);
+              {ottProviders.map((ott, index) => {
+                const providerName = ott.display_name;
+                const logo = ott.logo;
+                const url = ott.url;
 
                 return (
                   <a
@@ -333,6 +434,7 @@ export default function MovieDetail() {
                       trackProviderClick(providerName, movie.title);
                     }}
                     style={ottButtonStyle(Boolean(url))}
+                    aria-label={url ? `Watch ${movie.title} on ${providerName}` : `${providerName} availability`}
                   >
                     {logo ? (
                       <img

@@ -77,6 +77,11 @@ function isUsableDirectUrl(url) {
   return true;
 }
 
+function isGenericProviderName(value) {
+  const provider = normalizeProvider(value);
+  return !provider || provider === "ott" || provider === "provider" || provider === "streaming";
+}
+
 function providerNameFrom(input) {
   if (!input) return "";
 
@@ -84,19 +89,20 @@ function providerNameFrom(input) {
     return input;
   }
 
-  return (
-    input.provider_display_name ||
-    input.providerDisplayName ||
-    input.provider ||
-    input.provider_name ||
-    input.providerName ||
-    input.provider_key ||
-    input.providerKey ||
-    input.normalized_provider_name ||
-    input.name ||
-    input.title ||
-    ""
-  );
+  const candidates = [
+    input.provider_display_name,
+    input.providerDisplayName,
+    input.provider_name,
+    input.providerName,
+    input.normalized_provider_name,
+    input.provider_key,
+    input.providerKey,
+    input.provider,
+    input.name,
+    input.title,
+  ];
+
+  return candidates.find((value) => !isGenericProviderName(value)) || "";
 }
 
 function directUrlFrom(input) {
