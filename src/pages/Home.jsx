@@ -16,11 +16,7 @@ import "./Home.css";
 // Home provider filters now fetch /api/v4/movies directly from Home.jsx.
 // This bypasses stale helper/cache/bridge paths that were producing provider total 0.
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE ||
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-fresh-production.up.railway.app";
+const API_BASE = "https://flixyfy-api-fresh-production.up.railway.app";
 
 // FLIXYFY_HOME_PROVIDER_FETCH_HARDEN_V15
 // Some Vercel environments can define the API base as either root, /api, or /api/v4.
