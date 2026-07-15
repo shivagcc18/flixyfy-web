@@ -2,14 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import API_BASE from "../config/api";
 import { getBestProviderUrl, providerUrl } from "../utils/providerLinks";
 import { setPageSeo } from "../utils/seo";
 import "./DomainDetail.css";
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-fresh-production.up.railway.app";
 
 const LOCAL_LOGO_BASE = "/provider-logos";
 

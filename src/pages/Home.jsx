@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import Row from "../components/Row";
 import SearchBar from "../components/SearchBar";
 import MovieGrid from "../components/MovieGrid";
+import API_BASE from "../config/api";
 
 import { getHome } from "../api/flixyfyApi";
 import { setPageSeo, setJsonLd } from "../utils/seo";
@@ -15,8 +16,6 @@ import "./Home.css";
 // FLIXYFY_HOME_DIRECT_PROVIDER_RESULTS_V14
 // Home provider filters now fetch /api/v4/movies directly from Home.jsx.
 // This bypasses stale helper/cache/bridge paths that were producing provider total 0.
-
-const API_BASE = "https://flixyfy-api-fresh-production.up.railway.app";
 
 // FLIXYFY_HOME_PROVIDER_FETCH_HARDEN_V15
 // Some Vercel environments can define the API base as either root, /api, or /api/v4.

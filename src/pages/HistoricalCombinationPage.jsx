@@ -4,13 +4,9 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import MovieGrid from "../components/MovieGrid";
 import SkeletonRow from "../components/SkeletonRow";
+import API_BASE from "../config/api";
 import { setPageSeo } from "../utils/seo";
 import "./HistoricalCombinationPage.css";
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-fresh-production.up.railway.app";
 
 function formatList(values, fallback = "All languages") {
   if (!Array.isArray(values) || values.length === 0) return fallback;
@@ -34,7 +30,7 @@ export default function HistoricalCombinationPage() {
         setError("");
 
         const res = await fetch(
-          `${API_BASE}/api/v3/historical/combination/${encodeURIComponent(slug)}?limit=160`
+          `${API_BASE}/api/v4/historical/combination/${encodeURIComponent(slug)}?limit=160`
         );
 
         if (!res.ok) throw new Error(`Combination API failed: ${res.status}`);

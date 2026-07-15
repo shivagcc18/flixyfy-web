@@ -5,15 +5,10 @@ import Footer from "../components/Footer";
 import MovieGrid from "../components/MovieGrid";
 import SkeletonRow from "../components/SkeletonRow";
 import SearchBar from "../components/SearchBar";
+import API_BASE from "../config/api";
 import { setPageSeo } from "../utils/seo";
 import { fetchFlixyfyJson, normalizeProviderForApi, providerDisplayLabel, providerFromCurrentUrl, providerValueForState, syncProviderToUrl } from "../utils/providerFetchPatch";
 import "./DomainPage.css";
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE ||
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-fresh-production.up.railway.app";
 
 const PAGE_SIZE = 25;
 

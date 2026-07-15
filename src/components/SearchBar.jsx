@@ -91,7 +91,7 @@ export default function SearchBar({
           return;
         }
 
-        const res = await fetch(`${API_BASE}/api/v3/search-suggestions?${params.toString()}`, {
+        const res = await fetch(`${API_BASE}/api/v4/search-suggestions?${params.toString()}`, {
           signal: controller.signal,
         });
 

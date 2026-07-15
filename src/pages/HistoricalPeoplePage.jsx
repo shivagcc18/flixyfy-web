@@ -4,14 +4,9 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import MovieGrid from "../components/MovieGrid";
 import SkeletonRow from "../components/SkeletonRow";
+import API_BASE from "../config/api";
 import { setPageSeo } from "../utils/seo";
 import "./HistoricalPeoplePage.css";
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE ||
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-fresh-production.up.railway.app";
 
 const PEOPLE_ROW_LIMIT = 25;
 const PEOPLE_SEARCH_LIMIT = 72;
@@ -163,7 +158,7 @@ async function fetchHistoricalPeople({ query = "", language = "", limit = PEOPLE
   if (query.trim()) params.set("q", query.trim());
   if (language) params.set("language", language);
 
-  const response = await fetch(`${API_BASE}/api/v3/historical/people?${params.toString()}`);
+  const response = await fetch(`${API_BASE}/api/v4/historical/people?${params.toString()}`);
   if (!response.ok) throw new Error(`People API failed: ${response.status}`);
 
   const data = await response.json();
@@ -289,7 +284,7 @@ export function HistoricalPersonPage({ mode = "historical" }) {
         }
 
         const res = await fetch(
-          `${API_BASE}/api/v3/${apiPath}/${encodeURIComponent(slug)}?${params.toString()}`
+          `${API_BASE}/api/v4/${apiPath}/${encodeURIComponent(slug)}?${params.toString()}`
         );
 
         if (!res.ok) throw new Error(`Person API failed: ${res.status}`);

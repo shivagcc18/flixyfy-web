@@ -3,13 +3,9 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import SkeletonRow from "../components/SkeletonRow";
+import API_BASE from "../config/api";
 import { setPageSeo } from "../utils/seo";
 import "./HistoricalPeoplePage.css";
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-fresh-production.up.railway.app";
 
 function comboTypeLabel(value) {
   return String(value || "combination").replace(/_/g, " ");
@@ -43,7 +39,7 @@ export default function HistoricalCombinationsPage() {
         params.set("min_movies", "5");
         if (query.trim()) params.set("q", query.trim());
 
-        const res = await fetch(`${API_BASE}/api/v3/historical/combinations?${params.toString()}`);
+        const res = await fetch(`${API_BASE}/api/v4/historical/combinations?${params.toString()}`);
         if (!res.ok) throw new Error(`Combinations API failed: ${res.status}`);
 
         const data = await res.json();

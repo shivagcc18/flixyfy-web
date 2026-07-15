@@ -2,14 +2,10 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
+import API_BASE from "../config/api";
 import { getBestProviderUrl } from "../utils/providerLinks";
 import { getProviderLogo } from "../utils/providerLogos";
 import { setPageSeo } from "../utils/seo";
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "https://flixyfy-api-fresh-production.up.railway.app";
 
 function imageUrl(path) {
   if (!path) return "/no-poster.png";
