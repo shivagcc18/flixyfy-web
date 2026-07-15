@@ -2,25 +2,27 @@ import API_BASE_URL from "../config/api";
 import { normalizeProviderForApi } from "../utils/providerFetchPatch";
 
 const API_V3 = `${API_BASE_URL}/api/v3`;
+const API_V4 = `${API_BASE_URL}/api/v4`;
 
 const cache = new Map();
 const pendingRequests = new Map();
 
 const CACHE_TTL = 5 * 60 * 1000;
 
-async function apiGet(path) {
+async function apiGet(path, apiBase = API_V3) {
   const now = Date.now();
-  const cached = cache.get(path);
+  const cacheKey = `${apiBase}${path}`;
+  const cached = cache.get(cacheKey);
 
   if (cached && now - cached.time < CACHE_TTL) {
     return cached.data;
   }
 
-  if (pendingRequests.has(path)) {
-    return pendingRequests.get(path);
+  if (pendingRequests.has(cacheKey)) {
+    return pendingRequests.get(cacheKey);
   }
 
-  const request = fetch(`${API_V3}${path}`)
+  const request = fetch(`${apiBase}${path}`)
     .then(async (res) => {
       if (!res.ok) {
         const text = await res.text();
@@ -30,7 +32,7 @@ async function apiGet(path) {
 
       const data = await res.json();
 
-      cache.set(path, {
+      cache.set(cacheKey, {
         data,
         time: Date.now(),
       });
@@ -38,10 +40,10 @@ async function apiGet(path) {
       return data;
     })
     .finally(() => {
-      pendingRequests.delete(path);
+      pendingRequests.delete(cacheKey);
     });
 
-  pendingRequests.set(path, request);
+  pendingRequests.set(cacheKey, request);
 
   return request;
 }
@@ -90,7 +92,7 @@ export function getMovies({
 }
 
 export function getMovie(slug) {
-  return apiGet(`/movie/${slug}`);
+  return apiGet(`/movie/${slug}`, API_V4);
 }
 
 export function searchMovies(params = {}) {
