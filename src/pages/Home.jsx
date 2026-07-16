@@ -266,7 +266,7 @@ export default function Home() {
     setPageSeo({
       title: "Find Where Movies Are Streaming in India",
       description:
-        "Search Indian movies, Hollywood movies, and classic Indian movies across OTT platforms and free YouTube full-movie links.",
+        "Search Indian movies, historical movies, and active webseries across OTT platforms and free YouTube full-movie links.",
       path: "/",
     });
 
@@ -404,7 +404,11 @@ export default function Home() {
       params.set("provider", providerForApi);
     }
 
-    const data = await fetchApi(`/global-search?${params.toString()}`);
+    const requestPath =
+      cleanType === "webseries"
+        ? `/webseries?${params.toString()}`
+        : `/search?${params.toString()}`;
+    const data = await fetchApi(requestPath);
     applyData(data, selectedPage, append);
   };
 
@@ -677,7 +681,7 @@ export default function Home() {
 
   const resultTitle = query
     ? `${searchScope === "global" ? "Global" : "Indian"} ${contentLabel} Search Results for "${query}" (${filterTotal})`
-    : `${titleParts.join(" • ")} ${contentLabel} (${filterTotal})`;
+    : `${titleParts.join(" - ")} ${contentLabel} (${filterTotal})`;
 
   const displayResultTitle = query
     ? resultTitle

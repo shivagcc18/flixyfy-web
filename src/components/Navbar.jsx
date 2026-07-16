@@ -26,8 +26,8 @@ export default function Navbar() {
         <NavLink to="/" end>
           Indian
         </NavLink>
-        <NavLink to="/hollywood">Global</NavLink>
         <NavLink to="/historical">Historical</NavLink>
+        <NavLink to="/webseries">Webseries</NavLink>
       </nav>
     </header>
   );

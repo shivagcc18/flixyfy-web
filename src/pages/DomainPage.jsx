@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -414,13 +414,24 @@ function domainConfig(domain) {
     };
   }
 
+  if (domain === "webseries") {
+    return {
+      title: "Webseries",
+      subtitle: "Active provider-backed webseries available across streaming services and official watch links.",
+      apiPath: "/api/v4/webseries",
+      seoTitle: "Webseries Streaming Availability",
+      seoDescription:
+        "Explore active webseries with provider-backed streaming availability and official watch links.",
+    };
+  }
+
   return {
-    title: "Global Movies & Webseries",
-    subtitle: "Global movies and webseries with streaming and rental availability across major providers.",
+    title: "Hollywood",
+    subtitle: "Hollywood remains available as a secondary library while the main launch focuses on Indian movies, historical movies, and active webseries.",
     apiPath: "/api/v4/hollywood",
-    seoTitle: "Global Movies and Webseries Streaming Availability",
+    seoTitle: "Hollywood Streaming Availability",
     seoDescription:
-      "Explore global movies and webseries and find where they are available to stream, rent, buy, or watch online.",
+      "Explore Hollywood movies and find where they are available to stream, rent, buy, or watch online.",
   };
 }
 
@@ -467,17 +478,12 @@ export default function DomainPage({ domain }) {
       if (searchText) params.set("q", searchText);
       if (year) params.set("year", year);
 
-      const isGlobalPage = domain === "hollywood";
-      const useGlobalSearch =
-        isGlobalPage && (globalContentType === "webseries" || globalContentType === "all");
-
       if (domain === "historical" && language) {
         params.set("language", language);
       }
 
-      if (useGlobalSearch) {
+      if (domain === "hollywood" && globalContentType !== "movies") {
         params.set("type", globalContentType);
-        params.set("region", "global");
         if (globalContentType === "webseries" && language) {
           params.set("language", language);
         }
@@ -488,7 +494,7 @@ export default function DomainPage({ domain }) {
         const providerForApi = normalizeProviderForApi(provider);
         if (providerForApi && providerForApi !== "all") params.set("provider", providerForApi);
       }
-      const requestPath = useGlobalSearch ? "/api/v4/global-search" : config.apiPath;
+      const requestPath = config.apiPath;
       const res = await fetch(`${API_BASE}${requestPath}?${params.toString()}`);
 
       if (!res.ok) throw new Error(`API failed: ${res.status}`);
