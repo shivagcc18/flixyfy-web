@@ -5,13 +5,12 @@ import { getMovie } from "../api/flixyfyApi";
 import { trackProviderClick } from "../utils/analytics";
 import { getBestProviderUrl } from "../utils/providerLinks";
 import { getProviderLogo } from "../utils/providerLogos";
+import { resolvePosterUrl } from "../utils/posterImages";
 import { setPageSeo, setJsonLd } from "../utils/seo";
 import Footer from "../components/Footer";
 
 function buildPosterUrl(path) {
-  if (!path) return "/no-poster.png";
-  if (path.startsWith("http")) return path;
-  return `https://image.tmdb.org/t/p/w500${path}`;
+  return resolvePosterUrl({ poster_url: path }) || "";
 }
 
 function getYoutubeUrl(yt) {

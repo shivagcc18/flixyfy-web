@@ -1,6 +1,7 @@
 // src/utils/providerLinks.js
 
 import { getProviderClickUrl, getProviderLinkType } from "./providerDirectLinks";
+import { getProviderLogo } from "./providerLogo";
 
 function asArray(value) {
   if (!value) return [];
@@ -35,7 +36,8 @@ export function providerName(provider) {
 }
 
 export function providerLogo(provider) {
-  if (!provider || typeof provider === "string") return "";
+  if (!provider) return "";
+  if (typeof provider === "string") return getProviderLogo(provider, provider) || "";
 
   return (
     provider.logo_url ||
@@ -44,6 +46,7 @@ export function providerLogo(provider) {
     provider.providerLogo ||
     provider.logo ||
     provider.icon ||
+    getProviderLogo(provider.provider_key || provider.providerKey || provider.provider, providerName(provider)) ||
     ""
   );
 }

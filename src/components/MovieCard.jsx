@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import { resolvePosterUrl } from "../utils/posterImages";
 import "./MovieCard.css";
 
 function encodePath(value) {
@@ -126,7 +128,8 @@ export default function MovieCard({ movie }) {
 
   const domain = movie.domain || movie.source_domain || "modern";
   const title = movie.title || movie.person_name || movie.display_name || "Untitled";
-  const poster = movie.poster_url || movie.poster || "";
+  const poster = resolvePosterUrl(movie);
+  const [imageFailed, setImageFailed] = useState(false);
   const url = getMovieUrl(movie);
   const label = getDomainLabel(movie);
 
@@ -140,13 +143,14 @@ export default function MovieCard({ movie }) {
   return (
     <Link to={url} className={`movie-card ${domain}`}>
       <div className="movie-card-poster-wrap">
-        {poster ? (
+        {poster && !imageFailed ? (
           <img
             className="movie-card-img"
             src={poster}
-            alt={title}
+            alt=""
             loading="lazy"
             decoding="async"
+            onError={() => setImageFailed(true)}
           />
         ) : (
           <PosterFallback movie={{ ...movie, domain }} title={title} />

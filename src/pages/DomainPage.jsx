@@ -426,8 +426,8 @@ function domainConfig(domain) {
   }
 
   return {
-    title: "Hollywood",
-    subtitle: "Hollywood remains available as a secondary library while the main launch focuses on Indian movies, historical movies, and active webseries.",
+    title: "Global",
+    subtitle: "Explore global movies and webseries with streaming availability across major providers.",
     apiPath: "/api/v4/hollywood",
     seoTitle: "Hollywood Streaming Availability",
     seoDescription:
@@ -444,7 +444,7 @@ export default function DomainPage({ domain }) {
   const [sort, setSort] = useState("popular");
   const [language, setLanguage] = useState("");
   const [availability, setAvailability] = useState("all");
-  const [provider, setProvider] = useState(() => providerFromCurrentUrl());
+  const [provider, setProvider] = useState(() => (domain === "webseries" ? "" : providerFromCurrentUrl()));
   const [globalContentType, setGlobalContentType] = useState("movies");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -578,6 +578,13 @@ export default function DomainPage({ domain }) {
   const showGlobalLanguage =
     domain === "hollywood" && globalContentType === "webseries";
 
+  useEffect(() => {
+    if (domain === "webseries" && provider) {
+      setProvider("");
+      syncProviderToUrl("");
+    }
+  }, [domain]);
+
   const countLabel = total || serverTotal || movies.length || 0;
   const loadedDomainCount = Math.min(movies.length, countLabel || movies.length);
   const showingResultText =
@@ -705,7 +712,7 @@ export default function DomainPage({ domain }) {
         {loading ? (
           <SkeletonRow />
         ) : movies.length === 0 ? (
-          <p className="domain-empty">No movies found.</p>
+          <p className="domain-empty">No {domain === "webseries" ? "webseries" : "movies"} found.</p>
         ) : (
           <>
             <MovieGrid movies={movies} />

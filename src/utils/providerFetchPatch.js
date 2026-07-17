@@ -4,7 +4,7 @@
 // - Restore only behavior, not destructive JSX changes.
 // - Hide only duplicate All Titles / All Movies select.
 // - Keep Language / Year / Sort / Provider filters visible.
-// - Free to Watch selects YouTube provider.
+// - Free to Watch uses availability filtering without forcing provider defaults.
 // - Home heading is Indian Movies (full count).
 // - Small GET cache/dedupe for faster repeat clicks.
 
@@ -244,17 +244,6 @@ function isFreeSelect(select) {
   return text.includes("free") || text.includes("free to watch") || text.includes("youtube only");
 }
 
-function setProviderToYouTube() {
-  const providerSelect = Array.from(document.querySelectorAll("select")).find(isProviderSelect);
-  if (!providerSelect) return;
-  const youtubeOption = Array.from(providerSelect.options || []).find((option) => normalizeProviderForApi(option.value || option.textContent) === "youtube");
-  if (!youtubeOption) return;
-  if (providerSelect.value !== youtubeOption.value) {
-    providerSelect.value = youtubeOption.value;
-    providerSelect.dispatchEvent(new Event("change", { bubbles: true }));
-  }
-}
-
 async function fixIndianHeadingCount() {
   const path = window.location.pathname.replace(/\/+$/, "");
   if (path !== "") return;
@@ -290,11 +279,7 @@ export function installProviderFetchPatch() {
   const observer = new MutationObserver(() => runUiStabilizer());
   observer.observe(document.documentElement, { childList: true, subtree: true });
 
-  document.addEventListener("change", (event) => {
-    const target = event.target;
-    if (target && target.tagName === "SELECT" && isFreeSelect(target)) {
-      window.setTimeout(setProviderToYouTube, 0);
-    }
+  document.addEventListener("change", () => {
     window.setTimeout(runUiStabilizer, 0);
   }, true);
 

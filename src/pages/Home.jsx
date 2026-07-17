@@ -315,15 +315,7 @@ export default function Home() {
   const activeAvailability = showAvailabilityFilter ? availability : "";
   const activeProvider = showProviderFilter ? providerValueForState(provider) : "";
 
-  const showingFiltered = Boolean(
-    query ||
-      activeLanguage ||
-      activeYear ||
-      sort !== "popular" ||
-      activeAvailability ||
-      activeProvider ||
-      searchType !== "movies"
-  );
+  const showingFiltered = true;
   const canLoadMore = showingFiltered && results.length < filterTotal;
 
   const loadHome = async () => {
@@ -475,7 +467,19 @@ export default function Home() {
         setLoading(true);
       }
 
-      if (searchText || selectedType !== "movies") {
+      if (selectedType === "people") {
+        const params = new URLSearchParams();
+        params.set("page", String(selectedPage));
+        params.set("limit", String(PAGE_SIZE));
+        if (searchText) params.set("q", searchText);
+        if (selectedLanguage) params.set("language", selectedLanguage);
+        const data = await fetchApi(`/people?${params.toString()}`);
+        const rawItems = getItems(data).filter((item) => {
+          const name = item.person_name || item.display_name || item.title || "";
+          return name && !/^n\/?a\s+n\/?a$/i.test(String(name).trim());
+        });
+        applyData({ ...data, items: rawItems }, selectedPage, append);
+      } else if (searchText || selectedType !== "movies") {
         await runGlobalSearch(
           searchText,
           selectedLanguage,
@@ -607,8 +611,6 @@ export default function Home() {
   };
 
   const handleAvailabilityChange = (value) => {
-    if (String(value || "").toLowerCase().includes("free")) { setProvider("youtube"); syncProviderToUrl("youtube"); }
-    if (String(value || "").toLowerCase().includes("free")) { setProvider("youtube"); syncProviderToUrl("youtube"); }
     setAvailability(value);
     trackFilter("availability", value || "all");
   };

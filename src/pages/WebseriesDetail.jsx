@@ -5,12 +5,11 @@ import Navbar from "../components/Navbar";
 import API_BASE from "../config/api";
 import { getBestProviderUrl } from "../utils/providerLinks";
 import { getProviderLogo } from "../utils/providerLogos";
+import { resolvePosterUrl } from "../utils/posterImages";
 import { setPageSeo } from "../utils/seo";
 
 function imageUrl(path) {
-  if (!path) return "/no-poster.png";
-  if (path.startsWith("http")) return path;
-  return `https://image.tmdb.org/t/p/w500${path}`;
+  return resolvePosterUrl({ poster_url: path }) || "";
 }
 
 export default function WebseriesDetail() {
