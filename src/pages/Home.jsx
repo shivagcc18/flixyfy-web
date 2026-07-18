@@ -19,10 +19,12 @@ import "./Home.css";
 // FLIXYFY_HOME_PROVIDER_FETCH_HARDEN_V15
 // Home provider filters must always hit exactly /api/v4/movies.
 
-// FLIXYFY_HOME_LATENCY_SCOPE_FIX_V4
+// FLIXYFY_HOME_LATENCY_PROVIDER_SCOPE_FIX_V5
 // - Fixes Indian Webseries language/provider count consistency.
 // - Soft language fallback: incomplete language metadata must not show empty pages.
-// - Uses one cached Indian webseries index for language/provider/year/query filtering.
+// - Uses one cached Indian webseries index for all providers.
+// - Uses provider-specific cached Indian webseries indexes when provider is selected.
+// - Uses soft language fallback so incomplete language metadata does not show empty pages.
 // - Uses longer GET cache and background page batching to reduce repeated latency.
 
 function normalizeApiRoot(value) {
@@ -186,12 +188,12 @@ const PROVIDER_ALIASES = {
   coupang_play: ["coupang play", "coupang_play"],
 };
 
-let indianWebseriesIndexCache = {
-  createdAt: 0,
-  items: [],
-  sourceTotal: 0,
-  promise: null,
-};
+const indianWebseriesIndexCacheByKey = new Map();
+
+function indianWebseriesCacheKey(providerFilter = "") {
+  const providerKey = normalizeProviderForApi(providerFilter || "");
+  return providerKey && providerKey !== "all" ? providerKey : "all";
+}
 
 function getItems(data) {
   if (Array.isArray(data?.items)) return data.items;
@@ -437,11 +439,15 @@ function sortWebseriesItems(items, selectedSort) {
   });
 }
 
-function readCachedIndianWebseriesIndex() {
+function indianWebseriesSessionCacheName(cacheKey) {
+  return `FLIXYFY_INDIAN_WEBSERIES_INDEX_V5_${cacheKey || "all"}`;
+}
+
+function readCachedIndianWebseriesIndex(cacheKey = "all") {
   if (typeof window === "undefined") return null;
 
   try {
-    const raw = window.sessionStorage.getItem("FLIXYFY_INDIAN_WEBSERIES_INDEX_V4");
+    const raw = window.sessionStorage.getItem(indianWebseriesSessionCacheName(cacheKey));
     if (!raw) return null;
 
     const parsed = JSON.parse(raw);
@@ -454,11 +460,11 @@ function readCachedIndianWebseriesIndex() {
   }
 }
 
-function writeCachedIndianWebseriesIndex(payload) {
+function writeCachedIndianWebseriesIndex(cacheKey, payload) {
   if (typeof window === "undefined") return;
 
   try {
-    window.sessionStorage.setItem("FLIXYFY_INDIAN_WEBSERIES_INDEX_V4", JSON.stringify(payload));
+    window.sessionStorage.setItem(indianWebseriesSessionCacheName(cacheKey), JSON.stringify(payload));
   } catch (_) {
     // Session cache is optional.
   }
@@ -477,7 +483,7 @@ async function fetchApiUncached(cleanPath) {
 
       if (typeof window !== "undefined") {
         window.__FLIXYFY_HOME_DEBUG__ = {
-          version: "FLIXYFY_HOME_LATENCY_SCOPE_FIX_V4",
+          version: "FLIXYFY_HOME_LATENCY_PROVIDER_SCOPE_FIX_V5",
           ok: true,
           url,
           total: data?.total,
@@ -517,29 +523,33 @@ async function fetchApi(path) {
   return request;
 }
 
-async function buildIndianWebseriesIndex(force = false) {
-  const sessionCached = readCachedIndianWebseriesIndex();
+async function buildIndianWebseriesIndex(force = false, providerFilter = "") {
+  const cacheKey = indianWebseriesCacheKey(providerFilter);
+  const providerKey = cacheKey === "all" ? "" : cacheKey;
+  const memoryCached = indianWebseriesIndexCacheByKey.get(cacheKey);
+  const sessionCached = readCachedIndianWebseriesIndex(cacheKey);
 
   if (
     !force &&
-    indianWebseriesIndexCache.items.length > 0 &&
-    Date.now() - indianWebseriesIndexCache.createdAt < INDEX_CACHE_TTL
+    memoryCached?.items?.length > 0 &&
+    Date.now() - memoryCached.createdAt < INDEX_CACHE_TTL
   ) {
-    return indianWebseriesIndexCache;
+    return memoryCached;
   }
 
   if (!force && sessionCached) {
-    indianWebseriesIndexCache = {
+    const payload = {
       createdAt: sessionCached.createdAt,
       items: sessionCached.items,
       sourceTotal: sessionCached.sourceTotal || sessionCached.items.length,
       promise: null,
     };
-    return indianWebseriesIndexCache;
+    indianWebseriesIndexCacheByKey.set(cacheKey, payload);
+    return payload;
   }
 
-  if (!force && indianWebseriesIndexCache.promise) {
-    return indianWebseriesIndexCache.promise;
+  if (!force && memoryCached?.promise) {
+    return memoryCached.promise;
   }
 
   const buildPromise = (async () => {
@@ -549,6 +559,12 @@ async function buildIndianWebseriesIndex(force = false) {
     firstParams.set("limit", String(pageSize));
     firstParams.set("region", "global");
     firstParams.set("scope", "global");
+
+    // FLIXYFY_HOME_LATENCY_PROVIDER_SCOPE_FIX_V5:
+    // When provider is selected, fetch provider-specific webseries pages from API first.
+    // Do not rely only on card metadata provider fields, because many webseries rows
+    // do not expose provider_keys/provider_names consistently yet.
+    if (providerKey) firstParams.set("provider", providerKey);
 
     const firstData = await fetchApi(`/webseries?${firstParams.toString()}`);
     const firstItems = getItems(firstData);
@@ -583,6 +599,7 @@ async function buildIndianWebseriesIndex(force = false) {
           params.set("limit", String(pageSize));
           params.set("region", "global");
           params.set("scope", "global");
+          if (providerKey) params.set("provider", providerKey);
           return fetchApi(`/webseries?${params.toString()}`);
         })
       );
@@ -598,18 +615,21 @@ async function buildIndianWebseriesIndex(force = false) {
       items: indianItems,
       sourceTotal: sourceTotal || all.length,
       promise: null,
+      providerKey: providerKey || "all",
     };
 
-    indianWebseriesIndexCache = payload;
-    writeCachedIndianWebseriesIndex({
+    indianWebseriesIndexCacheByKey.set(cacheKey, payload);
+    writeCachedIndianWebseriesIndex(cacheKey, {
       createdAt: payload.createdAt,
       items: payload.items,
       sourceTotal: payload.sourceTotal,
+      providerKey: payload.providerKey,
     });
 
     if (typeof window !== "undefined") {
       window.__FLIXYFY_INDIAN_WEBSERIES_SCOPE_DEBUG__ = {
-        version: "FLIXYFY_HOME_LATENCY_SCOPE_FIX_V4",
+        version: "FLIXYFY_HOME_LATENCY_PROVIDER_SCOPE_FIX_V5",
+        providerKey: payload.providerKey,
         sourceTotal: payload.sourceTotal,
         indianTotal: payload.items.length,
         ts: new Date().toISOString(),
@@ -619,26 +639,35 @@ async function buildIndianWebseriesIndex(force = false) {
     return payload;
   })();
 
-  indianWebseriesIndexCache.promise = buildPromise;
+  indianWebseriesIndexCacheByKey.set(cacheKey, {
+    createdAt: Date.now(),
+    items: [],
+    sourceTotal: 0,
+    promise: buildPromise,
+    providerKey: providerKey || "all",
+  });
 
   try {
     return await buildPromise;
   } finally {
-    indianWebseriesIndexCache.promise = null;
+    const finalPayload = indianWebseriesIndexCacheByKey.get(cacheKey);
+    if (finalPayload?.promise) {
+      indianWebseriesIndexCacheByKey.set(cacheKey, { ...finalPayload, promise: null });
+    }
   }
 }
-
 async function fetchIndianWebseriesScopedData(baseParams, selectedPage, pageSize, options = {}) {
-  const index = await buildIndianWebseriesIndex(false);
-
   const selectedLanguage = options.language ?? baseParams.get("language") ?? "";
   const selectedProvider = options.provider ?? baseParams.get("provider") ?? "";
   const selectedYear = options.year ?? baseParams.get("year") ?? "";
   const selectedQuery = options.query ?? baseParams.get("q") ?? "";
   const selectedSort = options.sort ?? baseParams.get("sort") ?? "popular";
+  const providerKey = normalizeProviderForApi(selectedProvider || "");
+
+  const index = await buildIndianWebseriesIndex(false, providerKey);
 
   let filtered = index.items
-    .filter((item) => matchesProvider(item, selectedProvider))
+    .filter((item) => (providerKey ? true : matchesProvider(item, selectedProvider)))
     .filter((item) => matchesYear(item, selectedYear))
     .filter((item) => matchesQuery(item, selectedQuery));
 
@@ -659,7 +688,7 @@ async function fetchIndianWebseriesScopedData(baseParams, selectedPage, pageSize
     filtered_total: filtered.length,
     source_total: index.sourceTotal,
     indian_index_total: index.items.length,
-    scope_filter_version: "FLIXYFY_HOME_LATENCY_SCOPE_FIX_V4",
+    scope_filter_version: "FLIXYFY_HOME_LATENCY_PROVIDER_SCOPE_FIX_V5",
   };
 }
 
@@ -1017,9 +1046,9 @@ export default function Home() {
 
   useEffect(() => {
     if (searchType === "webseries" && searchScope === "indian") {
-      buildIndianWebseriesIndex(false).catch(() => {});
+      buildIndianWebseriesIndex(false, provider).catch(() => {});
     }
-  }, [searchType, searchScope]);
+  }, [searchType, searchScope, provider]);
 
   const handleSearch = async (q) => {
     const clean = q.trim();
