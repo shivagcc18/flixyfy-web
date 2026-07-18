@@ -10,21 +10,27 @@ import API_BASE from "../config/api";
 import { getHome } from "../api/flixyfyApi";
 import { setPageSeo, setJsonLd } from "../utils/seo";
 import { trackFilter, trackLanguageOpen, trackLoadMore } from "../utils/analytics";
-import { fetchFlixyfyJson, normalizeProviderForApi, providerDisplayLabel, providerFromCurrentUrl, providerValueForState, syncProviderToUrl } from "../utils/providerFetchPatch";
+import { fetchFlixyfyJson, normalizeProviderForApi, providerDisplayLabel, providerFromCurrentUrl, providerValueForState } from "../utils/providerFetchPatch";
 import "./Home.css";
 
 // FLIXYFY_HOME_DIRECT_PROVIDER_RESULTS_V14
 // Home provider filters now fetch /api/v4/movies directly from Home.jsx.
-// This bypasses stale helper/cache/bridge paths that were producing provider total 0.
 
 // FLIXYFY_HOME_PROVIDER_FETCH_HARDEN_V15
-// Some Vercel environments can define the API base as either root, /api, or /api/v4.
 // Home provider filters must always hit exactly /api/v4/movies.
+
+// FLIXYFY_HOME_LATENCY_SCOPE_FIX_V4
+// - Fixes Indian Webseries language/provider count consistency.
+// - Soft language fallback: incomplete language metadata must not show empty pages.
+// - Uses one cached Indian webseries index for language/provider/year/query filtering.
+// - Uses longer GET cache and background page batching to reduce repeated latency.
+
 function normalizeApiRoot(value) {
   return String(value || "")
     .trim()
     .replace(/\/+$/, "")
     .replace(/\/api\/v3$/i, "")
+    .replace(/\/api\/v4$/i, "")
     .replace(/\/api$/i, "");
 }
 
@@ -36,7 +42,8 @@ const API_ROOT_CANDIDATES = Array.from(
 );
 
 const PAGE_SIZE = 25;
-const FILTER_CACHE_TTL = 60 * 1000;
+const FILTER_CACHE_TTL = 5 * 60 * 1000;
+const INDEX_CACHE_TTL = 15 * 60 * 1000;
 const filterResponseCache = new Map();
 const pendingFilterRequests = new Map();
 
@@ -81,9 +88,7 @@ const PEOPLE_LANGUAGES = [
 ];
 
 const YEARS = [];
-for (let year = 2026; year >= 2000; year--) {
-  YEARS.push(String(year));
-}
+for (let year = 2026; year >= 2000; year--) YEARS.push(String(year));
 
 const SORTS = [
   { label: "Popular", value: "popular" },
@@ -128,6 +133,66 @@ const SEARCH_TYPES = [
   { label: "All", value: "all" },
 ];
 
+const INDIAN_LANGUAGE_TOKEN_ALIASES = {
+  hindi: ["hindi", "hi", "bollywood"],
+  telugu: ["telugu", "te", "tollywood"],
+  tamil: ["tamil", "ta", "kollywood"],
+  malayalam: ["malayalam", "ml", "mollywood"],
+  kannada: ["kannada", "kn", "sandalwood"],
+  bengali: ["bengali", "bn"],
+  marathi: ["marathi", "mr"],
+  punjabi: ["punjabi", "pa"],
+  gujarati: ["gujarati", "gu"],
+  odia: ["odia", "oriya", "or"],
+  assamese: ["assamese", "as"],
+};
+
+const INDIAN_LANGUAGE_TOKEN_SET = new Set(
+  Object.values(INDIAN_LANGUAGE_TOKEN_ALIASES).flat()
+);
+
+const GLOBAL_LANGUAGE_TOKEN_SET = new Set([
+  "en", "english", "ko", "korean", "ja", "japanese", "zh", "chinese",
+  "es", "spanish", "fr", "french", "de", "german", "th", "thai", "tr", "turkish",
+]);
+
+const INDIAN_PROVIDER_HINTS = new Set([
+  "jiohotstar", "hotstar", "disney hotstar", "zee5", "zee 5", "sonyliv", "sony liv",
+  "aha", "sun nxt", "sunnxt", "etv win", "mx player", "mxplayer", "hoichoi",
+  "manorama max", "shemaroo", "shemaroome",
+]);
+
+const PROVIDER_ALIASES = {
+  netflix: ["netflix"],
+  prime_video: ["prime video", "prime_video", "amazon prime", "amazon prime video", "amazonvideo"],
+  jiohotstar: ["jiohotstar", "jio hotstar", "hotstar", "disney hotstar", "disney+ hotstar"],
+  zee5: ["zee5", "zee 5"],
+  sonyliv: ["sonyliv", "sony liv"],
+  aha: ["aha"],
+  sun_nxt: ["sun nxt", "sunnxt", "sun_nxt"],
+  sunnxt: ["sun nxt", "sunnxt", "sun_nxt"],
+  etv_win: ["etv win", "etv_win"],
+  mx_player: ["mx player", "mxplayer", "mx_player"],
+  youtube: ["youtube", "you tube", "youtu be", "youtube com"],
+  apple_tv_store: ["apple tv", "apple tv store", "itunes", "apple"],
+  disney_plus: ["disney plus", "disney+"],
+  hulu: ["hulu"],
+  max: ["max", "hbo max"],
+  viki: ["viki", "rakuten viki"],
+  kocowa: ["kocowa"],
+  tving: ["tving"],
+  wavve: ["wavve"],
+  watcha: ["watcha"],
+  coupang_play: ["coupang play", "coupang_play"],
+};
+
+let indianWebseriesIndexCache = {
+  createdAt: 0,
+  items: [],
+  sourceTotal: 0,
+  promise: null,
+};
+
 function getItems(data) {
   if (Array.isArray(data?.items)) return data.items;
   if (Array.isArray(data?.movies)) return data.movies;
@@ -148,61 +213,7 @@ function getTotal(data, items) {
   return Number.isFinite(number) ? number : items.length;
 }
 
-const FLIXYFY_INDIAN_WEBSERIES_COUNT_CONSISTENCY_V2 = "FLIXYFY_FRONTEND_INDIAN_WEBSERIES_COUNT_CONSISTENCY_V2";
-
-const INDIAN_WEBSERIES_LANGUAGE_KEYS_V2 = new Set([
-  "hi", "hindi",
-  "te", "telugu",
-  "ta", "tamil",
-  "ml", "malayalam",
-  "kn", "kannada",
-  "bn", "bengali",
-  "mr", "marathi",
-  "pa", "punjabi",
-  "gu", "gujarati",
-  "or", "odia", "oriya",
-  "as", "assamese",
-  "ur", "urdu",
-  "sa", "sanskrit",
-  "bhojpuri",
-]);
-
-const GLOBAL_WEBSERIES_LANGUAGE_KEYS_V2 = new Set([
-  "en", "english",
-  "ko", "korean",
-  "ja", "japanese",
-  "zh", "chinese",
-  "es", "spanish",
-  "fr", "french",
-  "de", "german",
-  "th", "thai",
-  "tr", "turkish",
-]);
-
-const INDIAN_WEBSERIES_PROVIDER_ALIASES_V2 = {
-  netflix: ["netflix"],
-  prime_video: ["prime video", "prime_video", "amazon prime", "amazon prime video", "amazonvideo"],
-  jiohotstar: ["jiohotstar", "jio hotstar", "hotstar", "disney hotstar", "disney+ hotstar"],
-  zee5: ["zee5", "zee 5"],
-  sonyliv: ["sonyliv", "sony liv"],
-  aha: ["aha"],
-  sunnxt: ["sun nxt", "sunnxt", "sun_nxt"],
-  youtube: ["youtube", "you tube", "youtu be", "youtube com"],
-  mx_player: ["mx player", "mxplayer", "mx_player"],
-  etv_win: ["etv win", "etv_win"],
-  apple_tv_store: ["apple tv", "apple tv store", "itunes", "apple"],
-  disney_plus: ["disney plus", "disney+"],
-  hulu: ["hulu"],
-  max: ["max", "hbo max"],
-};
-
-let indianWebseriesIndexCacheV2 = {
-  createdAt: 0,
-  items: [],
-  sourceTotal: 0,
-};
-
-function normalizeIndianWebseriesTokenV2(value) {
+function normalizeScopeToken(value) {
   return String(value || "")
     .trim()
     .toLowerCase()
@@ -212,31 +223,31 @@ function normalizeIndianWebseriesTokenV2(value) {
     .trim();
 }
 
-function collectIndianWebseriesTokensV2(value, out = [], depth = 0) {
+function collectScopeTokens(value, out = [], depth = 0) {
   if (depth > 4 || value == null) return out;
 
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-    const text = normalizeIndianWebseriesTokenV2(value);
+    const text = normalizeScopeToken(value);
     if (text) out.push(text);
     return out;
   }
 
   if (Array.isArray(value)) {
-    value.slice(0, 80).forEach((item) => collectIndianWebseriesTokensV2(item, out, depth + 1));
+    value.slice(0, 80).forEach((item) => collectScopeTokens(item, out, depth + 1));
     return out;
   }
 
   if (typeof value === "object") {
     Object.entries(value).forEach(([key, item]) => {
-      collectIndianWebseriesTokensV2(key, out, depth + 1);
-      collectIndianWebseriesTokensV2(item, out, depth + 1);
+      collectScopeTokens(key, out, depth + 1);
+      collectScopeTokens(item, out, depth + 1);
     });
   }
 
   return out;
 }
 
-function getIndianWebseriesTokensV2(item) {
+function getWebseriesTokens(item) {
   const fields = [
     item?.domain,
     item?.source_domain,
@@ -266,18 +277,20 @@ function getIndianWebseriesTokensV2(item) {
     item?.availability,
     item?.providers,
     item?.watch_providers,
+    item?.title,
+    item?.original_title,
+    item?.name,
+    item?.original_name,
     item?.provenance_json,
   ];
 
   const tokens = [];
-  fields.forEach((value) => collectIndianWebseriesTokensV2(value, tokens));
+  fields.forEach((value) => collectScopeTokens(value, tokens));
   return tokens;
 }
 
-function isIndianWebseriesItemV2(item) {
-  if (!item || typeof item !== "object") return false;
-
-  const tokens = getIndianWebseriesTokensV2(item);
+function hasIndianSignal(item) {
+  const tokens = getWebseriesTokens(item);
   const joined = ` ${tokens.join(" ")} `;
 
   if (
@@ -286,22 +299,23 @@ function isIndianWebseriesItemV2(item) {
     joined.includes(" indian ") ||
     joined.includes(" bollywood ") ||
     joined.includes(" tollywood ") ||
-    joined.includes(" kollywood ")
+    joined.includes(" kollywood ") ||
+    joined.includes(" mollywood ") ||
+    joined.includes(" sandalwood ")
   ) {
     return true;
   }
 
   for (const token of tokens) {
-    if (INDIAN_WEBSERIES_LANGUAGE_KEYS_V2.has(token)) return true;
+    if (INDIAN_LANGUAGE_TOKEN_SET.has(token)) return true;
+    if (INDIAN_PROVIDER_HINTS.has(token)) return true;
   }
 
   return false;
 }
 
-function isGlobalOnlyWebseriesItemV2(item) {
-  if (!item || typeof item !== "object") return false;
-
-  const tokens = getIndianWebseriesTokensV2(item);
+function hasGlobalOnlySignal(item) {
+  const tokens = getWebseriesTokens(item);
   const joined = ` ${tokens.join(" ")} `;
 
   if (
@@ -311,54 +325,63 @@ function isGlobalOnlyWebseriesItemV2(item) {
     joined.includes(" japanese ") ||
     joined.includes(" united states ") ||
     joined.includes(" usa ") ||
-    joined.includes(" us ") ||
     joined.includes(" hollywood ")
   ) {
     return true;
   }
 
-  return tokens.some((token) => GLOBAL_WEBSERIES_LANGUAGE_KEYS_V2.has(token));
+  return tokens.some((token) => GLOBAL_LANGUAGE_TOKEN_SET.has(token));
 }
 
-function filterIndianWebseriesItemsV2(items) {
+function filterIndianWebseriesItems(items) {
   if (!Array.isArray(items)) return [];
 
   return items.filter((item) => {
-    if (isIndianWebseriesItemV2(item)) return true;
-    if (isGlobalOnlyWebseriesItemV2(item)) return false;
+    if (hasIndianSignal(item)) return true;
+    if (hasGlobalOnlySignal(item)) return false;
     return false;
   });
 }
 
-function getIndianWebseriesProviderTextV2(item) {
-  return getIndianWebseriesTokensV2(item).join(" ");
-}
-
-function matchesIndianWebseriesProviderV2(item, selectedProvider) {
+function matchesProvider(item, selectedProvider) {
   const clean = normalizeProviderForApi(selectedProvider || "");
   if (!clean || clean === "all") return true;
 
-  const providerText = getIndianWebseriesProviderTextV2(item);
-  const aliases = INDIAN_WEBSERIES_PROVIDER_ALIASES_V2[clean] || [
-    normalizeIndianWebseriesTokenV2(clean),
-    normalizeIndianWebseriesTokenV2(selectedProvider),
-  ];
+  const text = getWebseriesTokens(item).join(" ");
+  const aliases = PROVIDER_ALIASES[clean] || [clean, selectedProvider].map(normalizeScopeToken);
 
   return aliases.some((alias) => {
-    const token = normalizeIndianWebseriesTokenV2(alias);
-    return token && providerText.includes(token);
+    const token = normalizeScopeToken(alias);
+    return token && text.includes(token);
   });
 }
 
-function matchesIndianWebseriesLanguageV2(item, selectedLanguage) {
-  const clean = normalizeIndianWebseriesTokenV2(selectedLanguage || "");
+function matchesLanguageStrict(item, selectedLanguage) {
+  const clean = normalizeScopeToken(selectedLanguage || "");
   if (!clean) return true;
 
-  const tokens = getIndianWebseriesTokensV2(item);
-  return tokens.includes(clean) || tokens.some((token) => token === clean || token.includes(clean));
+  const aliases = INDIAN_LANGUAGE_TOKEN_ALIASES[clean] || [clean];
+  const tokens = getWebseriesTokens(item);
+
+  return aliases.some((alias) => {
+    const token = normalizeScopeToken(alias);
+    return token && (tokens.includes(token) || tokens.some((x) => x === token || x.includes(token)));
+  });
 }
 
-function matchesIndianWebseriesYearV2(item, selectedYear) {
+function applySoftLanguageFilter(items, selectedLanguage) {
+  const clean = normalizeScopeToken(selectedLanguage || "");
+  if (!clean) return items;
+
+  const strictMatches = items.filter((item) => matchesLanguageStrict(item, clean));
+
+  // FLIXYFY_INDIAN_WEBSERIES_SOFT_LANGUAGE_FILTER_V4:
+  // Webseries language metadata is incomplete. Do not show Hindi/Telugu/etc as 0
+  // when the base Indian webseries set exists but language signal is missing.
+  return strictMatches.length > 0 ? strictMatches : items;
+}
+
+function matchesYear(item, selectedYear) {
   const clean = String(selectedYear || "").trim();
   if (!clean) return true;
 
@@ -366,11 +389,11 @@ function matchesIndianWebseriesYearV2(item, selectedYear) {
   return year === clean;
 }
 
-function matchesIndianWebseriesQueryV2(item, query) {
-  const clean = normalizeIndianWebseriesTokenV2(query || "");
+function matchesQuery(item, query) {
+  const clean = normalizeScopeToken(query || "");
   if (!clean) return true;
 
-  const haystack = normalizeIndianWebseriesTokenV2(
+  const haystack = normalizeScopeToken(
     [
       item?.title,
       item?.name,
@@ -384,155 +407,61 @@ function matchesIndianWebseriesQueryV2(item, query) {
   return haystack.includes(clean);
 }
 
-function getIndianWebseriesNumberV2(value) {
+function safeNumber(value) {
   const parsed = Number(value || 0);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function sortIndianWebseriesItemsV2(items, selectedSort) {
-  const sort = String(selectedSort || "popular").trim().toLowerCase();
+function sortWebseriesItems(items, selectedSort) {
+  const cleanSort = String(selectedSort || "popular").trim().toLowerCase();
 
   return [...items].sort((a, b) => {
-    if (sort === "latest") {
+    if (cleanSort === "latest") {
       const yearDiff =
-        getIndianWebseriesNumberV2(b?.release_year || b?.year || b?.first_air_year) -
-        getIndianWebseriesNumberV2(a?.release_year || a?.year || a?.first_air_year);
+        safeNumber(b?.release_year || b?.year || b?.first_air_year) -
+        safeNumber(a?.release_year || a?.year || a?.first_air_year);
       if (yearDiff !== 0) return yearDiff;
     }
 
-    if (sort === "rating") {
+    if (cleanSort === "rating") {
       const ratingDiff =
-        getIndianWebseriesNumberV2(b?.rating || b?.vote_average || b?.imdb_rating) -
-        getIndianWebseriesNumberV2(a?.rating || a?.vote_average || a?.imdb_rating);
+        safeNumber(b?.rating || b?.vote_average || b?.imdb_rating) -
+        safeNumber(a?.rating || a?.vote_average || a?.imdb_rating);
       if (ratingDiff !== 0) return ratingDiff;
     }
 
-    const popularityDiff =
-      getIndianWebseriesNumberV2(b?.popularity) -
-      getIndianWebseriesNumberV2(a?.popularity);
+    const popularityDiff = safeNumber(b?.popularity) - safeNumber(a?.popularity);
     if (popularityDiff !== 0) return popularityDiff;
 
     return String(a?.title || a?.name || "").localeCompare(String(b?.title || b?.name || ""));
   });
 }
 
-async function buildIndianWebseriesIndexV2(force = false) {
-  const ttlMs = 5 * 60 * 1000;
-  if (
-    !force &&
-    indianWebseriesIndexCacheV2.items.length > 0 &&
-    Date.now() - indianWebseriesIndexCacheV2.createdAt < ttlMs
-  ) {
-    return indianWebseriesIndexCacheV2;
+function readCachedIndianWebseriesIndex() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem("FLIXYFY_INDIAN_WEBSERIES_INDEX_V4");
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    if (!parsed?.createdAt || !Array.isArray(parsed?.items)) return null;
+    if (Date.now() - parsed.createdAt > INDEX_CACHE_TTL) return null;
+
+    return parsed;
+  } catch (_) {
+    return null;
   }
-
-  const pageSize = 100;
-  const maxPages = 120;
-  const all = [];
-  const seen = new Set();
-  let sourceTotal = 0;
-
-  for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
-    const params = new URLSearchParams();
-    params.set("page", String(pageNo));
-    params.set("limit", String(pageSize));
-    params.set("region", "global");
-    params.set("scope", "global");
-
-    const data = await fetchApi(`/webseries?${params.toString()}`);
-    const rawItems = getItems(data);
-    sourceTotal = Math.max(sourceTotal, Number(data?.total || 0));
-
-    if (!rawItems.length) break;
-
-    for (const item of rawItems) {
-      const key = String(item?.slug || item?.id || item?.title || JSON.stringify(item)).trim();
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      all.push(item);
-    }
-
-    if (rawItems.length < pageSize) break;
-  }
-
-  const indianItems = filterIndianWebseriesItemsV2(all);
-
-  indianWebseriesIndexCacheV2 = {
-    createdAt: Date.now(),
-    items: indianItems,
-    sourceTotal: sourceTotal || all.length,
-  };
-
-  if (typeof window !== "undefined") {
-    window.__FLIXYFY_INDIAN_WEBSERIES_SCOPE_DEBUG__ = {
-      version: FLIXYFY_INDIAN_WEBSERIES_COUNT_CONSISTENCY_V2,
-      sourceTotal: indianWebseriesIndexCacheV2.sourceTotal,
-      indianTotal: indianWebseriesIndexCacheV2.items.length,
-      ts: new Date().toISOString(),
-    };
-  }
-
-  return indianWebseriesIndexCacheV2;
 }
 
-async function fetchIndianWebseriesScopedData(
-  baseParams,
-  selectedPage,
-  pageSize,
-  options = {}
-) {
-  const index = await buildIndianWebseriesIndexV2(false);
+function writeCachedIndianWebseriesIndex(payload) {
+  if (typeof window === "undefined") return;
 
-  const language =
-    options.language ??
-    baseParams.get("language") ??
-    "";
-
-  const provider =
-    options.provider ??
-    baseParams.get("provider") ??
-    "";
-
-  const year =
-    options.year ??
-    baseParams.get("year") ??
-    "";
-
-  const query =
-    options.query ??
-    baseParams.get("q") ??
-    "";
-
-  const sort =
-    options.sort ??
-    baseParams.get("sort") ??
-    "popular";
-
-  let filtered = index.items
-    .filter((item) => matchesIndianWebseriesLanguageV2(item, language))
-    .filter((item) => matchesIndianWebseriesProviderV2(item, provider))
-    .filter((item) => matchesIndianWebseriesYearV2(item, year))
-    .filter((item) => matchesIndianWebseriesQueryV2(item, query));
-
-  filtered = sortIndianWebseriesItemsV2(filtered, sort);
-
-  const currentPage = Math.max(1, Number(selectedPage || 1));
-  const limit = Math.max(1, Number(pageSize || 25));
-  const start = (currentPage - 1) * limit;
-  const pageItems = filtered.slice(start, start + limit);
-
-  return {
-    items: pageItems,
-    results: pageItems,
-    movies: pageItems,
-    total: filtered.length,
-    count: filtered.length,
-    filtered_total: filtered.length,
-    source_total: index.sourceTotal,
-    indian_index_total: index.items.length,
-    scope_filter_version: FLIXYFY_INDIAN_WEBSERIES_COUNT_CONSISTENCY_V2,
-    scope_filter_note: "Indian Webseries full index filtered locally for consistent language/provider counts.",
-  };
+  try {
+    window.sessionStorage.setItem("FLIXYFY_INDIAN_WEBSERIES_INDEX_V4", JSON.stringify(payload));
+  } catch (_) {
+    // Session cache is optional.
+  }
 }
 
 async function fetchApiUncached(cleanPath) {
@@ -548,7 +477,7 @@ async function fetchApiUncached(cleanPath) {
 
       if (typeof window !== "undefined") {
         window.__FLIXYFY_HOME_DEBUG__ = {
-          version: "FLIXYFY_HOME_PROVIDER_FETCH_HARDEN_V15",
+          version: "FLIXYFY_HOME_LATENCY_SCOPE_FIX_V4",
           ok: true,
           url,
           total: data?.total,
@@ -561,16 +490,6 @@ async function fetchApiUncached(cleanPath) {
     } catch (err) {
       errors.push(`${url} :: ${err?.message || String(err)}`);
     }
-  }
-
-  if (typeof window !== "undefined") {
-    window.__FLIXYFY_HOME_DEBUG__ = {
-      version: "FLIXYFY_HOME_PROVIDER_FETCH_HARDEN_V15",
-      ok: false,
-      path: cleanPath,
-      errors,
-      ts: new Date().toISOString(),
-    };
   }
 
   throw new Error(errors.join(" | "));
@@ -596,6 +515,152 @@ async function fetchApi(path) {
 
   pendingFilterRequests.set(cleanPath, request);
   return request;
+}
+
+async function buildIndianWebseriesIndex(force = false) {
+  const sessionCached = readCachedIndianWebseriesIndex();
+
+  if (
+    !force &&
+    indianWebseriesIndexCache.items.length > 0 &&
+    Date.now() - indianWebseriesIndexCache.createdAt < INDEX_CACHE_TTL
+  ) {
+    return indianWebseriesIndexCache;
+  }
+
+  if (!force && sessionCached) {
+    indianWebseriesIndexCache = {
+      createdAt: sessionCached.createdAt,
+      items: sessionCached.items,
+      sourceTotal: sessionCached.sourceTotal || sessionCached.items.length,
+      promise: null,
+    };
+    return indianWebseriesIndexCache;
+  }
+
+  if (!force && indianWebseriesIndexCache.promise) {
+    return indianWebseriesIndexCache.promise;
+  }
+
+  const buildPromise = (async () => {
+    const pageSize = 100;
+    const firstParams = new URLSearchParams();
+    firstParams.set("page", "1");
+    firstParams.set("limit", String(pageSize));
+    firstParams.set("region", "global");
+    firstParams.set("scope", "global");
+
+    const firstData = await fetchApi(`/webseries?${firstParams.toString()}`);
+    const firstItems = getItems(firstData);
+    const sourceTotal = Math.max(Number(firstData?.total || 0), firstItems.length);
+    const pageCount = Math.max(1, Math.ceil(sourceTotal / pageSize));
+    const maxPages = Math.min(pageCount, 120);
+
+    const all = [];
+    const seen = new Set();
+
+    function addRows(rows) {
+      rows.forEach((item) => {
+        const key = String(item?.slug || item?.id || item?.title || JSON.stringify(item)).trim();
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        all.push(item);
+      });
+    }
+
+    addRows(firstItems);
+
+    const pages = [];
+    for (let pageNo = 2; pageNo <= maxPages; pageNo += 1) pages.push(pageNo);
+
+    const batchSize = 6;
+    for (let i = 0; i < pages.length; i += batchSize) {
+      const batch = pages.slice(i, i + batchSize);
+      const results = await Promise.allSettled(
+        batch.map((pageNo) => {
+          const params = new URLSearchParams();
+          params.set("page", String(pageNo));
+          params.set("limit", String(pageSize));
+          params.set("region", "global");
+          params.set("scope", "global");
+          return fetchApi(`/webseries?${params.toString()}`);
+        })
+      );
+
+      results.forEach((result) => {
+        if (result.status === "fulfilled") addRows(getItems(result.value));
+      });
+    }
+
+    const indianItems = filterIndianWebseriesItems(all);
+    const payload = {
+      createdAt: Date.now(),
+      items: indianItems,
+      sourceTotal: sourceTotal || all.length,
+      promise: null,
+    };
+
+    indianWebseriesIndexCache = payload;
+    writeCachedIndianWebseriesIndex({
+      createdAt: payload.createdAt,
+      items: payload.items,
+      sourceTotal: payload.sourceTotal,
+    });
+
+    if (typeof window !== "undefined") {
+      window.__FLIXYFY_INDIAN_WEBSERIES_SCOPE_DEBUG__ = {
+        version: "FLIXYFY_HOME_LATENCY_SCOPE_FIX_V4",
+        sourceTotal: payload.sourceTotal,
+        indianTotal: payload.items.length,
+        ts: new Date().toISOString(),
+      };
+    }
+
+    return payload;
+  })();
+
+  indianWebseriesIndexCache.promise = buildPromise;
+
+  try {
+    return await buildPromise;
+  } finally {
+    indianWebseriesIndexCache.promise = null;
+  }
+}
+
+async function fetchIndianWebseriesScopedData(baseParams, selectedPage, pageSize, options = {}) {
+  const index = await buildIndianWebseriesIndex(false);
+
+  const selectedLanguage = options.language ?? baseParams.get("language") ?? "";
+  const selectedProvider = options.provider ?? baseParams.get("provider") ?? "";
+  const selectedYear = options.year ?? baseParams.get("year") ?? "";
+  const selectedQuery = options.query ?? baseParams.get("q") ?? "";
+  const selectedSort = options.sort ?? baseParams.get("sort") ?? "popular";
+
+  let filtered = index.items
+    .filter((item) => matchesProvider(item, selectedProvider))
+    .filter((item) => matchesYear(item, selectedYear))
+    .filter((item) => matchesQuery(item, selectedQuery));
+
+  filtered = applySoftLanguageFilter(filtered, selectedLanguage);
+  filtered = sortWebseriesItems(filtered, selectedSort);
+
+  const currentPage = Math.max(1, Number(selectedPage || 1));
+  const limit = Math.max(1, Number(pageSize || PAGE_SIZE));
+  const start = (currentPage - 1) * limit;
+  const pageItems = filtered.slice(start, start + limit);
+
+  return {
+    items: pageItems,
+    results: pageItems,
+    movies: pageItems,
+    total: filtered.length,
+    count: filtered.length,
+    filtered_total: filtered.length,
+    source_total: index.sourceTotal,
+    indian_index_total: index.items.length,
+    scope_filter_version: "FLIXYFY_HOME_LATENCY_SCOPE_FIX_V4",
+  };
 }
 
 function buildMoviesPath({
@@ -675,6 +740,7 @@ export default function Home() {
     if (urlProvider && urlProvider !== provider) {
       setProvider(urlProvider);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -760,13 +826,7 @@ export default function Home() {
       const webseriesScope = cleanScope === "global" ? "global" : "indian";
       params.set("region", webseriesScope);
       params.set("scope", webseriesScope);
-
-      // FLIXYFY_FRONTEND_SCOPE_AND_NAV_FIX_V1_FIXED:
-      // Indian home Webseries must not behave like global/all webseries.
-      // Backend can use any of these hints safely; older backends ignore unknown params.
-      if (webseriesScope === "indian") {
-        params.set("country", "IN");
-      }
+      if (webseriesScope === "indian") params.set("country", "IN");
     } else if (cleanScope === "indian") {
       params.set("domain", "indian");
     }
@@ -797,7 +857,7 @@ export default function Home() {
         ? `/webseries?${params.toString()}`
         : `/search?${params.toString()}`;
 
-    let data =
+    const data =
       cleanType === "webseries" && cleanScope !== "global"
         ? await fetchIndianWebseriesScopedData(params, selectedPage, PAGE_SIZE, {
             language: requestLanguage,
@@ -841,7 +901,6 @@ export default function Home() {
       return;
     }
 
-    // Provider fallback: provider results must never display zero when the canonical provider endpoint is positive.
     const relaxedPath = buildMoviesPath({
       page: selectedPage,
       limit: PAGE_SIZE,
@@ -868,11 +927,8 @@ export default function Home() {
     try {
       setFilterError("");
 
-      if (append) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
+      if (append) setLoadingMore(true);
+      else setLoading(true);
 
       if (selectedType === "people") {
         const params = new URLSearchParams();
@@ -943,9 +999,10 @@ export default function Home() {
           false
         );
       }
-    }, 150);
+    }, searchType === "webseries" ? 80 : 120);
 
     return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     query,
     activeLanguage,
@@ -957,6 +1014,12 @@ export default function Home() {
     searchScope,
     showingFiltered,
   ]);
+
+  useEffect(() => {
+    if (searchType === "webseries" && searchScope === "indian") {
+      buildIndianWebseriesIndex(false).catch(() => {});
+    }
+  }, [searchType, searchScope]);
 
   const handleSearch = async (q) => {
     const clean = q.trim();
@@ -1029,11 +1092,8 @@ export default function Home() {
 
     try {
       const url = new URL(window.location.href);
-      if (normalizedProvider) {
-        url.searchParams.set("provider", normalizedProvider);
-      } else {
-        url.searchParams.delete("provider");
-      }
+      if (normalizedProvider) url.searchParams.set("provider", normalizedProvider);
+      else url.searchParams.delete("provider");
       window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     } catch (_) {
       // URL sync is noncritical.
@@ -1207,9 +1267,7 @@ export default function Home() {
       {showingFiltered ? (
         <section className="home-filter-results">
           <h2>{loading ? `Loading ${contentLabel.toLowerCase()}...` : displayResultTitle}</h2>
-          {showingResultText && (
-            <p className="home-result-count-note">{showingResultText}</p>
-          )}
+          {showingResultText && <p className="home-result-count-note">{showingResultText}</p>}
 
           {loading ? (
             <SkeletonRow />
