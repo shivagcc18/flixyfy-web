@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/movies",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/movies/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/movie/:path*",
       "destination": "/index.html"
     },
