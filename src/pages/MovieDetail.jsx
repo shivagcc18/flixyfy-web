@@ -235,7 +235,109 @@ function isBadWatchUrl(url) {
 }
 
 function normalizeOttProviders(movie) {
-  const rows = Array.isArray(movie?.ott_all) ? movie.ott_all : [];
+  const rawRows = Array.isArray(movie?.ott_all) ? movie.ott_all : [];
+
+  const normalizeProviderKey = (value) =>
+    String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/&/g, "and")
+      .replace(/\+/g, "plus")
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
+
+  const providerFallbackUrls = {
+    jiohotstar: "https://www.hotstar.com/in/",
+    hotstar: "https://www.hotstar.com/in/",
+    disney_hotstar: "https://www.hotstar.com/in/",
+    prime_video: "https://www.primevideo.com/",
+    amazon_prime_video: "https://www.primevideo.com/",
+    amazon_video: "https://www.primevideo.com/",
+    netflix: "https://www.netflix.com/search",
+    youtube: "https://www.youtube.com/",
+    zee5: "https://www.zee5.com/",
+    sonyliv: "https://www.sonyliv.com/",
+    sony_liv: "https://www.sonyliv.com/",
+    aha: "https://www.aha.video/",
+    sunnxt: "https://www.sunnxt.com/",
+    sun_nxt: "https://www.sunnxt.com/",
+    mx_player: "https://www.mxplayer.in/",
+    mxplayer: "https://www.mxplayer.in/",
+    eros_now: "https://erosnow.com/",
+    hoichoi: "https://www.hoichoi.tv/",
+    manorama_max: "https://www.manoramamax.com/",
+    shemaroome: "https://www.shemaroome.com/",
+    apple_tv: "https://tv.apple.com/",
+    google_play: "https://play.google.com/store/movies",
+    bookmyshow: "https://in.bookmyshow.com/explore/movies",
+  };
+
+  const providerFallbackNames = {
+    jiohotstar: "JioHotstar",
+    hotstar: "JioHotstar",
+    disney_hotstar: "JioHotstar",
+    prime_video: "Prime Video",
+    amazon_prime_video: "Prime Video",
+    amazon_video: "Prime Video",
+    netflix: "Netflix",
+    youtube: "YouTube",
+    zee5: "ZEE5",
+    sonyliv: "SonyLIV",
+    sony_liv: "SonyLIV",
+    aha: "Aha",
+    sunnxt: "SunNXT",
+    sun_nxt: "SunNXT",
+    mx_player: "MX Player",
+    mxplayer: "MX Player",
+    eros_now: "Eros Now",
+    hoichoi: "Hoichoi",
+    manorama_max: "Manorama Max",
+    shemaroome: "ShemarooMe",
+    apple_tv: "Apple TV",
+    google_play: "Google Play",
+    bookmyshow: "BookMyShow",
+  };
+
+  const fallbackProviderKey = normalizeProviderKey(
+    movie?.provider_display_primary_key || movie?.ott_primary_key || ""
+  );
+
+  const fallbackProviderName =
+    movie?.provider_display_primary_name ||
+    movie?.ott_primary ||
+    providerFallbackNames[fallbackProviderKey] ||
+    "";
+
+  const fallbackProviderUrl = providerFallbackUrls[fallbackProviderKey] || "";
+
+  const fallbackRows =
+    rawRows.length === 0 && fallbackProviderKey && fallbackProviderName && fallbackProviderUrl
+      ? [
+          {
+            provider_key: fallbackProviderKey,
+            provider: fallbackProviderName,
+            provider_name: fallbackProviderName,
+            name: fallbackProviderName,
+            display_name: fallbackProviderName,
+            final_url: fallbackProviderUrl,
+            url: fallbackProviderUrl,
+            watch_url: fallbackProviderUrl,
+            web_url: fallbackProviderUrl,
+            provider_public_label:
+              fallbackProviderKey === "youtube"
+                ? "Watch on YouTube"
+                : `Open ${fallbackProviderName}`,
+            provider_trust_label:
+              fallbackProviderKey === "youtube"
+                ? "YOUTUBE_DIRECT"
+                : "PROVIDER_HOMEPAGE_FALLBACK",
+            provider_is_public_safe: true,
+            source: "ott_primary_detail_fallback_v1",
+          },
+        ]
+      : [];
+
+  const rows = rawRows.length > 0 ? rawRows : fallbackRows;
   const seen = new Set();
   const title = movie?.title || "";
 
