@@ -187,3 +187,36 @@
   color: #051018;
   box-shadow: 0 0 10px rgba(32, 217, 255, 0.26);
 }
+/* FLIXYFY_FRONTEND_PREMIUM_NAV_POLISH_V1 */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: linear-gradient(180deg, rgba(12, 12, 14, 0.94), rgba(12, 12, 14, 0.78));
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(32, 215, 255, 0.10);
+}
+
+.brand {
+  text-shadow: 0 0 18px rgba(32, 215, 255, 0.34), 0 0 34px rgba(224, 59, 210, 0.18);
+  letter-spacing: 0.14em;
+}
+
+.navbar-links a,
+.navbar-links button,
+nav a,
+nav button,
+.nav-button,
+.nav-link {
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, border-color 180ms ease;
+}
+
+.navbar-links a:hover,
+.navbar-links button:hover,
+nav a:hover,
+nav button:hover,
+.nav-button:hover,
+.nav-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 18px rgba(32, 215, 255, 0.24);
+}
