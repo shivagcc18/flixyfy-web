@@ -574,3 +574,48 @@ select:focus,
     flex: 0 0 auto;
   }
 }
+/* FLIXYFY_FRONTEND_CROSS_PLATFORM_HOME_LAYOUT_V1 */
+.home-filter-results,
+.home-section,
+.home-page section,
+.row-section,
+.movie-row-section {
+  width: min(100%, var(--flixyfy-content-max-width)) !important;
+  max-width: var(--flixyfy-content-max-width) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: var(--flixyfy-page-pad) !important;
+  padding-right: var(--flixyfy-page-pad) !important;
+  box-sizing: border-box !important;
+}
+
+.home-filter-results {
+  margin-top: clamp(22px, 3vw, 42px) !important;
+}
+
+/* Controls stay centered and touch-friendly. */
+.home-filter-row,
+.home-filter-row-v2,
+.home-search-wrap,
+.search-control-stack {
+  width: min(100%, 920px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
+.home-search-wrap {
+  padding-left: var(--flixyfy-page-pad) !important;
+  padding-right: var(--flixyfy-page-pad) !important;
+}
+
+@media (max-width: 760px) {
+  .home-filter-results,
+  .home-section,
+  .home-page section,
+  .row-section,
+  .movie-row-section {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}

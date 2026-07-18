@@ -843,3 +843,43 @@ select:focus,
     flex: 0 0 auto;
   }
 }
+/* FLIXYFY_FRONTEND_CROSS_PLATFORM_DOMAIN_LAYOUT_V1 */
+.domain-results,
+.domain-hero,
+.domain-controls,
+.domain-page section {
+  width: min(100%, var(--flixyfy-content-max-width)) !important;
+  max-width: var(--flixyfy-content-max-width) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: var(--flixyfy-page-pad) !important;
+  padding-right: var(--flixyfy-page-pad) !important;
+  box-sizing: border-box !important;
+}
+
+.domain-results {
+  margin-top: clamp(24px, 3vw, 44px) !important;
+}
+
+.domain-controls {
+  width: min(100%, 980px) !important;
+}
+
+.domain-filter-row,
+.domain-type-toggle,
+.domain-link-row {
+  width: 100% !important;
+  max-width: 920px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+@media (max-width: 760px) {
+  .domain-results,
+  .domain-hero,
+  .domain-controls,
+  .domain-page section {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
