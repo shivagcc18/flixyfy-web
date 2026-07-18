@@ -148,6 +148,208 @@ function getTotal(data, items) {
   return Number.isFinite(number) ? number : items.length;
 }
 
+const FLIXYFY_INDIAN_WEBSERIES_SCOPE_INTELLIGENCE_V1 = "FLIXYFY_FRONTEND_INDIAN_WEBSERIES_SCOPE_INTELLIGENCE_V1";
+
+const INDIAN_WEBSERIES_LANGUAGE_KEYS = new Set([
+  "hi", "hindi",
+  "te", "telugu",
+  "ta", "tamil",
+  "ml", "malayalam",
+  "kn", "kannada",
+  "bn", "bengali",
+  "mr", "marathi",
+  "pa", "punjabi",
+  "gu", "gujarati",
+  "or", "odia", "oriya",
+  "as", "assamese",
+  "ur", "urdu",
+  "sa", "sanskrit",
+  "bhojpuri",
+]);
+
+const GLOBAL_WEBSERIES_LANGUAGE_KEYS = new Set([
+  "en", "english",
+  "ko", "korean",
+  "ja", "japanese",
+  "zh", "chinese",
+  "es", "spanish",
+  "fr", "french",
+  "de", "german",
+  "th", "thai",
+  "tr", "turkish",
+]);
+
+function normalizeScopeToken(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/[^\p{L}\p{N}\s]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function collectScopeTokens(value, out = [], depth = 0) {
+  if (depth > 4 || value == null) return out;
+
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    const text = normalizeScopeToken(value);
+    if (text) out.push(text);
+    return out;
+  }
+
+  if (Array.isArray(value)) {
+    value.slice(0, 40).forEach((item) => collectScopeTokens(item, out, depth + 1));
+    return out;
+  }
+
+  if (typeof value === "object") {
+    Object.entries(value).forEach(([key, item]) => {
+      collectScopeTokens(key, out, depth + 1);
+      collectScopeTokens(item, out, depth + 1);
+    });
+  }
+
+  return out;
+}
+
+function getWebseriesScopeTokens(item) {
+  const fields = [
+    item?.domain,
+    item?.source_domain,
+    item?.content_type,
+    item?.country,
+    item?.country_code,
+    item?.origin_country,
+    item?.origin_country_code,
+    item?.production_country,
+    item?.production_countries,
+    item?.primary_language,
+    item?.primary_language_slug,
+    item?.language,
+    item?.language_name,
+    item?.language_slug,
+    item?.original_language,
+    item?.spoken_languages,
+    item?.genres,
+    item?.provider_names,
+    item?.provider_keys,
+    item?.provenance_json,
+  ];
+
+  const tokens = [];
+  fields.forEach((value) => collectScopeTokens(value, tokens));
+  return tokens;
+}
+
+function isIndianWebseriesItem(item) {
+  if (!item || typeof item !== "object") return false;
+
+  const tokens = getWebseriesScopeTokens(item);
+  const joined = ` ${tokens.join(" ")} `;
+
+  if (
+    joined.includes(" india ") ||
+    joined.includes(" in ") ||
+    joined.includes(" indian ") ||
+    joined.includes(" bollywood ") ||
+    joined.includes(" tollywood ") ||
+    joined.includes(" kollywood ")
+  ) {
+    return true;
+  }
+
+  for (const token of tokens) {
+    if (INDIAN_WEBSERIES_LANGUAGE_KEYS.has(token)) return true;
+  }
+
+  return false;
+}
+
+function isGlobalOnlyWebseriesItem(item) {
+  if (!item || typeof item !== "object") return false;
+
+  const tokens = getWebseriesScopeTokens(item);
+  const joined = ` ${tokens.join(" ")} `;
+
+  if (
+    joined.includes(" korea ") ||
+    joined.includes(" korean ") ||
+    joined.includes(" japan ") ||
+    joined.includes(" japanese ") ||
+    joined.includes(" united states ") ||
+    joined.includes(" usa ") ||
+    joined.includes(" us ") ||
+    joined.includes(" hollywood ")
+  ) {
+    return true;
+  }
+
+  return tokens.some((token) => GLOBAL_WEBSERIES_LANGUAGE_KEYS.has(token));
+}
+
+function filterIndianWebseriesItems(items) {
+  if (!Array.isArray(items)) return [];
+
+  return items.filter((item) => {
+    if (isIndianWebseriesItem(item)) return true;
+    if (isGlobalOnlyWebseriesItem(item)) return false;
+
+    // Unknown rows are hidden from Indian Webseries until provider/genre rebuild
+    // gives us a reliable country/language signal.
+    return false;
+  });
+}
+
+async function fetchIndianWebseriesScopedData(baseParams, selectedPage, pageSize) {
+  const targetCount = Math.max(1, Number(selectedPage || 1)) * Number(pageSize || 25);
+  const collected = [];
+  const seen = new Set();
+  const maxPagesToScan = 80;
+
+  let lastData = null;
+
+  for (let scanPage = 1; scanPage <= maxPagesToScan && collected.length < targetCount; scanPage += 1) {
+    const params = new URLSearchParams(baseParams.toString());
+    params.set("page", String(scanPage));
+    params.set("limit", String(pageSize || 25));
+    params.set("region", "indian");
+    params.set("scope", "indian");
+    params.set("country", "IN");
+
+    const data = await fetchApi(`/webseries?${params.toString()}`);
+    lastData = data;
+
+    const rawItems = getItems(data);
+    if (!rawItems.length) break;
+
+    const filtered = filterIndianWebseriesItems(rawItems);
+    for (const item of filtered) {
+      const key = String(item?.slug || item?.id || item?.title || JSON.stringify(item)).trim();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      collected.push(item);
+    }
+
+    if (rawItems.length < Number(pageSize || 25)) break;
+  }
+
+  const start = (Math.max(1, Number(selectedPage || 1)) - 1) * Number(pageSize || 25);
+  const pageItems = collected.slice(start, start + Number(pageSize || 25));
+  const hasMore = collected.length >= targetCount;
+
+  return {
+    ...(lastData && typeof lastData === "object" ? lastData : {}),
+    items: pageItems,
+    results: pageItems,
+    movies: pageItems,
+    total: hasMore ? Math.max(collected.length + 1, targetCount + 1) : collected.length,
+    filtered_total: collected.length,
+    scope_filter_version: FLIXYFY_INDIAN_WEBSERIES_SCOPE_INTELLIGENCE_V1,
+    scope_filter_note: "Indian Webseries filtered client-side by Indian country/language signals.",
+  };
+}
+
 async function fetchApiUncached(cleanPath) {
   const urls = API_ROOT_CANDIDATES.map((root) => `${root}/api/v4${cleanPath}`);
   const errors = [];
@@ -409,7 +611,12 @@ export default function Home() {
       cleanType === "webseries"
         ? `/webseries?${params.toString()}`
         : `/search?${params.toString()}`;
-    const data = await fetchApi(requestPath);
+
+    let data =
+      cleanType === "webseries" && cleanScope !== "global"
+        ? await fetchIndianWebseriesScopedData(params, selectedPage, PAGE_SIZE)
+        : await fetchApi(requestPath);
+
     applyData(data, selectedPage, append);
   };
 
