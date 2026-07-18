@@ -484,6 +484,12 @@ export default function DomainPage({ domain }) {
 
       if (domain === "hollywood" && globalContentType !== "movies") {
         params.set("type", globalContentType);
+        params.set("scope", "global");
+
+        if (globalContentType === "webseries") {
+          params.set("region", "global");
+        }
+
         if (globalContentType === "webseries" && language) {
           params.set("language", language);
         }
@@ -494,7 +500,26 @@ export default function DomainPage({ domain }) {
         const providerForApi = normalizeProviderForApi(provider);
         if (providerForApi && providerForApi !== "all") params.set("provider", providerForApi);
       }
-      const requestPath = config.apiPath;
+      // FLIXYFY_FRONTEND_SCOPE_AND_NAV_FIX_V1_FIXED:
+      // Global Movies must use Hollywood movie route.
+      // Global Webseries must use Webseries route with global region.
+      // Global All must use unified search, not the Hollywood-only route.
+      let requestPath = config.apiPath;
+
+      if (domain === "hollywood" && globalContentType === "webseries") {
+        requestPath = "/api/v4/webseries";
+        params.set("region", "global");
+        params.set("scope", "global");
+      } else if (domain === "hollywood" && globalContentType === "all") {
+        requestPath = "/api/v4/search";
+        params.set("type", "all");
+        params.set("scope", "global");
+      } else if (domain === "webseries") {
+        params.set("region", "indian");
+        params.set("scope", "indian");
+        params.set("country", "IN");
+      }
+
       const res = await fetch(`${API_BASE}${requestPath}?${params.toString()}`);
 
       if (!res.ok) throw new Error(`API failed: ${res.status}`);

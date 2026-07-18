@@ -370,7 +370,16 @@ export default function Home() {
     params.set("type", cleanType);
 
     if (cleanType === "webseries") {
-      params.set("region", cleanScope === "global" ? "global" : "indian");
+      const webseriesScope = cleanScope === "global" ? "global" : "indian";
+      params.set("region", webseriesScope);
+      params.set("scope", webseriesScope);
+
+      // FLIXYFY_FRONTEND_SCOPE_AND_NAV_FIX_V1_FIXED:
+      // Indian home Webseries must not behave like global/all webseries.
+      // Backend can use any of these hints safely; older backends ignore unknown params.
+      if (webseriesScope === "indian") {
+        params.set("country", "IN");
+      }
     } else if (cleanScope === "indian") {
       params.set("domain", "indian");
     }
