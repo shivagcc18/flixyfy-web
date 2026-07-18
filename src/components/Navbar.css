@@ -220,3 +220,30 @@ nav button:hover,
   transform: translateY(-1px);
   box-shadow: 0 0 18px rgba(32, 215, 255, 0.24);
 }
+/* FLIXYFY_FRONTEND_HOTSTAR_NAV_V1 */
+.navbar {
+  background:
+    linear-gradient(180deg, rgba(8, 10, 14, 0.98), rgba(8, 10, 14, 0.84)) !important;
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(36, 216, 255, 0.12);
+}
+
+.navbar-links {
+  gap: 10px;
+}
+
+.navbar-links a {
+  border-radius: 999px !important;
+  padding: 9px 16px !important;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.navbar-links a.active {
+  color: #051019 !important;
+  background: linear-gradient(135deg, #24d8ff, #35e6ff) !important;
+  border-color: rgba(36, 216, 255, 0.85) !important;
+  box-shadow:
+    0 0 18px rgba(36, 216, 255, 0.32),
+    inset 0 0 0 1px rgba(255,255,255,0.18);
+}

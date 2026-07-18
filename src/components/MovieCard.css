@@ -472,3 +472,24 @@
     transform: none;
   }
 }
+/* FLIXYFY_FRONTEND_HOTSTAR_CARD_V1 */
+.movie-card {
+  border-radius: 18px;
+}
+
+.movie-card-poster-wrap {
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.34);
+}
+
+.movie-card-img,
+.movie-poster-fallback {
+  border-radius: 18px;
+}
+
+.movie-card:hover {
+  transform: translateY(-10px) scale(1.04);
+  box-shadow:
+    0 22px 54px rgba(0, 0, 0, 0.66),
+    0 0 32px rgba(36, 216, 255, 0.24);
+}
