@@ -61,7 +61,7 @@ export default function OttProviderCards({ providers = [] }) {
               href={url || "#"}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`Watch on ${name}`}
+              aria-label={`Open ${name}`}
             >
               <div className="ott-logo-wrap">
                 {logo ? (
