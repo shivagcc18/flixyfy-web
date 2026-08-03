@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, RotateCcw, SearchX, Sparkles } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { apiFetch, type Movie, type SearchResponse } from "@/lib/api";
+import { apiFetch, normalizePosterUrl, type Movie, type SearchResponse } from "@/lib/api";
+import { getYearOptions, isYearValidForDomain } from "@/lib/search-helpers";
 import AppShell from "./AppShell";
 import MovieCard from "./MovieCard";
 import SearchInput from "./SearchInput";
@@ -20,19 +21,27 @@ const languageOptions = [
 ];
 
 const genreQueries = ["Action", "Comedy", "Drama", "Romance", "Thriller", "Family"];
-const currentYear = new Date().getFullYear();
-const yearOptions = [
-  { value: "", label: "Any year" },
-  ...Array.from({ length: currentYear - 1949 }, (_, index) => {
-    const year = String(currentYear - index);
-    return { value: year, label: year };
-  }),
-];
+
+function normalizeResponseMovie(movie: Movie): Movie {
+  return {
+    ...movie,
+    poster_url: normalizePosterUrl(
+      movie.poster_url ?? (movie as unknown as { poster?: string | null }).poster ?? (movie as unknown as { poster_path?: string | null }).poster_path,
+    ),
+  };
+}
 
 function toResponse(items: Movie[], response: MovieListResponse, query: string, domain: "current" | "historical"): SearchResponse {
   const limit = response.limit || 48;
   const page = response.page || 1;
-  return { query, total: response.total, limit, offset: (page - 1) * limit, items, domain };
+  return {
+    query,
+    total: response.total,
+    limit,
+    offset: (page - 1) * limit,
+    items: items.map(normalizeResponseMovie),
+    domain,
+  };
 }
 
 export default function SearchPageClient() {
@@ -45,12 +54,24 @@ export default function SearchPageClient() {
   const year = params?.get("year") ?? params?.get("year_from") ?? "";
   const provider = params?.get("provider") ?? "";
   const domain = params?.get("domain") === "historical" ? "historical" : "current";
-  const hasFilters = Boolean(language || year || provider || domain !== "current");
+  const effectiveYear = isYearValidForDomain(year, domain) ? year : "";
+  const yearOptions = getYearOptions(domain);
+  const hasFilters = Boolean(language || effectiveYear || provider || domain !== "current");
   const [data, setData] = useState<SearchResponse | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [providers, setProviders] = useState<ProviderFilter[]>([]);
   const [retryKey, setRetryKey] = useState(0);
+
+  useEffect(() => {
+    if (!year || isYearValidForDomain(year, domain)) return;
+    const next = new URLSearchParams(paramsKey);
+    next.delete("year");
+    next.delete("year_from");
+    next.delete("year_to");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }, [year, domain, paramsKey, pathname, router]);
 
   useEffect(() => {
     let active = true;
@@ -74,7 +95,7 @@ export default function SearchPageClient() {
       if (query.trim()) apiParams.set("q", query.trim());
       if (provider) apiParams.set("provider", provider);
       if (language) apiParams.set("language", language);
-      if (year) apiParams.set("year", year);
+      if (effectiveYear) apiParams.set("year", effectiveYear);
       const path = query.trim() ? `/api/v4/search?${apiParams}` : `/api/v4/${domain}?${apiParams}`;
       apiFetch<MovieListResponse>(path)
         .then((response) => {
@@ -92,6 +113,11 @@ export default function SearchPageClient() {
     const next = new URLSearchParams(paramsKey);
     if (value) next.set(name, value); else next.delete(name);
     if (name === "year") { next.delete("year_from"); next.delete("year_to"); }
+    if (name === "domain" && year && !isYearValidForDomain(year, value)) {
+      next.delete("year");
+      next.delete("year_from");
+      next.delete("year_to");
+    }
     const qs = next.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
   }
@@ -109,7 +135,7 @@ export default function SearchPageClient() {
   const chips = [
     domain === "historical" ? "Historical Indian" : "Current Indian",
     language ? languageOptions.find((item) => item.value === language)?.label ?? language : "",
-    year,
+    effectiveYear,
     provider,
   ].filter(Boolean);
 
@@ -123,7 +149,7 @@ export default function SearchPageClient() {
           <SearchInput initialValue={query} large key={query} />
           <div className="filter-bar" aria-label="Supported search filters">
             <label><span>Language</span><select value={language} onChange={(event) => setFilter("language", event.target.value)}>{languageOptions.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</select></label>
-            <label><span>Year</span><select value={year} onChange={(event) => setFilter("year", event.target.value)}>{yearOptions.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</select></label>
+            <label><span>Year</span><select value={effectiveYear} onChange={(event) => setFilter("year", event.target.value)}>{yearOptions.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</select></label>
             <label><span>Provider</span><select value={provider} onChange={(event) => setFilter("provider", event.target.value)}><option value="">Any provider</option><option value="youtube">YouTube</option>{providers.map((item) => <option value={item.provider_key} key={item.provider_key}>{item.provider_name}</option>)}</select></label>
             <label><span>Domain</span><select value={domain} onChange={(event) => setFilter("domain", event.target.value)}><option value="current">Current Indian</option><option value="historical">Historical Indian</option></select></label>
             <button type="button" onClick={resetFilters} disabled={!hasFilters}><RotateCcw size={15} aria-hidden="true" />Reset</button>

@@ -18,6 +18,7 @@ function isActive(pathname: string, href: string) {
 
 export default function AppShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname() ?? "/";
+  const isSearchPage = pathname === "/search";
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -84,10 +85,12 @@ export default function AppShell({ children }: Readonly<{ children: ReactNode }>
         <nav className="desktop-nav" aria-label="Primary navigation">{links}</nav>
         <div className="topbar-actions">
           <span className="topbar-copy">Indian cinema, indexed clearly</span>
-          <Link className="topbar-search" href="/search">
-            <Search size={16} aria-hidden="true" />
-            <span>Search</span>
-          </Link>
+          {!isSearchPage ? (
+            <Link className="topbar-search" href="/search">
+              <Search size={16} aria-hidden="true" />
+              <span>Search</span>
+            </Link>
+          ) : null}
           <button
             ref={triggerRef}
             className="drawer-trigger"
