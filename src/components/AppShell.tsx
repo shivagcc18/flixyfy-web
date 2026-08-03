@@ -1,16 +1,8 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Compass,
-  Menu,
-  Search,
-  Tv2,
-  X,
-} from "lucide-react";
+import { Compass, Menu, Search, Tv2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
@@ -24,28 +16,11 @@ function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-function isFocusable(element: Element): element is HTMLElement {
-  if (!(element instanceof HTMLElement)) return false;
-  if (element.hasAttribute("disabled") || element.getAttribute("aria-hidden") === "true") return false;
-  const rect = element.getBoundingClientRect();
-  return rect.width > 0 && rect.height > 0;
-}
-
-export default function AppShell({
-  children,
-}: Readonly<{ children: ReactNode }>) {
-  const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
+export default function AppShell({ children }: Readonly<{ children: ReactNode }>) {
+  const pathname = usePathname() ?? "/";
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setCollapsed(window.localStorage.getItem("flixyfy-sidebar") === "collapsed");
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -62,9 +37,7 @@ export default function AppShell({
       }
       if (event.key !== "Tab" || !drawer) return;
       const focusable = Array.from(
-        drawer.querySelectorAll<HTMLElement>(
-          'a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])',
-        ),
+        drawer.querySelectorAll<HTMLElement>('a[href],button:not([disabled])'),
       );
       const first = focusable[0];
       const last = focusable.at(-1);
@@ -76,6 +49,7 @@ export default function AppShell({
         first?.focus();
       }
     }
+
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -84,102 +58,36 @@ export default function AppShell({
     };
   }, [drawerOpen]);
 
-  useEffect(() => {
-    function onArrowKey(event: KeyboardEvent) {
-      if (!event.key.startsWith("Arrow") || window.innerWidth < 1700) return;
-      const active = document.activeElement;
-      if (!(active instanceof HTMLElement)) return;
-      if (["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName) || active.isContentEditable) return;
-
-      const focusable = Array.from(
-        document.querySelectorAll<HTMLElement>(
-          'a[href],button:not([disabled]),input:not([disabled]),[tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter((element) => isFocusable(element) && element !== active);
-      const currentRect = active.getBoundingClientRect();
-      const currentX = currentRect.left + currentRect.width / 2;
-      const currentY = currentRect.top + currentRect.height / 2;
-      const direction = event.key.replace("Arrow", "");
-
-      let best: { element: HTMLElement; score: number } | null = null;
-      for (const element of focusable) {
-        const rect = element.getBoundingClientRect();
-        const x = rect.left + rect.width / 2;
-        const y = rect.top + rect.height / 2;
-        const dx = x - currentX;
-        const dy = y - currentY;
-        const inDirection =
-          (direction === "Right" && dx > 8) ||
-          (direction === "Left" && dx < -8) ||
-          (direction === "Down" && dy > 8) ||
-          (direction === "Up" && dy < -8);
-        if (!inDirection) continue;
-        const primary = direction === "Right" || direction === "Left" ? Math.abs(dx) : Math.abs(dy);
-        const secondary = direction === "Right" || direction === "Left" ? Math.abs(dy) : Math.abs(dx);
-        const score = primary + secondary * 2;
-        if (!best || score < best.score) best = { element, score };
-      }
-
-      if (best) {
-        event.preventDefault();
-        best.element.focus();
-      }
-    }
-
-    document.addEventListener("keydown", onArrowKey);
-    return () => document.removeEventListener("keydown", onArrowKey);
-  }, []);
-
-  function toggleCollapsed() {
-    setCollapsed((current) => {
-      const next = !current;
-      window.localStorage.setItem(
-        "flixyfy-sidebar",
-        next ? "collapsed" : "expanded",
-      );
-      return next;
-    });
-  }
-
-  const links = navigation.map(({ href, label, icon: Icon }) => (
-    <Link
-      href={href}
-      key={href}
-      className={isActive(pathname ?? "", href) ? "active" : undefined}
-      aria-current={isActive(pathname ?? "", href) ? "page" : undefined}
-      title={collapsed ? label : undefined}
-      onClick={() => setDrawerOpen(false)}
-    >
-      <Icon aria-hidden="true" size={20} />
-      <span className="sidebar-label">{label}</span>
-    </Link>
-  ));
+  const links = navigation.map(({ href, label, icon: Icon }) => {
+    const active = isActive(pathname, href);
+    return (
+      <Link
+        href={href}
+        key={href}
+        className={active ? "active" : undefined}
+        aria-current={active ? "page" : undefined}
+        onClick={() => setDrawerOpen(false)}
+      >
+        <Icon size={17} aria-hidden="true" />
+        <span>{label}</span>
+      </Link>
+    );
+  });
 
   return (
-    <div className={`app-shell${collapsed ? " sidebar-collapsed" : ""}`}>
-      <aside className="sidebar" aria-label="Primary navigation">
-        <Link className="brand" href="/">
+    <div className="app-shell">
+      <header className="topbar">
+        <Link className="brand" href="/" aria-label="FLIXYFY home">
           <span className="brand-mark" aria-hidden="true">F</span>
-          <span className="sidebar-label">FLIXYFY</span>
+          <span>FLIXYFY</span>
         </Link>
-        <nav className="nav-list" aria-label="Explore FLIXYFY">{links}</nav>
-        <button
-          className="sidebar-toggle"
-          type="button"
-          onClick={toggleCollapsed}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-pressed={collapsed}
-        >
-          {collapsed ? <ChevronRight aria-hidden="true" /> : <ChevronLeft aria-hidden="true" />}
-          <span className="sidebar-label">{collapsed ? "Expand" : "Collapse"}</span>
-        </button>
-        <p className="sidebar-note">
-          <Tv2 aria-hidden="true" size={17} />
-          <span className="sidebar-label">Real availability data</span>
-        </p>
-      </aside>
-      <div className="main-column">
-        <header className="topbar">
+        <nav className="desktop-nav" aria-label="Primary navigation">{links}</nav>
+        <div className="topbar-actions">
+          <span className="topbar-copy">Indian cinema, indexed clearly</span>
+          <Link className="topbar-search" href="/search">
+            <Search size={16} aria-hidden="true" />
+            <span>Search</span>
+          </Link>
           <button
             ref={triggerRef}
             className="drawer-trigger"
@@ -191,15 +99,9 @@ export default function AppShell({
             <Menu aria-hidden="true" />
             <span className="sr-only">Open navigation</span>
           </button>
-          <Link className="mobile-brand" href="/">FLIXYFY</Link>
-          <span className="topbar-copy">One search. Every movie. Where to watch.</span>
-          <Link className="topbar-search" href="/search">
-            <Search aria-hidden="true" size={18} />
-            <span>Search</span>
-          </Link>
-        </header>
-        {children}
-      </div>
+        </div>
+      </header>
+      {children}
       {drawerOpen ? (
         <div
           className="drawer-backdrop"
@@ -225,7 +127,7 @@ export default function AppShell({
                 <X aria-hidden="true" />
               </button>
             </div>
-            <nav className="nav-list" aria-label="Mobile navigation">{links}</nav>
+            <nav className="mobile-nav-list" aria-label="Mobile navigation">{links}</nav>
           </aside>
         </div>
       ) : null}
