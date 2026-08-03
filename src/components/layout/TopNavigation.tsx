@@ -1,0 +1,1 @@
+export default function TopNavigation(){return <header className="text-white p-4">Movies Languages Actors</header>}

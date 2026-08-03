@@ -1,0 +1,1 @@
+export default function GlassSidebar(){return <aside className="fixed left-4 top-4 w-64 text-white">FLIXYFY</aside>}

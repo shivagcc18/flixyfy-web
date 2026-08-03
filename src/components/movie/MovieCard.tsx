@@ -1,0 +1,1 @@
+export default function MovieCard(){return <div className="text-white">Movie</div>}

@@ -1,0 +1,1 @@
+export default function SmartSearch(){return <div className="text-white">Search movies, actors, languages</div>}

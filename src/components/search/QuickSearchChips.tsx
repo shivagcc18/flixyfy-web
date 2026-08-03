@@ -1,0 +1,1 @@
+export default function QuickSearchChips(){return <div className="text-white">NTR Prabhas Netflix Telugu</div>}
