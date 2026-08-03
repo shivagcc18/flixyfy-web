@@ -9,10 +9,6 @@
       "destination": "/index.html"
     },
     {
-      "source": "/movie/:path*",
-      "destination": "/index.html"
-    },
-    {
       "source": "/language/:path*",
       "destination": "/index.html"
     },
