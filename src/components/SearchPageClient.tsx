@@ -155,14 +155,15 @@ export default function SearchPageClient() {
     navigate({ q: interpretedQuery || undefined });
   }
 
+  const inferredIntentKeys = new Set(intent.chips.map((chip) => chip.key));
   const activeChips = [
-    inferredLanguage ? { key: "language", label: "Language: " + languageName(inferredLanguage) } : null,
-    inferredGenre ? { key: "genre", label: "Genre: " + inferredGenre } : null,
-    inferredProvider ? { key: "provider", label: "Provider: " + (providers.find((item) => item.provider_key === inferredProvider)?.provider_name ?? intent.providerName ?? inferredProvider) } : null,
-    domain === "historical" ? { key: "domain", label: "Indian classics" } : null,
-    effectiveYear ? { key: "year", label: "Year: " + effectiveYear } : null,
-    yearFrom && yearTo ? { key: "years", label: "Years: " + yearFrom + "-" + yearTo } : null,
-    contentType ? { key: "content_type", label: contentType === "web-series" ? "Web series" : contentType } : null,
+    inferredLanguage && !inferredIntentKeys.has("language") ? { key: "language", label: "Language: " + languageName(inferredLanguage) } : null,
+    inferredGenre && !inferredIntentKeys.has("genre") ? { key: "genre", label: "Genre: " + inferredGenre } : null,
+    inferredProvider && !inferredIntentKeys.has("provider") ? { key: "provider", label: "Provider: " + (providers.find((item) => item.provider_key === inferredProvider)?.provider_name ?? intent.providerName ?? inferredProvider) } : null,
+    domain === "historical" && !inferredIntentKeys.has("domain") ? { key: "domain", label: "Indian classics" } : null,
+    effectiveYear && !inferredIntentKeys.has("year") ? { key: "year", label: "Year: " + effectiveYear } : null,
+    yearFrom && yearTo && !inferredIntentKeys.has("year") ? { key: "years", label: "Years: " + yearFrom + "-" + yearTo } : null,
+    contentType && !inferredIntentKeys.has("content_type") ? { key: "content_type", label: contentType === "web-series" ? "Web series" : contentType } : null,
   ].filter(Boolean) as { key: string; label: string }[];
 
   return (
