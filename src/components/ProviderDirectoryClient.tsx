@@ -8,7 +8,7 @@ import AppShell from "./AppShell";
 type ProviderRow = {
   provider_key: string;
   provider_name: string;
-  category: string;
+  provider_type: string;
   movie_count: number;
   flatrate_rows: number;
   rent_rows: number;
@@ -21,11 +21,11 @@ export default function ProviderDirectoryClient() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    apiFetch<{ items?: Array<{ provider_key: string; provider_name: string; row_count?: number; content_count?: number }> }>("/api/v4/providers")
+    apiFetch<{ items?: Array<{ provider_key: string; provider_name: string; provider_type?: string; row_count?: number; content_count?: number }> }>("/api/v4/providers")
       .then((data) => setItems((data.items ?? []).map((item) => ({
         provider_key: item.provider_key,
         provider_name: item.provider_name,
-        category: "OTT",
+        provider_type: item.provider_type ?? "UNKNOWN_OR_UNAPPROVED",
         movie_count: Number(item.content_count ?? 0),
         flatrate_rows: Number(item.row_count ?? 0),
         rent_rows: 0,
@@ -41,9 +41,9 @@ export default function ProviderDirectoryClient() {
       <main className="page-content">
         <section className="search-header">
           <span className="section-kicker">PROVIDER DIRECTORY</span>
-          <h1>OTT coverage in the final snapshot</h1>
+          <h1>Approved watch providers in India</h1>
           <p className="page-lead">
-            Provider-wise movie counts from the accepted fresh India availability dataset.
+            Counts and categories from the approved India availability serving relation.
           </p>
         </section>
 
@@ -57,14 +57,14 @@ export default function ProviderDirectoryClient() {
           {items.map((provider) => (
             <a
               key={provider.provider_key}
-              href={`/search?q=${encodeURIComponent(provider.provider_name)}`}
+              href={`/search?provider=${encodeURIComponent(provider.provider_key)}`}
             >
               <div className="provider-icon">
                 <Tv2 size={24} />
               </div>
               <div>
                 <strong>{provider.provider_name}</strong>
-                <span>{provider.category}</span>
+                <span>{provider.provider_type.replaceAll("_", " ")}</span>
               </div>
               <div className="provider-count">
                 {provider.movie_count.toLocaleString()}

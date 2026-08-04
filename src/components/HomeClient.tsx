@@ -1,7 +1,7 @@
 "use client";
-
+/* global HTMLDivElement, ResizeObserver */
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Compass, SearchCheck, Sparkles, Tv2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiFetch, type Movie } from "@/lib/api";
@@ -16,7 +16,7 @@ type HomePayload = {
   historical?: { items?: Movie[] };
 };
 
-type Provider = { provider_key: string; provider_name: string };
+type Provider = { provider_key: string; provider_name: string; provider_type?: string };
 
 const examples = [
   "Telugu action movies",
@@ -34,6 +34,52 @@ function LoadingRail() {
           <div className="skeleton-line short" />
         </div>
       ))}
+    </div>
+  );
+}
+
+// eslint-disable-next-line no-unused-vars
+function ProviderRail({ providers, onSelect }: { providers: Provider[]; onSelect: (value?: string) => void }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [canScroll, setCanScroll] = useState(false);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(true);
+
+  function updateState() {
+    const node = scrollerRef.current;
+    if (!node) return;
+    const max = Math.max(0, node.scrollWidth - node.clientWidth);
+    setCanScroll(max > 2);
+    setAtStart(node.scrollLeft <= 2);
+    setAtEnd(node.scrollLeft >= max - 2);
+  }
+
+  useEffect(() => {
+    updateState();
+    const node = scrollerRef.current;
+    if (!node) return;
+    node.addEventListener("scroll", updateState, { passive: true });
+    const observer = new ResizeObserver(updateState);
+    observer.observe(node);
+    return () => { node.removeEventListener("scroll", updateState); observer.disconnect(); };
+  }, [providers.length]);
+
+  function move(direction: number) {
+    scrollerRef.current?.scrollBy({ left: direction * Math.max(220, (scrollerRef.current?.clientWidth ?? 360) * 0.78), behavior: "smooth" });
+  }
+
+  return (
+    <div className={canScroll ? "provider-rail-shell has-overflow" : "provider-rail-shell"}>
+      <button type="button" className="provider-rail-control previous" onClick={() => move(-1)} disabled={!canScroll || atStart} aria-label="Previous providers"><ChevronLeft size={17} /></button>
+      <div ref={scrollerRef} className="provider-scroller" aria-label="Browse by provider" tabIndex={0} onKeyDown={(event) => { if (event.key === "ArrowLeft") { event.preventDefault(); move(-1); } if (event.key === "ArrowRight") { event.preventDefault(); move(1); } }}>
+        <button type="button" className="provider-pill selected" onClick={() => onSelect()} aria-pressed="true">All providers</button>
+        {providers.map((provider) => (
+          <button type="button" className="provider-pill" key={provider.provider_key} onClick={() => onSelect(provider.provider_key)}>
+            <span className="provider-monogram" aria-hidden="true">{provider.provider_name.trim().slice(0, 1).toUpperCase()}</span>{provider.provider_name}
+          </button>
+        ))}
+      </div>
+      <button type="button" className="provider-rail-control next" onClick={() => move(1)} disabled={!canScroll || atEnd} aria-label="Next providers"><ChevronRight size={17} /></button>
     </div>
   );
 }
@@ -83,7 +129,7 @@ export default function HomeClient() {
   }
 
   const activeLanguage = "";
-  const activeProvider = "";
+
   const currentItems = data?.current?.items ?? [];
   const classicItems = data?.historical?.items ?? [];
 
@@ -121,14 +167,7 @@ export default function HomeClient() {
           </div>
           <div className="provider-watchbar">
             <div className="watchbar-heading"><span>Watch by provider</span><small>Availability appears on movie details</small></div>
-            <div className="provider-scroller" aria-label="Browse by provider">
-              <button type="button" className={!activeProvider ? "selected provider-pill" : "provider-pill"} onClick={() => goToSearch({})} aria-pressed={!activeProvider}>All providers</button>
-              {providers.map((provider) => (
-                <button type="button" className={activeProvider === provider.provider_key ? "selected provider-pill" : "provider-pill"} key={provider.provider_key} onClick={() => goToSearch({ provider: provider.provider_key })}>
-                  <span className="provider-monogram" aria-hidden="true">{provider.provider_name.trim().slice(0, 1).toUpperCase()}</span>{provider.provider_name}
-                </button>
-              ))}
-            </div>
+            <ProviderRail providers={providers} onSelect={(provider) => goToSearch({ provider })} />
           </div>
           <div className="compact-filter-row" aria-label="Quick filters">
             <span>Quick filters</span>

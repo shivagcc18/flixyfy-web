@@ -1,4 +1,4 @@
-﻿import { languageName } from "./languages";
+import { languageName, normalizeLanguageCode } from "./languages";
 
 export type SearchIntent = {
   query: string;
@@ -33,7 +33,7 @@ export function serializeSearchParams(values: Record<string, string | undefined 
   for (const key of orderedKeys) {
     const value = values[key]?.trim();
     if (!value || (key === "domain" && value === "current") || (key === "content_type" && value === "movie")) continue;
-    params.set(key, value);
+    params.set(key, key === "language" ? normalizeLanguageCode(value) : value);
   }
   return params.toString();
 }
