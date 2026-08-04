@@ -1,13 +1,23 @@
+/* global HTMLDivElement, PointerEvent, Node */
+
 "use client";
 
 import { FormEvent, KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import { ArrowRight, Search, Sparkles } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
-import { getEntitySearchBlocker } from "@/lib/search-guards";
 import { isCurrentSuggestionResponse, shouldOpenSuggestions } from "@/lib/search-ux";
+import { serializeSearchParams } from "@/lib/search-interpretation";
+import { normalizeProviderForApi } from "../utils/providerFetchPatch";
 
-type Suggestion = { entity_type: string; entity_key: string; entity_name: string; release_year?: number };
+type Suggestion = {
+  entity_type: string;
+  entity_key: string;
+  entity_name: string;
+  person_id?: string;
+  disambiguation?: string;
+  release_year?: number;
+};
 
 type SuggestionApiItem = {
   canonical_movie_id?: string;
@@ -16,6 +26,10 @@ type SuggestionApiItem = {
   entity_type?: string;
   entity_key?: string;
   entity_name?: string;
+  person_id?: string;
+  display_name?: string;
+  disambiguation?: string;
+  roles?: string[];
 };
 
 export default function SearchInput({ initialValue = "", large = false }: { initialValue?: string; large?: boolean }) {
@@ -56,11 +70,11 @@ export default function SearchInput({ initialValue = "", large = false }: { init
 
   useEffect(() => {
     const query = value.trim();
-    const blocked = Boolean(getEntitySearchBlocker(query));
+    const lookupQuery = query.replace(/\s+(?:on|from|available\s+on|streaming\s+on)\s+[^?]+$/i, "").trim();
     const id = ++request.current;
     abortRef.current?.abort();
     abortRef.current = null;
-    if (query.length < 2 || query === submittedValue.trim() || blocked) {
+    if (query.length < 2 || query === submittedValue.trim()) {
       setItems([]);
       setOpen(false);
       setActiveIndex(-1);
@@ -71,12 +85,28 @@ export default function SearchInput({ initialValue = "", large = false }: { init
       const controller = new AbortController();
       abortRef.current = controller;
       try {
-        const response = await apiFetch<{ items?: SuggestionApiItem[]; suggestions?: SuggestionApiItem[] }>(
-          "/api/v4/search-suggestions?q=" + encodeURIComponent(query) + "&limit=8",
-          15000,
-          controller.signal,
-        );
-        const suggestions = (response.items ?? response.suggestions ?? [])
+        const [peopleResponse, movieResponse] = await Promise.all([
+          apiFetch<{ items?: SuggestionApiItem[] }>(
+            "/api/v1/search/entities?entity_type=person&q=" + encodeURIComponent(lookupQuery || query) + "&limit=6",
+            15000,
+            controller.signal,
+          ).catch(() => ({ items: [] })),
+          apiFetch<{ items?: SuggestionApiItem[]; suggestions?: SuggestionApiItem[] }>(
+            "/api/v4/search-suggestions?q=" + encodeURIComponent(query) + "&limit=6",
+            15000,
+            controller.signal,
+          ).catch(() => ({ items: [], suggestions: [] })),
+        ]);
+        const people = (peopleResponse.items ?? [])
+          .map((item) => ({
+            entity_type: "Person",
+            entity_key: "person-" + (item.person_id ?? item.display_name ?? ""),
+            entity_name: item.display_name ?? item.entity_name ?? "",
+            person_id: item.person_id,
+            disambiguation: item.disambiguation,
+          }))
+          .filter((item) => item.entity_name);
+        const movies = (movieResponse.items ?? movieResponse.suggestions ?? [])
           .map((item) => ({
             entity_type: item.entity_type ?? "Movie",
             entity_key: item.entity_key ?? item.canonical_movie_id ?? item.title ?? "",
@@ -84,6 +114,7 @@ export default function SearchInput({ initialValue = "", large = false }: { init
             release_year: item.release_year ?? undefined,
           }))
           .filter((item) => item.entity_name);
+        const suggestions = [...people, ...movies].slice(0, 8);
         if (!isCurrentSuggestionResponse({
           requestId: id,
           currentRequestId: request.current,
@@ -91,7 +122,7 @@ export default function SearchInput({ initialValue = "", large = false }: { init
           currentQuery: value,
           submittedValue,
           focused: focusedRef.current,
-          blocked: Boolean(getEntitySearchBlocker(value)),
+          blocked: false,
         })) return;
         setItems(suggestions);
         setOpen(shouldOpenSuggestions({
@@ -99,7 +130,7 @@ export default function SearchInput({ initialValue = "", large = false }: { init
           value,
           submittedValue,
           itemCount: suggestions.length,
-          blocked: Boolean(getEntitySearchBlocker(value)),
+          blocked: false,
         }));
         setActiveIndex(suggestions.length ? 0 : -1);
       } catch {
@@ -130,18 +161,25 @@ export default function SearchInput({ initialValue = "", large = false }: { init
     abortRef.current?.abort();
   }, []);
 
-  function goToSearch(query: string) {
-    const next = query.trim();
+  function goToSearch(query: string, selected?: Suggestion) {
+    const next = (selected?.entity_name ?? query).trim();
     if (!next) return;
     setSubmitting(true);
     setSubmittedValue(next);
     closeSuggestions();
-    router.push("/search?q=" + encodeURIComponent(next));
+    const providerMatch = value.match(/\s+(?:on|from|available\s+on|streaming\s+on)\s+(.+)$/i);
+    const provider = providerMatch ? normalizeProviderForApi(providerMatch[1]) : "";
+    const search = serializeSearchParams({
+      q: next,
+      person_id: selected?.person_id,
+      provider: provider || undefined,
+    });
+    router.push("/search?" + search);
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (open && activeIndex >= 0 && items[activeIndex]) goToSearch(items[activeIndex].entity_name);
+    if (open && activeIndex >= 0 && items[activeIndex]) goToSearch(items[activeIndex].entity_name, items[activeIndex]);
     else goToSearch(value);
   }
 
@@ -161,7 +199,7 @@ export default function SearchInput({ initialValue = "", large = false }: { init
       setActiveIndex((index) => (index <= 0 ? items.length - 1 : index - 1));
     } else if (event.key === "Enter" && open && activeIndex >= 0) {
       event.preventDefault();
-      goToSearch(items[activeIndex].entity_name);
+      goToSearch(items[activeIndex].entity_name, items[activeIndex]);
     }
   }
 
@@ -188,7 +226,7 @@ export default function SearchInput({ initialValue = "", large = false }: { init
               value,
               submittedValue,
               itemCount: items.length,
-              blocked: Boolean(getEntitySearchBlocker(value)),
+              blocked: false,
             }));
           }}
           onBlur={() => {
@@ -217,8 +255,8 @@ export default function SearchInput({ initialValue = "", large = false }: { init
         <div className="suggestion-panel" id={listboxId} role="listbox" aria-label="Search suggestions">
           <div className="suggestion-label"><Sparkles size={14} aria-hidden="true" />Indexed suggestions</div>
           {items.map((item, index) => (
-            <button type="button" id={listboxId + "-" + index} key={item.entity_type + "-" + item.entity_key} role="option" aria-selected={index === activeIndex} onMouseEnter={() => setActiveIndex(index)} onMouseDown={(event) => event.preventDefault()} onClick={() => { setValue(item.entity_name); goToSearch(item.entity_name); }}>
-              <small>{item.entity_type}</small><span>{item.entity_name}</span>{item.release_year ? <em>{item.release_year}</em> : null}
+            <button type="button" id={listboxId + "-" + index} key={item.entity_type + "-" + item.entity_key} role="option" aria-selected={index === activeIndex} onMouseEnter={() => setActiveIndex(index)} onMouseDown={(event) => event.preventDefault()} onClick={() => { setValue(item.entity_name); goToSearch(item.entity_name, item); }}>
+              <small>{item.entity_type}</small><span>{item.entity_name}</span>{item.disambiguation ? <em>{item.disambiguation}</em> : item.release_year ? <em>{item.release_year}</em> : null}
             </button>
           ))}
         </div>

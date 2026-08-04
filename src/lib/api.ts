@@ -1,3 +1,5 @@
+/* global AbortSignal */
+
 import { normalizePosterUrl } from "@/lib/poster-normalizer";
 
 const configuredApiBase = process.env.NEXT_PUBLIC_FLIXYFY_API_URL?.trim();

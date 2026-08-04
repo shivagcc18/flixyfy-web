@@ -8,7 +8,6 @@ import { apiFetch, normalizePosterUrl, type Movie, type SearchResponse } from "@
 import { getYearOptions, isYearValidForDomain } from "@/lib/search-helpers";
 import { languageName } from "@/lib/languages";
 import { parseSearchIntent, serializeSearchParams } from "@/lib/search-interpretation";
-import { getEntitySearchBlocker } from "@/lib/search-guards";
 import AppShell from "./AppShell";
 import MovieCard from "./MovieCard";
 import SearchInput from "./SearchInput";
@@ -45,6 +44,7 @@ export default function SearchPageClient() {
   const language = params?.get("language") ?? "";
   const genre = params?.get("genre") ?? "";
   const provider = params?.get("provider") ?? "";
+  const personId = params?.get("person_id") ?? "";
   const contentType = params?.get("content_type") ?? "";
   const domain = params?.get("domain") === "historical" ? "historical" : "current";
   const year = params?.get("year") ?? "";
@@ -64,8 +64,6 @@ export default function SearchPageClient() {
   const inferredLanguage = language || intent.language || "";
   const inferredGenre = genre || intent.genre || "";
   const interpretedQuery = intent.chips.length ? intent.query : rawQuery;
-  const entityBlocker = useMemo(() => getEntitySearchBlocker(rawQuery), [rawQuery]);
-
   useEffect(() => {
     let active = true;
     apiFetch<{ items?: ProviderFilter[] }>("/api/v4/providers")
@@ -75,9 +73,10 @@ export default function SearchPageClient() {
   }, []);
 
   useEffect(() => {
-    if (entityBlocker || !rawQuery || !providers.length) return;
+    if (!rawQuery || !providers.length) return;
     const nextValues: Record<string, string | undefined> = {
       q: interpretedQuery,
+      person_id: personId,
       provider: provider || intent.provider,
       language: language || intent.language,
       genre: genre || intent.genre,
@@ -89,7 +88,7 @@ export default function SearchPageClient() {
     };
     const next = serializeSearchParams(nextValues);
     if (next !== paramsKey) router.replace(next ? pathname + "?" + next : pathname);
-  }, [rawQuery, providers, interpretedQuery, intent, entityBlocker, provider, language, genre, domain, contentType, year, yearFrom, yearTo, paramsKey, pathname, router]);
+  }, [rawQuery, providers, interpretedQuery, intent, personId, provider, language, genre, domain, contentType, year, yearFrom, yearTo, paramsKey, pathname, router]);
 
   useEffect(() => {
     if (!year || isYearValidForDomain(year, domain)) return;
@@ -103,16 +102,10 @@ export default function SearchPageClient() {
 
   useEffect(() => {
     let active = true;
-    if (entityBlocker) {
-      setData(null);
-      setError("");
-      setLoading(false);
-      return () => { active = false; };
-    }
     const timer = window.setTimeout(() => {
       setData(null);
       setError("");
-      const hasFilters = Boolean(inferredLanguage || effectiveYear || inferredProvider || inferredGenre || contentType || domain !== "current" || yearFrom || yearTo);
+      const hasFilters = Boolean(personId || inferredLanguage || effectiveYear || inferredProvider || inferredGenre || contentType || domain !== "current" || yearFrom || yearTo);
       if (!interpretedQuery.trim() && !hasFilters) {
         setLoading(false);
         return;
@@ -120,6 +113,7 @@ export default function SearchPageClient() {
       setLoading(true);
       const apiParams = new URLSearchParams({ limit: "48", domain });
       if (interpretedQuery.trim()) apiParams.set("q", interpretedQuery.trim());
+      if (personId) apiParams.set("person_id", personId);
       if (inferredProvider) apiParams.set("provider", inferredProvider);
       if (inferredLanguage) apiParams.set("language", inferredLanguage);
       if (inferredGenre) apiParams.set("genre", inferredGenre);
@@ -127,14 +121,14 @@ export default function SearchPageClient() {
       if (yearFrom) apiParams.set("year_from", yearFrom);
       if (yearTo) apiParams.set("year_to", yearTo);
       if (contentType) apiParams.set("content_type", contentType);
-      const path = interpretedQuery.trim() ? "/api/v4/search?" + apiParams.toString() : "/api/v4/" + domain + "?" + apiParams.toString();
+      const path = personId ? "/api/v1/search/intelligence?" + apiParams.toString() : interpretedQuery.trim() ? "/api/v4/search?" + apiParams.toString() : "/api/v4/" + domain + "?" + apiParams.toString();
       apiFetch<MovieListResponse>(path)
         .then((response) => { if (active) setData(toResponse(response.items ?? response.results ?? [], response, interpretedQuery, domain)); })
         .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Search failed"); })
         .finally(() => { if (active) setLoading(false); });
     }, 0);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [entityBlocker, interpretedQuery, inferredProvider, inferredLanguage, inferredGenre, effectiveYear, yearFrom, yearTo, contentType, domain, retryKey]);
+  }, [personId, interpretedQuery, inferredProvider, inferredLanguage, inferredGenre, effectiveYear, yearFrom, yearTo, contentType, domain, retryKey]);
 
   function navigate(values: Record<string, string | undefined>) {
     const next = serializeSearchParams(values);
@@ -144,6 +138,7 @@ export default function SearchPageClient() {
   function setFilter(name: string, value: string) {
     const values: Record<string, string | undefined> = {
       q: interpretedQuery || undefined,
+      person_id: personId || undefined,
       domain,
       language: name === "language" ? value : inferredLanguage,
       genre: name === "genre" ? value : inferredGenre,
@@ -165,6 +160,7 @@ export default function SearchPageClient() {
 
   const inferredIntentKeys = new Set(intent.chips.map((chip) => chip.key));
   const activeChips = [
+    personId ? { key: "person_id", label: "Person: " + (rawQuery || personId) } : null,
     inferredLanguage && !inferredIntentKeys.has("language") ? { key: "language", label: "Language: " + languageName(inferredLanguage) } : null,
     inferredGenre && !inferredIntentKeys.has("genre") ? { key: "genre", label: "Genre: " + inferredGenre } : null,
     inferredProvider && !inferredIntentKeys.has("provider") ? { key: "provider", label: "Provider: " + (providers.find((item) => item.provider_key === inferredProvider)?.provider_name ?? intent.providerName ?? inferredProvider) } : null,
@@ -199,20 +195,14 @@ export default function SearchPageClient() {
           <div className="genre-tools" aria-label="Genre search shortcuts"><span>Genre search</span>{genreQueries.map((item) => <button type="button" key={item} onClick={() => navigate({ q: item + " movies" })}>{item}</button>)}<small>Search understood as structured filters when a phrase is recognized.</small></div>
         </section>
 
-        {entityBlocker ? (
-          <section className="entity-blocker" role="status" aria-live="polite">
-            <div className="intro-icon"><SearchX size={18} aria-hidden="true" /></div>
-            <div><code>{entityBlocker.code}</code><strong>{entityBlocker.title}</strong><span>{entityBlocker.message}</span></div>
-          </section>
-        ) : null}
         {error ? <div className="status-banner" role="status"><div><strong>Search is temporarily unavailable.</strong><span>{error}</span></div><button type="button" onClick={() => setRetryKey((value) => value + 1)}>Retry <ArrowRight size={15} aria-hidden="true" /></button></div> : null}
-        {loading && !data && !error && !entityBlocker ? <SearchSkeleton /> : null}
+        {loading && !data && !error ? <SearchSkeleton /> : null}
 
-        {!entityBlocker && !interpretedQuery && !activeChips.length && !loading && !error ? (
+        {!interpretedQuery && !activeChips.length && !loading && !error ? (
           <section className="search-intro"><div className="intro-icon"><SearchX size={18} aria-hidden="true" /></div><div><strong>Start with a title, person or natural phrase.</strong><span>Try Prabhas on Netflix, Telugu action movies or 1990s Tamil classics.</span></div><Link href="/">Browse discovery <ArrowRight size={15} aria-hidden="true" /></Link></section>
         ) : null}
 
-        {!entityBlocker && data ? (
+        {data ? (
           <section className="results-section" aria-labelledby="results-heading">
             <div className="results-toolbar"><div><small>RESULTS</small><h2 id="results-heading">{data.total.toLocaleString()} titles found</h2></div><div className="active-chips" aria-label="Active filters">{activeChips.map((chip) => <span key={chip.key}>{chip.label}</span>)}</div></div>
             {data.items.length ? <div className="movie-grid search-results">{data.items.map((movie) => <MovieCard movie={movie} key={movie.canonical_movie_id} />)}</div> : <section className="empty-state"><SearchX size={22} aria-hidden="true" /><div><strong>No matching title found.</strong><span>Try a shorter title, search all providers, or clear one filter.</span></div><div className="empty-actions"><button type="button" onClick={() => navigate({ q: interpretedQuery || undefined })}>Search all providers</button>{interpretedQuery ? <button type="button" onClick={() => navigate({ q: interpretedQuery })}>Search only for {interpretedQuery}</button> : null}<button type="button" onClick={clearAll}>Clear filters</button></div></section>}

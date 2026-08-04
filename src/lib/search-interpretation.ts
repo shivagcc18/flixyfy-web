@@ -29,7 +29,7 @@ function escapeRegExp(value: string) {
 
 export function serializeSearchParams(values: Record<string, string | undefined | null>) {
   const params = new URLSearchParams();
-  const orderedKeys = ["q", "domain", "language", "genre", "provider", "content_type", "year", "year_from", "year_to"];
+  const orderedKeys = ["q", "person_id", "domain", "language", "genre", "provider", "content_type", "year", "year_from", "year_to"];
   for (const key of orderedKeys) {
     const value = values[key]?.trim();
     if (!value || (key === "domain" && value === "current") || (key === "content_type" && value === "movie")) continue;
