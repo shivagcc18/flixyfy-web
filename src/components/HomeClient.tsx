@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -19,10 +19,9 @@ type HomePayload = {
 type Provider = { provider_key: string; provider_name: string };
 
 const examples = [
-  "NTR movies",
-  "Prabhas on Netflix",
   "Telugu action movies",
   "1990s Tamil classics",
+  "Hindi comedy movies",
 ];
 
 function LoadingRail() {
@@ -95,17 +94,17 @@ export default function HomeClient() {
           <div className="hero-orbit" aria-hidden="true" />
           <div className="hero-copy">
             <div className="eyebrow"><Sparkles size={15} aria-hidden="true" />Indian movies and web series</div>
-            <h1 id="home-heading">Find what to watch.<br /><span>Know where it plays.</span></h1>
-            <p>Search Indian movies and web series by title, person, language, genre, year or provider. Browse current releases and Indian classics in one clear place.</p>
+            <h1 id="home-heading">Find Indian movies.<br /><span>Know where to watch.</span></h1>
+            <p>Search by movie, person, language, genre or provider.</p>
             <SearchInput large />
             <div className="discovery-chips" aria-label="Search examples">
               {examples.map((item) => <Link href={"/search?q=" + encodeURIComponent(item)} key={item}>{item}</Link>)}
             </div>
-          </div>
-          <div className="hero-signals" aria-label="How FLIXYFY works">
-            <div><SearchCheck size={17} aria-hidden="true" /><strong>Search across Indian cinema</strong><span>Titles, people, languages, genres and providers</span></div>
-            <div><Tv2 size={17} aria-hidden="true" /><strong>Find where to watch</strong><span>OTT and YouTube stay separate on movie details</span></div>
-            <div><Compass size={17} aria-hidden="true" /><strong>Explore by language</strong><span>Current movies and Indian classics, clearly organized</span></div>
+            <div className="hero-signals" aria-label="How FLIXYFY works">
+              <div><SearchCheck size={17} aria-hidden="true" /><strong>Current movies and classics</strong></div>
+              <div><Tv2 size={17} aria-hidden="true" /><strong>OTT and YouTube shown separately</strong></div>
+              <div><Compass size={17} aria-hidden="true" /><strong>Browse by language and provider</strong></div>
+            </div>
           </div>
         </section>
 
@@ -125,7 +124,7 @@ export default function HomeClient() {
             <div className="provider-scroller" aria-label="Browse by provider">
               <button type="button" className={!activeProvider ? "selected provider-pill" : "provider-pill"} onClick={() => goToSearch({})} aria-pressed={!activeProvider}>All providers</button>
               {providers.map((provider) => (
-                <button type="button" className={activeProvider === provider.provider_key ? "selected provider-pill" : "provider-pill"} key={provider.provider_key} onClick={() => goToSearch({ provider: provider.provider_key })} aria-pressed={activeProvider === provider.provider_key}>
+                <button type="button" className={activeProvider === provider.provider_key ? "selected provider-pill" : "provider-pill"} key={provider.provider_key} onClick={() => goToSearch({ provider: provider.provider_key })}>
                   <span className="provider-monogram" aria-hidden="true">{provider.provider_name.trim().slice(0, 1).toUpperCase()}</span>{provider.provider_name}
                 </button>
               ))}

@@ -1,4 +1,4 @@
-﻿import { normalizePosterUrl } from "@/lib/poster-normalizer";
+import { normalizePosterUrl } from "@/lib/poster-normalizer";
 
 const configuredApiBase = process.env.NEXT_PUBLIC_FLIXYFY_API_URL?.trim();
 
@@ -119,12 +119,14 @@ export type SearchResponse = {
 
 export { normalizePosterUrl };
 
-export async function apiFetch<T>(path: string, timeoutMs = 15000): Promise<T> {
+export async function apiFetch<T>(path: string, timeoutMs = 15000, externalSignal?: AbortSignal): Promise<T> {
   if (!API_BASE) {
     throw new Error("NEXT_PUBLIC_FLIXYFY_API_URL is required for production API requests");
   }
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  const abortExternal = () => controller.abort();
+  externalSignal?.addEventListener("abort", abortExternal, { once: true });
   try {
     const response = await fetch(`${API_BASE}${path}`, {
       cache: "no-store",
@@ -137,10 +139,12 @@ export async function apiFetch<T>(path: string, timeoutMs = 15000): Promise<T> {
     return (await response.json()) as T;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
+      if (externalSignal?.aborted) throw error;
       throw new Error("Request timed out");
     }
     throw error;
   } finally {
+    externalSignal?.removeEventListener("abort", abortExternal);
     window.clearTimeout(timeout);
   }
 }
