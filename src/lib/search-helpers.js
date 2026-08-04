@@ -1,4 +1,4 @@
-const currentYear = new Date().getFullYear();
+﻿const currentYear = 2026;
 
 export function getYearOptions(domain) {
   const years = domain === "historical"
