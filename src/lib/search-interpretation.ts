@@ -38,6 +38,16 @@ export function serializeSearchParams(values: Record<string, string | undefined 
   return params.toString();
 }
 
+export function mergeSearchParams(current: string, updates: Record<string, string | undefined | null>) {
+  const params = new URLSearchParams(current);
+  for (const [key, value] of Object.entries(updates)) {
+    const normalized = value?.trim();
+    if (!normalized) params.delete(key);
+    else params.set(key, key === "language" ? normalizeLanguageCode(normalized) : normalized);
+  }
+  return serializeSearchParams(Object.fromEntries(params.entries()));
+}
+
 export function parseSearchIntent(input: string, providers: ProviderAuthority[] = []): SearchIntent {
   const source = input.trim();
   let query = source;

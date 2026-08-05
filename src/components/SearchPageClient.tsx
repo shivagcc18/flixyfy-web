@@ -7,7 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { apiFetch, normalizePosterUrl, type Movie, type SearchResponse } from "@/lib/api";
 import { getYearOptions, isYearValidForDomain } from "@/lib/search-helpers";
 import { languageName } from "@/lib/languages";
-import { parseSearchIntent, serializeSearchParams } from "@/lib/search-interpretation";
+import { mergeSearchParams, parseSearchIntent, serializeSearchParams } from "@/lib/search-interpretation";
 import AppShell from "./AppShell";
 import MovieCard from "./MovieCard";
 import SearchInput from "./SearchInput";
@@ -135,27 +135,35 @@ export default function SearchPageClient() {
     router.push(next ? pathname + "?" + next : pathname);
   }
 
+  function navigateMerged(values: Record<string, string | undefined>) {
+    const next = mergeSearchParams(paramsKey, values);
+    router.push(next ? pathname + "?" + next : pathname);
+  }
+
   function setFilter(name: string, value: string) {
-    const values: Record<string, string | undefined> = {
-      q: interpretedQuery || undefined,
-      person_id: personId || undefined,
-      domain,
-      language: name === "language" ? value : inferredLanguage,
-      genre: name === "genre" ? value : inferredGenre,
-      provider: name === "provider" ? value : inferredProvider,
-      year: name === "year" ? value : effectiveYear,
-      content_type: contentType,
-    };
+    const values: Record<string, string | undefined> = { [name]: value || undefined };
     if (name === "domain") {
       values.domain = value;
       if (value === "historical") values.year = isYearValidForDomain(effectiveYear, "historical") ? effectiveYear : undefined;
       if (value === "current") values.year = isYearValidForDomain(effectiveYear, "current") ? effectiveYear : undefined;
     }
-    navigate(values);
+    if (name === "year") {
+      values.year_from = undefined;
+      values.year_to = undefined;
+    }
+    navigateMerged(values);
+  }
+
+  function clearFilter(name: string) {
+    if (name === "years" || name === "year") {
+      navigateMerged({ year: undefined, year_from: undefined, year_to: undefined });
+      return;
+    }
+    navigateMerged({ [name]: undefined });
   }
 
   function clearAll() {
-    navigate({ q: interpretedQuery || undefined });
+    router.push(pathname);
   }
 
   const inferredIntentKeys = new Set(intent.chips.map((chip) => chip.key));
@@ -180,8 +188,8 @@ export default function SearchPageClient() {
           <SearchInput initialValue={rawQuery} large key={rawQuery} />
           {activeChips.length || intent.chips.length ? (
             <div className="parsed-search" aria-live="polite"><span className="parsed-label">Search understood as</span><div className="parsed-chip-row">
-              {intent.chips.map((chip) => <Chip key={chip.key} label={chip.label + ": " + chip.value} onClear={() => setFilter(chip.key === "domain" ? "domain" : chip.key === "provider" ? "provider" : chip.key, "")} />)}
-              {activeChips.map((chip) => <Chip key={"active-" + chip.key} label={chip.label} onClear={() => setFilter(chip.key === "years" ? "year_from" : chip.key, "")} />)}
+              {intent.chips.map((chip) => <Chip key={chip.key} label={chip.label + ": " + chip.value} onClear={() => clearFilter(chip.key)} />)}
+              {activeChips.map((chip) => <Chip key={"active-" + chip.key} label={chip.label} onClear={() => clearFilter(chip.key)} />)}
             </div></div>
           ) : null}
           <button className="mobile-filter-toggle" type="button" onClick={() => setFiltersOpen((value) => !value)} aria-expanded={filtersOpen}><SlidersHorizontal size={16} />Filters</button>

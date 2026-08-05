@@ -1,7 +1,7 @@
 ﻿import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { languageName } from "./languages";
-import { parseSearchIntent, serializeSearchParams } from "./search-interpretation";
+import { mergeSearchParams, parseSearchIntent, serializeSearchParams } from "./search-interpretation";
 
 const providers = [
   { provider_key: "netflix", provider_name: "Netflix" },
@@ -43,5 +43,39 @@ describe("search interpretation", () => {
   it("uses full supported language names", () => {
     assert.equal(languageName("te"), "Telugu");
     assert.equal(languageName("bho"), "Bhojpuri");
+  });
+
+  it("preserves provider, language, and year while filters change", () => {
+    let current = "provider=vi_movies_and_tv";
+    current = mergeSearchParams(current, { language: "te" });
+    assert.equal(current, "language=te&provider=vi_movies_and_tv");
+    current = mergeSearchParams(current, { year: "2024" });
+    assert.equal(current, "language=te&provider=vi_movies_and_tv&year=2024");
+    current = mergeSearchParams(current, { language: "ta" });
+    assert.equal(current, "language=ta&provider=vi_movies_and_tv&year=2024");
+    current = mergeSearchParams(current, { year: undefined });
+    assert.equal(current, "language=ta&provider=vi_movies_and_tv");
+  });
+
+  it("accepts language codes and names without case sensitivity", () => {
+    assert.equal(mergeSearchParams("", { language: "Te" }), "language=te");
+    assert.equal(mergeSearchParams("", { language: "TELUGU" }), "language=te");
+    assert.equal(mergeSearchParams("", { language: "Tamil" }), "language=ta");
+    assert.equal(mergeSearchParams("", { language: "HINDI" }), "language=hi");
+    assert.equal(mergeSearchParams("", { language: "Malayalam" }), "language=ml");
+    assert.equal(mergeSearchParams("", { language: "Kn" }), "language=kn");
+    assert.equal(mergeSearchParams("", { language: "Bengali" }), "language=bn");
+    assert.equal(mergeSearchParams("", { language: "MR" }), "language=mr");
+  });
+
+  it("canonicalizes Telugu names and preserves unrelated parameters", () => {
+    assert.equal(
+      mergeSearchParams("q=Pushpak&provider=vi_movies_and_tv&year=2024", { language: "Telugu" }),
+      "q=Pushpak&language=te&provider=vi_movies_and_tv&year=2024",
+    );
+  });
+
+  it("clearing every filter produces the empty search URL", () => {
+    assert.equal(serializeSearchParams({}), "");
   });
 });
