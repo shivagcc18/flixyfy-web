@@ -17,21 +17,36 @@ type ProviderRow = {
   home_url?: string | null;
 };
 
+const YOUTUBE_BROWSE_PROVIDER: ProviderRow = {
+  provider_key: "youtube",
+  provider_name: "YouTube",
+  provider_type: "FREE_STREAMING",
+  movie_count: 9936,
+  flatrate_rows: 9936,
+  rent_rows: 0,
+  buy_rows: 0,
+};
+
 export default function ProviderDirectoryClient() {
   const [items, setItems] = useState<ProviderRow[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
     apiFetch<{ items?: Array<{ provider_key: string; provider_name: string; provider_type?: string; row_count?: number; content_count?: number }> }>("/api/v4/providers")
-      .then((data) => setItems((data.items ?? []).map((item) => ({
-        provider_key: item.provider_key,
-        provider_name: item.provider_name,
-        provider_type: item.provider_type ?? "UNKNOWN_OR_UNAPPROVED",
-        movie_count: Number(item.content_count ?? 0),
-        flatrate_rows: Number(item.row_count ?? 0),
-        rent_rows: 0,
-        buy_rows: 0,
-      }))))
+      .then((data) => {
+        const apiItems = (data.items ?? []).map((item) => ({
+          provider_key: item.provider_key,
+          provider_name: item.provider_name,
+          provider_type: item.provider_type ?? "UNKNOWN_OR_UNAPPROVED",
+          movie_count: Number(item.content_count ?? 0),
+          flatrate_rows: Number(item.row_count ?? 0),
+          rent_rows: 0,
+          buy_rows: 0,
+        }));
+        setItems(apiItems.some((item) => item.provider_key === "youtube")
+          ? apiItems
+          : [...apiItems, YOUTUBE_BROWSE_PROVIDER]);
+      })
       .catch((reason: unknown) =>
         setError(reason instanceof Error ? reason.message : "Failed to load"),
       );
@@ -59,18 +74,21 @@ export default function ProviderDirectoryClient() {
             <a
               key={provider.provider_key}
               href={`/search?provider=${encodeURIComponent(provider.provider_key)}`}
+              className="provider-directory-card"
             >
-              <div className="provider-icon">
+              <div className="provider-directory-card__meta">
+                <span>{provider.provider_type.replaceAll("_", " ")}</span>
+                <div className="provider-count">
+                  {provider.movie_count.toLocaleString()}
+                  <span>movies</span>
+                  <ArrowRight size={15} aria-hidden="true" />
+                </div>
+              </div>
+              <div className="provider-icon provider-directory-card__logo">
                 <ProviderLogo providerKey={provider.provider_key} providerName={provider.provider_name} />
               </div>
-              <div>
+              <div className="provider-directory-card__name">
                 <strong>{provider.provider_name}</strong>
-                <span>{provider.provider_type.replaceAll("_", " ")}</span>
-              </div>
-              <div className="provider-count">
-                {provider.movie_count.toLocaleString()}
-                <span>movies</span>
-                <ArrowRight size={15} aria-hidden="true" />
               </div>
             </a>
           ))}

@@ -72,8 +72,8 @@ export default function AppShell({ children }: Readonly<{ children: ReactNode }>
       <FilmReelBackground />
       <header className="topbar">
         <Link className="brand" href="/" aria-label="FLIXYFY home">
-          <span className="brand-mark" aria-hidden="true">F</span>
-          <span>FLIXYFY</span>
+          <img className="brand-logo" src="/flixyfy-logo.png" alt="FLIXYFY" />
+          <span className="sr-only">FLIXYFY</span>
         </Link>
         <nav className="desktop-nav" aria-label="Primary navigation">{links}</nav>
         <div className="topbar-actions">
@@ -95,7 +95,7 @@ export default function AppShell({ children }: Readonly<{ children: ReactNode }>
         <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }}>
           <aside ref={drawerRef} id="mobile-navigation" className="mobile-drawer" role="dialog" aria-modal="true" aria-label="FLIXYFY navigation">
             <div className="drawer-heading">
-              <Link className="brand" href="/" onClick={() => setDrawerOpen(false)}><span className="brand-mark" aria-hidden="true">F</span><span>FLIXYFY</span></Link>
+              <Link className="brand" href="/" onClick={() => setDrawerOpen(false)}><img className="brand-logo" src="/flixyfy-logo.png" alt="FLIXYFY" /><span className="sr-only">FLIXYFY</span></Link>
               <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close navigation"><X aria-hidden="true" /></button>
             </div>
             <nav className="mobile-nav-list" aria-label="Drawer navigation">{links}</nav>

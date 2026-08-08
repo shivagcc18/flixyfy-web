@@ -19,6 +19,12 @@ type HomePayload = {
 
 type Provider = { provider_key: string; provider_name: string; provider_type?: string };
 
+const YOUTUBE_BROWSE_PROVIDER: Provider = {
+  provider_key: "youtube",
+  provider_name: "YouTube",
+  provider_type: "FREE_STREAMING",
+};
+
 const examples = [
   "Telugu action movies",
   "1990s Tamil classics",
@@ -123,7 +129,10 @@ export default function HomeClient() {
       .then(([home, providerResponse]) => {
         if (!active) return;
         setData(home);
-        setProviders(providerResponse.items ?? []);
+        const apiProviders = providerResponse.items ?? [];
+        setProviders(apiProviders.some((item) => item.provider_key === "youtube")
+          ? apiProviders
+          : [...apiProviders, YOUTUBE_BROWSE_PROVIDER]);
       })
       .catch((reason: unknown) => {
         if (active) setError(reason instanceof Error ? reason.message : "Discovery is unavailable");
