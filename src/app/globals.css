@@ -1436,3 +1436,66 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   filter: drop-shadow(0 0 10px rgba(255, 210, 63, .16));
 }
 @media (max-width: 640px) { .brand-logo { width: 112px; height: 36px; } }
+
+/* FLIXYFY_TELUGU_FIRST_WATCHABLE_HOMEPAGE_V1 */
+.home-page .hero {
+  min-height: 0;
+  padding: 18px clamp(20px, 4vw, 48px) 16px;
+}
+.home-page .hero h1 {
+  margin: 6px 0 8px;
+  font-size: clamp(26px, 3.6vw, 44px);
+  line-height: 1.02;
+}
+.home-page .hero p,
+.home-page .hero-signals { display: none; }
+.home-page .search-input-shell.large { margin-top: 8px; }
+.home-page .discovery-chips { margin-top: 8px; }
+.home-page .content-section { margin-top: 20px; }
+.home-page .homepage-rail:first-of-type { margin-top: 14px; }
+.home-page .homepage-rail .section-heading { margin-bottom: 10px; }
+.home-page .homepage-rail .section-heading p { max-width: 650px; }
+.home-page .compact-discovery-controls { margin-top: 24px; }
+.home-page .compact-language-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.home-page .provider-pill:not(.selected) {
+  min-width: 122px;
+  min-height: 78px;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 8px;
+  padding: 7px 9px;
+}
+.home-page .provider-pill:not(.selected) .provider-logo,
+.home-page .provider-pill:not(.selected) .provider-logo-fallback {
+  width: 76px;
+  height: 52px;
+  border-radius: 10px;
+}
+.home-page .provider-pill:not(.selected) .provider-logo img { padding: 6px; }
+.home-page .provider-pill:not(.selected) > span:last-child { font-size: 10px; }
+@media (max-width: 640px) {
+  .home-page .hero { padding: 16px 16px 14px; }
+  .home-page .hero h1 { font-size: clamp(24px, 7.3vw, 34px); }
+  .home-page .provider-pill:not(.selected) {
+    min-width: 112px;
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+  .home-page .provider-pill:not(.selected) .provider-logo,
+  .home-page .provider-pill:not(.selected) .provider-logo-fallback {
+    width: 64px;
+    height: 48px;
+  }
+}
+.home-page .hero h1 {
+  margin: 4px 0 4px;
+  font-size: clamp(24px, 3vw, 36px);
+  line-height: .94;
+}
+.home-page .hero-copy { max-width: 940px; }
+.home-page .eyebrow { font-size: 11px; }
+.home-page .search-input-shell.large { min-height: 46px; }
+.home-page .discovery-chips a { min-height: 21px; padding: 4px 8px; }
