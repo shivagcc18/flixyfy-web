@@ -3,12 +3,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ChevronLeft, ChevronRight, SearchCheck, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, SearchCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiFetch, normalizePosterUrl, type Movie } from "@/lib/api";
 import { FEATURED_LANGUAGES } from "@/lib/languages";
 import { serializeSearchParams } from "@/lib/search-interpretation";
-import { curateHomepageCandidates } from "@/lib/homepage-curation";
+import { curateHomepageCandidates, curateHomepageWithYearBackfill } from "@/lib/homepage-curation";
 import AppShell from "./AppShell";
 import MovieCard from "./MovieCard";
 import SearchInput from "./SearchInput";
@@ -20,7 +20,7 @@ type ProviderSelector = (provider?: string) => void;
 type RawMovie = Record<string, unknown>;
 type HomepageMovie = Movie & { approved_provider_count: number; rating_signal: number };
 type SearchPayload = { items?: RawMovie[]; results?: RawMovie[]; total?: number };
-type Rail = { key: string; title: string; subtitle: string; items: HomepageMovie[] };
+type Rail = { key: string; title: string; subtitle: string; items: HomepageMovie[]; currentCount?: number; backfillCount?: number };
 
 const YOUTUBE_BROWSE_PROVIDER: Provider = { provider_key: "youtube", provider_name: "YouTube", provider_type: "FREE_STREAMING" };
 
@@ -76,6 +76,14 @@ export function curateHomepageMovies(items: RawMovie[], domain: "current" | "his
   return curateHomepageCandidates(items.map((item) => normalizeHomepageMovie(item, domain)), domain) as HomepageMovie[];
 }
 
+function curateKannadaMovies(currentItems: RawMovie[], backfillItems: RawMovie[]) {
+  return curateHomepageWithYearBackfill(
+    currentItems.map((item) => normalizeHomepageMovie(item, "current")),
+    backfillItems.map((item) => normalizeHomepageMovie(item, "current")),
+    2025,
+  ) as { items: HomepageMovie[]; currentCount: number; backfillCount: number };
+}
+
 function LoadingRail() {
   return <div className="movie-rail" aria-label="Loading watchable movies" aria-busy="true">{Array.from({ length: 6 }, (_, index) => <div className="skeleton-card" key={index}><div className="skeleton-poster" /><div className="skeleton-line long" /><div className="skeleton-line short" /></div>)}</div>;
 }
@@ -127,8 +135,9 @@ function RailControls({ target }: { target: string }) {
 function MovieRail({ rail, index }: { rail: Rail; index: number }) {
   const target = `${rail.key}-homepage-rail`;
   const browseHref = rail.key === "te-historical" ? "/search?domain=historical&language=te" : `/search?language=${rail.key}`;
-  return <section className={`content-section homepage-rail homepage-rail-${index + 1}`} aria-labelledby={`${target}-heading`}>
-    <div className="section-heading"><div><small>{index === 0 ? "TELUGU FIRST" : "WATCH NOW"}</small><h2 id={`${target}-heading`}>{rail.title}</h2><p>{rail.subtitle}</p></div><div className="section-actions"><RailControls target={target} /><Link href={browseHref}>Explore all <ArrowRight size={15} aria-hidden="true" /></Link></div></div>
+  const displayTitle = ({ te: "Telugu", hi: "Hindi", ta: "Tamil", kn: "Kannada", ml: "Malayalam", "te-historical": "Telugu Classics" } as Record<string, string>)[rail.key] ?? rail.title;
+  return <section className={`content-section homepage-rail homepage-rail-${index + 1}`} aria-labelledby={`${target}-heading`} data-kannada-current-count={rail.key === "kn" ? rail.currentCount : undefined} data-kannada-backfill-count={rail.key === "kn" ? rail.backfillCount : undefined} data-kannada-total-rendered={rail.key === "kn" ? rail.items.length : undefined}>
+    <div className="section-heading"><div><h2 id={`${target}-heading`}>{displayTitle}</h2><p>{rail.subtitle}</p></div><div className="section-actions"><RailControls target={target} /><Link href={browseHref}>Explore all <ArrowRight size={15} aria-hidden="true" /></Link></div></div>
     <div className="movie-rail" id={target} tabIndex={0}>{rail.items.map((movie) => <MovieCard movie={movie} key={movie.canonical_movie_id} />)}</div>
   </section>;
 }
@@ -148,16 +157,24 @@ export default function HomeClient() {
     const requests = CURRENT_RAILS.map((rail) => apiFetch<SearchPayload>(`/api/v4/search?language=${rail.key}&domain=current&limit=48`));
     Promise.all([
       ...requests,
+      apiFetch<SearchPayload>("/api/v4/search?language=kn&domain=current&year=2025&limit=48").catch(() => ({ items: [] })),
       apiFetch<SearchPayload>("/api/v4/search?language=te&domain=historical&limit=48"),
       apiFetch<{ items?: Provider[] }>("/api/v4/providers"),
     ])
       .then((responses) => {
         if (!active) return;
         const currentResponses = responses.slice(0, CURRENT_RAILS.length) as SearchPayload[];
-        const historicalResponse = responses[CURRENT_RAILS.length] as SearchPayload;
-        const providerResponse = responses[CURRENT_RAILS.length + 1] as { items?: Provider[] };
+        const kannadaBackfillResponse = responses[CURRENT_RAILS.length] as SearchPayload;
+        const historicalResponse = responses[CURRENT_RAILS.length + 1] as SearchPayload;
+        const providerResponse = responses[CURRENT_RAILS.length + 2] as { items?: Provider[] };
+        const kannada = curateKannadaMovies(
+          currentResponses[3]?.items ?? currentResponses[3]?.results ?? [],
+          kannadaBackfillResponse?.items ?? kannadaBackfillResponse?.results ?? [],
+        );
         setRails([
-          ...CURRENT_RAILS.map((rail, index) => ({ ...rail, items: curateHomepageMovies(currentResponses[index]?.items ?? currentResponses[index]?.results ?? [], "current") })),
+          ...CURRENT_RAILS.map((rail, index) => index === 3
+            ? { ...rail, items: kannada.items, currentCount: kannada.currentCount, backfillCount: kannada.backfillCount }
+            : { ...rail, items: curateHomepageMovies(currentResponses[index]?.items ?? currentResponses[index]?.results ?? [], "current") }),
           { key: "te-historical", title: "Telugu Classics", subtitle: "Historical Telugu cinema, kept in its own lane.", items: curateHomepageMovies(historicalResponse?.items ?? historicalResponse?.results ?? [], "historical") },
         ]);
         const apiProviders = providerResponse.items ?? [];
@@ -178,8 +195,7 @@ export default function HomeClient() {
       <section className="hero" aria-labelledby="home-heading">
         <div className="hero-orbit" aria-hidden="true" />
         <div className="hero-copy">
-          <div className="eyebrow"><Sparkles size={15} aria-hidden="true" />Indian movie discovery</div>
-          <h1 id="home-heading">Indian movies in every language.<br /><span>Know where to watch.</span></h1>
+          <h1 id="home-heading">Indian movies in every language. Know where to watch.</h1>
           <SearchInput large />
           <div className="discovery-chips" aria-label="Search examples">{["Telugu action movies", "Prabhas movies", "Movies on Prime Video"].map((item) => <Link href={`/search?q=${encodeURIComponent(item)}`} key={item}>{item}</Link>)}</div>
         </div>

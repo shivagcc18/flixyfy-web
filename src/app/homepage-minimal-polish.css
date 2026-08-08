@@ -1,0 +1,32 @@
+.topbar-wordmark {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--gold-highlight, #fff4b0);
+  font-size: clamp(17px, 1.6vw, 24px);
+  font-weight: 950;
+  letter-spacing: .2em;
+  line-height: 1;
+  text-shadow: 0 0 8px rgba(255, 224, 102, .8), 0 0 24px rgba(212, 175, 55, .35);
+  white-space: nowrap;
+}
+.topbar-wordmark:hover { color: #fff8d2; }
+.brand-logo {
+  padding: 2px;
+  border: 1px solid rgba(255, 224, 102, .58);
+  background: linear-gradient(135deg, rgba(255, 244, 176, .13), rgba(5, 5, 5, .78) 42%, rgba(212, 175, 55, .12));
+  box-shadow: 0 0 0 2px rgba(5, 5, 5, .82), 0 0 18px rgba(212, 175, 55, .28), inset 0 1px 0 rgba(255, 244, 176, .3);
+  filter: saturate(1.18) contrast(1.12) drop-shadow(0 0 10px rgba(255, 210, 63, .26));
+}
+.home-page .hero-copy { max-width: none; }
+.home-page .hero h1 {
+  max-width: none;
+  font-size: clamp(24px, 2.55vw, 36px);
+  line-height: 1.08;
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .topbar { gap: 10px; }
+  .topbar-wordmark { position: static; transform: none; margin-left: auto; margin-right: 2px; font-size: 15px; letter-spacing: .14em; }
+  .home-page .hero h1 { white-space: normal; }
+}

@@ -21,3 +21,18 @@ export function curateHomepageCandidates<T extends HomepageCandidate>(items: T[]
     .sort(compareHomepageCandidates)
     .slice(0, 12);
 }
+
+export function curateHomepageWithYearBackfill<T extends HomepageCandidate>(currentItems: T[], backfillItems: T[], backfillYear: number) {
+  const currentWatchable = curateHomepageCandidates(currentItems, "current")
+    .filter((movie) => movie.approved_provider_count >= 1);
+  const selectedCurrent = currentWatchable.slice(0, 12);
+  const seen = new Set(selectedCurrent.map((movie) => movie.canonical_movie_id));
+  const backfillWatchable = curateHomepageCandidates(backfillItems, "current")
+    .filter((movie) => movie.release_year === backfillYear && movie.approved_provider_count >= 1 && !seen.has(movie.canonical_movie_id));
+  const selectedBackfill = backfillWatchable.slice(0, Math.max(0, 12 - selectedCurrent.length));
+  return {
+    items: [...selectedCurrent, ...selectedBackfill],
+    currentCount: selectedCurrent.length,
+    backfillCount: selectedBackfill.length,
+  };
+}

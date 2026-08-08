@@ -76,8 +76,8 @@ export default function AppShell({ children }: Readonly<{ children: ReactNode }>
           <span className="sr-only">FLIXYFY</span>
         </Link>
         <nav className="desktop-nav" aria-label="Primary navigation">{links}</nav>
+        <Link className="topbar-wordmark" href="/" aria-label="FLIXYFY home">FLIXYFY</Link>
         <div className="topbar-actions">
-          <span className="topbar-copy">Find Indian movies and web series</span>
           <button ref={triggerRef} className="drawer-trigger" type="button" aria-expanded={drawerOpen} aria-controls="mobile-navigation" onClick={() => setDrawerOpen(true)}>
             <Menu aria-hidden="true" />
             <span className="sr-only">Open navigation</span>

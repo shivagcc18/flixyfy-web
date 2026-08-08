@@ -116,7 +116,8 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
     );
   }
 
-  const rating = movie.imdb_rating ?? movie.tmdb_rating;
+  const rating = movie.imdb_rating ?? movie.tmdb_rating ?? movie.rating;
+  const ratingSource = movie.imdb_rating != null ? "IMDb" : movie.tmdb_rating != null || movie.rating != null ? "TMDB" : null;
   const availability = movie.availability ?? movie.providers ?? [];
   const ottProviders = movie.providers?.length
     ? movie.providers
@@ -161,7 +162,7 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
               <span><CalendarDays size={17} aria-hidden="true" />{movie.release_year ?? "-"}</span>
               {movie.runtime ? <span><Clock3 size={17} aria-hidden="true" />{movie.runtime} min</span> : null}
               <span><Languages size={17} aria-hidden="true" />{movie.language_name ?? movie.original_language ?? "Unknown"}</span>
-              {rating ? <span><Star size={17} aria-hidden="true" /><strong>Rating</strong>{Number(rating).toFixed(1)}</span> : null}
+              {ratingSource && rating != null ? <span data-rating-source={ratingSource}><Star size={17} aria-hidden="true" /><strong>{ratingSource}</strong>{Number(rating).toFixed(1)}</span> : null}
             </div>
 
             {movie.genres.length ? (

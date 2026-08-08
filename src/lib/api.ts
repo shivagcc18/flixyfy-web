@@ -66,6 +66,7 @@ export type Movie = {
   poster_url?: string | null;
   backdrop_url?: string | null;
   tmdb_rating?: number | null;
+  rating?: number | null;
   imdb_rating?: number | null;
   provider_count: number;
   youtube_video_count?: number;
