@@ -134,7 +134,7 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
           style={
             backdrop
               ? {
-                  backgroundImage: `linear-gradient(90deg,rgba(7,16,24,.98) 0%,rgba(7,16,24,.78) 58%,rgba(7,16,24,.94) 100%),url("${backdrop}")`,
+                  backgroundImage: `linear-gradient(90deg,rgba(5,5,5,.98) 0%,rgba(5,5,5,.78) 58%,rgba(5,5,5,.94) 100%),url("${backdrop}")`,
                 }
               : undefined
           }

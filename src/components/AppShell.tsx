@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Compass, Menu, Search, Tv2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import FilmReelBackground from "./FilmReelBackground";
 
 const navigation = [
   { href: "/", label: "Home", desktopLabel: "Discover", icon: Compass },
@@ -68,6 +69,7 @@ export default function AppShell({ children }: Readonly<{ children: ReactNode }>
 
   return (
     <div className="app-shell">
+      <FilmReelBackground />
       <header className="topbar">
         <Link className="brand" href="/" aria-label="FLIXYFY home">
           <span className="brand-mark" aria-hidden="true">F</span>
