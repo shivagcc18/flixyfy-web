@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { languageName } from "@/lib/languages";
@@ -14,7 +14,7 @@ export default function MovieCard({ movie }: { movie: Movie }) {
     <Link className="movie-card" href={route} aria-label={"Open " + labelParts.join(", ") + " details"}>
       <div className="movie-card-poster-wrap">
         <PosterImage src={movie.poster_url} alt={movie.title + " poster"} fallbackLabel={movie.title} />
-        <span className={"movie-domain-badge " + movie.domain}>{movie.domain === "current" ? "Current" : "Classic"}</span>
+        {movie.domain === "historical" ? <span className="movie-domain-badge historical">Classic</span> : null}
         <span className="poster-hover-title">{movie.title}</span>
       </div>
       <div className="movie-card-body">

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Tv2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import AppShell from "./AppShell";
+import ProviderLogo from "./ProviderLogo";
 
 type ProviderRow = {
   provider_key: string;
@@ -60,7 +61,7 @@ export default function ProviderDirectoryClient() {
               href={`/search?provider=${encodeURIComponent(provider.provider_key)}`}
             >
               <div className="provider-icon">
-                <Tv2 size={24} />
+                <ProviderLogo providerKey={provider.provider_key} providerName={provider.provider_name} />
               </div>
               <div>
                 <strong>{provider.provider_name}</strong>
@@ -69,6 +70,7 @@ export default function ProviderDirectoryClient() {
               <div className="provider-count">
                 {provider.movie_count.toLocaleString()}
                 <span>movies</span>
+                <ArrowRight size={15} aria-hidden="true" />
               </div>
             </a>
           ))}

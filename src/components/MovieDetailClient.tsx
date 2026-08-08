@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { CalendarDays, Clock3, Languages, Star } from "lucide-react";
-import { apiFetch, movieApiPath, normalizePosterUrl, type AvailabilityOption, type Movie, type Provider } from "@/lib/api";
+import {
+  apiFetch,
+  movieApiPath,
+  normalizePosterUrl,
+  type AvailabilityOption,
+  type Movie,
+  type Provider,
+} from "@/lib/api";
 import AppShell from "./AppShell";
 import ProviderButtons from "./ProviderButtons";
 import PosterImage from "./PosterImage";
@@ -30,42 +37,61 @@ type BackendMovieDetail = MovieDetail & {
   youtube_versions?: AvailabilityOption[];
 };
 
+type DetailResult = {
+  routeKey: string;
+  movie: MovieDetail | null;
+  error: string;
+};
+
 export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
-  const [movie, setMovie] = useState<MovieDetail | null>(null);
-  const [error, setError] = useState("");
+  const [result, setResult] = useState<DetailResult | null>(null);
 
   useEffect(() => {
     let active = true;
-    const timer = window.setTimeout(() => {
-      setMovie(null);
-      setError("");
-      apiFetch<BackendMovieDetail>(movieApiPath(tmdbId))
-        .then((response) => {
-          if (active) {
-            const ott = (response.providers ?? []).map((item) => ({ ...item, media_kind: "ott" as const }));
-            const youtube = (response.youtube ?? response.youtube_versions ?? []).map((item) => ({ ...item, media_kind: "youtube" as const }));
-            setMovie({
-              ...response,
-              providers: response.providers ?? [],
-              availability: [...ott, ...youtube],
-              genres: response.genres ?? [],
-              languages: response.languages ?? [],
-              cast: response.cast ?? [],
-              crew: response.crew ?? [],
-            });
-          }
-        })
-        .catch((reason: unknown) => {
-          if (active) {
-            setError(reason instanceof Error ? reason.message : "Movie not found");
-          }
+
+    apiFetch<BackendMovieDetail>(movieApiPath(tmdbId))
+      .then((response) => {
+        if (!active) return;
+        const ott = (response.providers ?? []).map((item) => ({
+          ...item,
+          media_kind: "ott" as const,
+        }));
+        const youtube = (response.youtube ?? response.youtube_versions ?? []).map((item) => ({
+          ...item,
+          media_kind: "youtube" as const,
+        }));
+
+        setResult({
+          routeKey: tmdbId,
+          error: "",
+          movie: {
+            ...response,
+            providers: response.providers ?? [],
+            availability: [...ott, ...youtube],
+            genres: response.genres ?? [],
+            languages: response.languages ?? [],
+            cast: response.cast ?? [],
+            crew: response.crew ?? [],
+          },
         });
-    }, 0);
+      })
+      .catch((reason: unknown) => {
+        if (!active) return;
+        setResult({
+          routeKey: tmdbId,
+          movie: null,
+          error: reason instanceof Error ? reason.message : "Movie not found",
+        });
+      });
+
     return () => {
       active = false;
-      window.clearTimeout(timer);
     };
   }, [tmdbId]);
+
+  const current = result?.routeKey === tmdbId ? result : null;
+  const movie = current?.movie ?? null;
+  const error = current?.error ?? "";
 
   if (error) {
     return (
@@ -108,13 +134,18 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
           style={
             backdrop
               ? {
-                  backgroundImage: `linear-gradient(90deg,rgba(5,7,13,.98) 0%,rgba(5,7,13,.72) 58%,rgba(5,7,13,.92) 100%),url("${backdrop}")`,
+                  backgroundImage: `linear-gradient(90deg,rgba(7,16,24,.98) 0%,rgba(7,16,24,.78) 58%,rgba(7,16,24,.94) 100%),url("${backdrop}")`,
                 }
               : undefined
           }
         >
           <div className="detail-poster">
-            <PosterImage src={movie.poster_url} alt={`${movie.title} poster`} fallbackLabel={movie.title} detail />
+            <PosterImage
+              src={movie.poster_url}
+              alt={`${movie.title} poster`}
+              fallbackLabel={movie.title}
+              detail
+            />
           </div>
 
           <div className="detail-copy">
@@ -127,45 +158,32 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
             ) : null}
 
             <div className="detail-meta">
-              <span>
-                <CalendarDays size={17} aria-hidden="true" />
-                {movie.release_year ?? "-"}
-              </span>
-              {movie.runtime ? (
-                <span>
-                  <Clock3 size={17} aria-hidden="true" />
-                  {movie.runtime} min
-                </span>
-              ) : null}
-              <span>
-                <Languages size={17} aria-hidden="true" />
-                {movie.language_name ?? movie.original_language ?? "Unknown"}
-              </span>
-              {rating ? (
-                <span>
-                  <Star size={17} aria-hidden="true" />
-                  {Number(rating).toFixed(1)}
-                </span>
-              ) : null}
+              <span><CalendarDays size={17} aria-hidden="true" />{movie.release_year ?? "-"}</span>
+              {movie.runtime ? <span><Clock3 size={17} aria-hidden="true" />{movie.runtime} min</span> : null}
+              <span><Languages size={17} aria-hidden="true" />{movie.language_name ?? movie.original_language ?? "Unknown"}</span>
+              {rating ? <span><Star size={17} aria-hidden="true" /><strong>Rating</strong>{Number(rating).toFixed(1)}</span> : null}
             </div>
 
             {movie.genres.length ? (
               <div className="genre-row">
-                {movie.genres.map((genre) => (
-                  <span key={genre.genre_id}>{genre.genre_name}</span>
-                ))}
+                {movie.genres.map((genre) => <span key={genre.genre_id}>{genre.genre_name}</span>)}
               </div>
             ) : null}
 
-            <p className="detail-overview">
-              {movie.overview || "Overview is not available."}
-            </p>
+            <p className="detail-overview">{movie.overview || "Overview is not available."}</p>
 
-            <div className="where-to-watch">
-              <span className="section-kicker">WHERE TO WATCH IN INDIA</span>
-              <ProviderButtons providers={ottProviders} />
-              <span className="section-kicker youtube-kicker">YOUTUBE AVAILABILITY</span>
-              <ProviderButtons providers={youtubeAvailability} />
+            <div className="watch-panels" aria-label="Watch options">
+              <section className="watch-panel ott-panel" aria-labelledby="ott-watch-title">
+                <span className="section-kicker">WHERE TO WATCH IN INDIA</span>
+                <h2 id="ott-watch-title">OTT and store options</h2>
+                <ProviderButtons providers={ottProviders} />
+              </section>
+
+              <section className="watch-panel youtube-panel" aria-labelledby="youtube-watch-title">
+                <span className="section-kicker youtube-kicker">WATCH FREE ON YOUTUBE</span>
+                <h2 id="youtube-watch-title">Approved full-movie links</h2>
+                <ProviderButtons providers={youtubeAvailability} limit={3} />
+              </section>
             </div>
           </div>
         </section>
@@ -183,9 +201,7 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="provider-empty">Cast data is not listed in this snapshot.</p>
-            )}
+            ) : <p className="provider-empty">Cast data is not listed in this snapshot.</p>}
           </div>
 
           <div>
@@ -200,9 +216,7 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="provider-empty">Crew data is not listed in this snapshot.</p>
-            )}
+            ) : <p className="provider-empty">Crew data is not listed in this snapshot.</p>}
           </div>
         </section>
       </main>

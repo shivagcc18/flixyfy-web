@@ -3,9 +3,9 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, useEffect, useId, useRef, useState } from "react";
-import { ArrowRight, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Clock3, Search, Sparkles, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, normalizePosterUrl } from "@/lib/api";
 import { isCurrentSuggestionResponse, shouldOpenSuggestions } from "@/lib/search-ux";
 import { serializeSearchParams } from "@/lib/search-interpretation";
 import { normalizeProviderForApi } from "../utils/providerFetchPatch";
@@ -17,6 +17,7 @@ type Suggestion = {
   person_id?: string;
   disambiguation?: string;
   release_year?: number;
+  poster_url?: string;
 };
 
 type SuggestionApiItem = {
@@ -30,7 +31,21 @@ type SuggestionApiItem = {
   display_name?: string;
   disambiguation?: string;
   roles?: string[];
+  poster_url?: string | null;
+  poster_path?: string | null;
 };
+
+const RECENT_SEARCH_KEY = "flixyfy_recent_searches_v1";
+const MAX_RECENT_SEARCHES = 6;
+
+function readRecentSearches() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(RECENT_SEARCH_KEY) ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string").slice(0, MAX_RECENT_SEARCHES) : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function SearchInput({ initialValue = "", large = false }: { initialValue?: string; large?: boolean }) {
   const router = useRouter();
@@ -47,6 +62,8 @@ export default function SearchInput({ initialValue = "", large = false }: { init
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [submitting, setSubmitting] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [recent, setRecent] = useState<string[]>([]);
 
   function closeSuggestions() {
     request.current += 1;
@@ -56,6 +73,11 @@ export default function SearchInput({ initialValue = "", large = false }: { init
     setOpen(false);
     setActiveIndex(-1);
   }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setRecent(readRecentSearches()), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     setValue(initialValue);
@@ -112,6 +134,7 @@ export default function SearchInput({ initialValue = "", large = false }: { init
             entity_key: item.entity_key ?? item.canonical_movie_id ?? item.title ?? "",
             entity_name: item.entity_name ?? item.title ?? "",
             release_year: item.release_year ?? undefined,
+            poster_url: normalizePosterUrl(item.poster_url ?? item.poster_path) ?? undefined,
           }))
           .filter((item) => item.entity_name);
         const suggestions = [...people, ...movies].slice(0, 8);
@@ -161,11 +184,33 @@ export default function SearchInput({ initialValue = "", large = false }: { init
     abortRef.current?.abort();
   }, []);
 
+  function rememberSearch(query: string) {
+    const normalized = query.trim();
+    if (!normalized) return;
+    const next = [normalized, ...recent.filter((item) => item.toLowerCase() !== normalized.toLowerCase())].slice(0, MAX_RECENT_SEARCHES);
+    setRecent(next);
+    try {
+      window.localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(next));
+    } catch {
+      // Local history is optional.
+    }
+  }
+
+  function clearRecentSearches() {
+    setRecent([]);
+    try {
+      window.localStorage.removeItem(RECENT_SEARCH_KEY);
+    } catch {
+      // Local history is optional.
+    }
+  }
+
   function goToSearch(query: string, selected?: Suggestion) {
     const next = (selected?.entity_name ?? query).trim();
     if (!next) return;
     setSubmitting(true);
     setSubmittedValue(next);
+    rememberSearch(next);
     closeSuggestions();
     const providerMatch = value.match(/\s+(?:on|from|available\s+on|streaming\s+on)\s+(.+)$/i);
     const provider = providerMatch ? normalizeProviderForApi(providerMatch[1]) : "";
@@ -221,6 +266,7 @@ export default function SearchInput({ initialValue = "", large = false }: { init
           }}
           onFocus={() => {
             focusedRef.current = true;
+            setFocused(true);
             setOpen(shouldOpenSuggestions({
               focused: true,
               value,
@@ -233,6 +279,7 @@ export default function SearchInput({ initialValue = "", large = false }: { init
             window.setTimeout(() => {
               if (!shellRef.current?.contains(document.activeElement)) {
                 focusedRef.current = false;
+                setFocused(false);
                 closeSuggestions();
               }
             }, 0);
@@ -256,9 +303,22 @@ export default function SearchInput({ initialValue = "", large = false }: { init
           <div className="suggestion-label"><Sparkles size={14} aria-hidden="true" />Indexed suggestions</div>
           {items.map((item, index) => (
             <button type="button" id={listboxId + "-" + index} key={item.entity_type + "-" + item.entity_key} role="option" aria-selected={index === activeIndex} onMouseEnter={() => setActiveIndex(index)} onMouseDown={(event) => event.preventDefault()} onClick={() => { setValue(item.entity_name); goToSearch(item.entity_name, item); }}>
-              <small>{item.entity_type}</small><span>{item.entity_name}</span>{item.disambiguation ? <em>{item.disambiguation}</em> : item.release_year ? <em>{item.release_year}</em> : null}
+              <span className="suggestion-thumb" aria-hidden="true">
+                {item.poster_url ? <img src={item.poster_url} alt="" loading="lazy" /> : <Search size={15} />}
+              </span>
+              <span className="suggestion-copy"><small>{item.entity_type}</small><strong>{item.entity_name}</strong></span>
+              {item.disambiguation ? <em>{item.disambiguation}</em> : item.release_year ? <em>{item.release_year}</em> : null}
             </button>
           ))}
+        </div>
+      ) : null}
+
+      {focused && !value.trim() && recent.length ? (
+        <div className="recent-search-panel" aria-label="Recent searches">
+          <div className="recent-search-heading"><span><Clock3 size={13} aria-hidden="true" />Recent searches</span><button type="button" onMouseDown={(event) => event.preventDefault()} onClick={clearRecentSearches}>Clear <X size={12} /></button></div>
+          <div className="recent-search-list">
+            {recent.map((query) => <button type="button" key={query} onMouseDown={(event) => event.preventDefault()} onClick={() => { setValue(query); goToSearch(query); }}>{query}</button>)}
+          </div>
         </div>
       ) : null}
     </div>

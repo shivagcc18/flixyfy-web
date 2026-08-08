@@ -10,6 +10,7 @@ import { serializeSearchParams } from "@/lib/search-interpretation";
 import AppShell from "./AppShell";
 import MovieCard from "./MovieCard";
 import SearchInput from "./SearchInput";
+import ProviderLogo from "./ProviderLogo";
 
 type HomePayload = {
   current?: { items?: Movie[] };
@@ -74,8 +75,15 @@ function ProviderRail({ providers, onSelect }: { providers: Provider[]; onSelect
       <div ref={scrollerRef} className="provider-scroller" aria-label="Browse by provider" tabIndex={0} onKeyDown={(event) => { if (event.key === "ArrowLeft") { event.preventDefault(); move(-1); } if (event.key === "ArrowRight") { event.preventDefault(); move(1); } }}>
         <button type="button" className="provider-pill selected" onClick={() => onSelect()} aria-pressed="true">All providers</button>
         {providers.map((provider) => (
-          <button type="button" className="provider-pill" key={provider.provider_key} onClick={() => onSelect(provider.provider_key)}>
-            <span className="provider-monogram" aria-hidden="true">{provider.provider_name.trim().slice(0, 1).toUpperCase()}</span>{provider.provider_name}
+          <button
+            type="button"
+            className="provider-pill"
+            key={provider.provider_key}
+            onClick={() => onSelect(provider.provider_key)}
+            aria-label={`Browse ${provider.provider_name} movies`}
+          >
+            <ProviderLogo providerKey={provider.provider_key} providerName={provider.provider_name} compact />
+            <span>{provider.provider_name}</span>
           </button>
         ))}
       </div>
@@ -135,7 +143,7 @@ export default function HomeClient() {
 
   return (
     <AppShell>
-      <main className="page-content">
+      <main className="page-content" data-ui-checkpoint="flixyfy-fresh-cinematic-v1">
         <section className="hero" aria-labelledby="home-heading">
           <div className="hero-orbit" aria-hidden="true" />
           <div className="hero-copy">
@@ -173,8 +181,8 @@ export default function HomeClient() {
             <span>Quick filters</span>
             <button type="button" onClick={() => goToSearch({ domain: "current" })}>Movies</button>
             <button type="button" onClick={() => goToSearch({ domain: "historical" })}>Classics</button>
-            <button type="button" onClick={() => goToSearch({ language: "te" })}>Language</button>
-            <button type="button" onClick={() => goToSearch({ provider: providers[0]?.provider_key })}>Provider</button>
+            <button type="button" onClick={() => goToSearch({ language: "te" })}>Telugu</button>
+            <button type="button" onClick={() => goToSearch({ provider: providers[0]?.provider_key })}>Top provider</button>
             <button type="button" onClick={() => goToSearch({ q: "Action movies" })}>Genre</button>
             <Link href="/search">More filters <ArrowRight size={14} aria-hidden="true" /></Link>
           </div>
