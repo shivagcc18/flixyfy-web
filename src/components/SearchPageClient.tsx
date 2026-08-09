@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, RotateCcw, SearchX, SlidersHorizontal, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -182,9 +181,7 @@ export default function SearchPageClient() {
     <AppShell>
       <main className="page-content search-page">
         <section className="search-header" aria-labelledby="search-heading">
-          <div className="eyebrow">SEARCH INTELLIGENCE <span className="eyebrow-rule" /></div>
           <h1 id="search-heading">Find the next Indian movie to watch.</h1>
-          <p className="page-lead">Search titles, people, languages, genres, years and providers with a shareable URL.</p>
           <SearchInput initialValue={rawQuery} large key={rawQuery} />
           {activeChips.length || intent.chips.length ? (
             <div className="parsed-search" aria-live="polite"><span className="parsed-label">Search understood as</span><div className="parsed-chip-row">
@@ -205,10 +202,6 @@ export default function SearchPageClient() {
 
         {error ? <div className="status-banner" role="status"><div><strong>Search is temporarily unavailable.</strong><span>{error}</span></div><button type="button" onClick={() => setRetryKey((value) => value + 1)}>Retry <ArrowRight size={15} aria-hidden="true" /></button></div> : null}
         {loading && !data && !error ? <SearchSkeleton /> : null}
-
-        {!interpretedQuery && !activeChips.length && !loading && !error ? (
-          <section className="search-intro"><div className="intro-icon"><SearchX size={18} aria-hidden="true" /></div><div><strong>Start with a title, person or natural phrase.</strong><span>Try Prabhas on Netflix, Telugu action movies or 1990s Tamil classics.</span></div><Link href="/">Browse discovery <ArrowRight size={15} aria-hidden="true" /></Link></section>
-        ) : null}
 
         {data ? (
           <section className="results-section" aria-labelledby="results-heading">

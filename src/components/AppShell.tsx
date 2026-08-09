@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, Menu, Search, Tv2, X } from "lucide-react";
+import { Menu, Search, Tv2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import FilmReelBackground from "./FilmReelBackground";
 
 const navigation = [
-  { href: "/", label: "Home", desktopLabel: "Discover", icon: Compass },
   { href: "/search", label: "Search", desktopLabel: "Search", icon: Search },
   { href: "/providers", label: "Providers", desktopLabel: "Providers", icon: Tv2 },
 ] as const;
