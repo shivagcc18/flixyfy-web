@@ -70,13 +70,16 @@ export default function AppShell({ children }: Readonly<{ children: ReactNode }>
     <div className="app-shell">
       <FilmReelBackground />
       <header className="topbar">
-        <Link className="brand" href="/" aria-label="FLIXYFY home">
-          <img className="brand-logo" src="/flixyfy-logo.png" alt="FLIXYFY" />
+        <Link className="brand unified-brand" href="/" aria-label="FLIXYFY home">
+          <img className="brand-logo" src="/flixyfy-logo.png" alt="" aria-hidden="true" />
+          <span className="brand-wordmark" aria-hidden="true">FLIXYFY</span>
           <span className="sr-only">FLIXYFY</span>
         </Link>
         <nav className="desktop-nav" aria-label="Primary navigation">{links}</nav>
-        <Link className="topbar-wordmark" href="/" aria-label="FLIXYFY home">FLIXYFY</Link>
         <div className="topbar-actions">
+          <Link className="mobile-search-action" href="/search" aria-label="Open search">
+            <Search aria-hidden="true" />
+          </Link>
           <button ref={triggerRef} className="drawer-trigger" type="button" aria-expanded={drawerOpen} aria-controls="mobile-navigation" onClick={() => setDrawerOpen(true)}>
             <Menu aria-hidden="true" />
             <span className="sr-only">Open navigation</span>
@@ -94,7 +97,11 @@ export default function AppShell({ children }: Readonly<{ children: ReactNode }>
         <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }}>
           <aside ref={drawerRef} id="mobile-navigation" className="mobile-drawer" role="dialog" aria-modal="true" aria-label="FLIXYFY navigation">
             <div className="drawer-heading">
-              <Link className="brand" href="/" onClick={() => setDrawerOpen(false)}><img className="brand-logo" src="/flixyfy-logo.png" alt="FLIXYFY" /><span className="sr-only">FLIXYFY</span></Link>
+              <Link className="brand unified-brand" href="/" onClick={() => setDrawerOpen(false)}>
+                <img className="brand-logo" src="/flixyfy-logo.png" alt="" aria-hidden="true" />
+                <span className="brand-wordmark" aria-hidden="true">FLIXYFY</span>
+                <span className="sr-only">FLIXYFY</span>
+              </Link>
               <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close navigation"><X aria-hidden="true" /></button>
             </div>
             <nav className="mobile-nav-list" aria-label="Drawer navigation">{links}</nav>

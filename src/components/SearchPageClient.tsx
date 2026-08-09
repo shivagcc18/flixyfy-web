@@ -34,6 +34,27 @@ function SearchSkeleton() {
   return <div className="movie-grid search-results" aria-label="Loading results" aria-busy="true">{Array.from({ length: 10 }, (_, index) => <div className="skeleton-card grid-skeleton" key={index}><div className="skeleton-poster" /><div className="skeleton-line long" /><div className="skeleton-line short" /></div>)}</div>;
 }
 
+type DomainSegmentedControlProps = {
+  domain: "current" | "historical";
+  // eslint-disable-next-line no-unused-vars
+  onChange: (value: "current" | "historical") => void;
+};
+
+function DomainSegmentedControl({ domain, onChange }: DomainSegmentedControlProps) {
+  return (
+    <div className="domain-segmented-control" role="group" aria-label="Movie era">
+      <button type="button" className={domain === "current" ? "active" : undefined} aria-pressed={domain === "current"} onClick={() => onChange("current")}>
+        <span>Current</span>
+        <small>2000-2026</small>
+      </button>
+      <button type="button" className={domain === "historical" ? "active" : undefined} aria-pressed={domain === "historical"} onClick={() => onChange("historical")}>
+        <span>Classics</span>
+        <small>1960-1999</small>
+      </button>
+    </div>
+  );
+}
+
 export default function SearchPageClient() {
   const params = useSearchParams();
   const pathname = usePathname() ?? "/search";
@@ -70,6 +91,20 @@ export default function SearchPageClient() {
       .catch(() => { if (active) setProviders([]); });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setFiltersOpen(false);
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [filtersOpen]);
 
   useEffect(() => {
     if (!rawQuery || !providers.length) return;
@@ -184,20 +219,30 @@ export default function SearchPageClient() {
           <h1 id="search-heading">Find the next Indian movie to watch.</h1>
           <SearchInput initialValue={rawQuery} large key={rawQuery} />
           {activeChips.length || intent.chips.length ? (
-            <div className="parsed-search" aria-live="polite"><span className="parsed-label">Search understood as</span><div className="parsed-chip-row">
+            <div className="parsed-search" aria-live="polite"><div className="parsed-chip-row">
               {intent.chips.map((chip) => <Chip key={chip.key} label={chip.label + ": " + chip.value} onClear={() => clearFilter(chip.key)} />)}
               {activeChips.map((chip) => <Chip key={"active-" + chip.key} label={chip.label} onClear={() => clearFilter(chip.key)} />)}
             </div></div>
           ) : null}
-          <button className="mobile-filter-toggle" type="button" onClick={() => setFiltersOpen((value) => !value)} aria-expanded={filtersOpen}><SlidersHorizontal size={16} />Filters</button>
-          <div className={filtersOpen ? "filter-bar filters-open" : "filter-bar"} aria-label="Supported search filters">
-            <label><span>Language</span><select value={inferredLanguage} onChange={(event) => event.target.value ? setFilter("language", event.target.value) : clearFilter("language")}><option value="">Any language</option>{Object.entries({ te: "Telugu", hi: "Hindi", ta: "Tamil", ml: "Malayalam", kn: "Kannada", bn: "Bengali", mr: "Marathi", bho: "Bhojpuri", gu: "Gujarati", or: "Odia", as: "Assamese", pa: "Punjabi", ur: "Urdu" }).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-            <label><span>Year</span><select value={effectiveYear} onChange={(event) => setFilter("year", event.target.value)}>{yearOptions.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</select></label>
-            <label><span>Provider</span><select value={inferredProvider} onChange={(event) => setFilter("provider", event.target.value)}><option value="">Any provider</option>{providers.map((item) => <option value={item.provider_key} key={item.provider_key}>{item.provider_name}</option>)}</select></label>
-            <label><span>Domain</span><select value={domain} onChange={(event) => setFilter("domain", event.target.value)}><option value="current">Current Indian</option><option value="historical">Indian classics</option></select></label>
-            <button type="button" onClick={clearAll} disabled={!activeChips.length && !interpretedQuery}><RotateCcw size={15} aria-hidden="true" />Reset filters</button>
+          <DomainSegmentedControl domain={domain} onChange={(value) => setFilter("domain", value)} />
+          <button className="mobile-filter-toggle" type="button" onClick={() => setFiltersOpen(true)} aria-expanded={filtersOpen} aria-controls="search-filter-panel"><SlidersHorizontal size={16} />Filters</button>
+          <div className={filtersOpen ? "filter-panel filters-open" : "filter-panel"} id="search-filter-panel" role={filtersOpen ? "dialog" : undefined} aria-modal={filtersOpen ? "true" : undefined} aria-label="Search filters">
+            <div className="filter-panel-heading">
+              <div><strong>Filters</strong><span>Refine this search</span></div>
+              <button type="button" onClick={() => setFiltersOpen(false)} aria-label="Close filters"><X size={18} aria-hidden="true" /></button>
+            </div>
+            <div className="filter-bar" aria-label="Supported search filters">
+              <label><span>Language</span><select value={inferredLanguage} onChange={(event) => event.target.value ? setFilter("language", event.target.value) : clearFilter("language")}><option value="">Any language</option>{Object.entries({ te: "Telugu", hi: "Hindi", ta: "Tamil", ml: "Malayalam", kn: "Kannada", bn: "Bengali", mr: "Marathi", bho: "Bhojpuri", gu: "Gujarati", or: "Odia", as: "Assamese", pa: "Punjabi", ur: "Urdu" }).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+              <label><span>Year</span><select value={effectiveYear} onChange={(event) => setFilter("year", event.target.value)}>{yearOptions.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</select></label>
+              <label><span>Provider</span><select value={inferredProvider} onChange={(event) => setFilter("provider", event.target.value)}><option value="">Any provider</option>{providers.map((item) => <option value={item.provider_key} key={item.provider_key}>{item.provider_name}</option>)}</select></label>
+              <button type="button" onClick={clearAll} disabled={!activeChips.length && !interpretedQuery}><RotateCcw size={15} aria-hidden="true" />Reset</button>
+            </div>
+            <div className="genre-tools" aria-label="Genre search shortcuts"><span>Genres</span>{genreQueries.map((item) => <button type="button" key={item} onClick={() => navigate({ q: item + " movies" })}>{item}</button>)}</div>
+            <div className="filter-panel-actions">
+              <button type="button" onClick={clearAll} disabled={!activeChips.length && !interpretedQuery}>Reset filters</button>
+              <button type="button" onClick={() => setFiltersOpen(false)}>Apply</button>
+            </div>
           </div>
-          <div className="genre-tools" aria-label="Genre search shortcuts"><span>Genre search</span>{genreQueries.map((item) => <button type="button" key={item} onClick={() => navigate({ q: item + " movies" })}>{item}</button>)}<small>Search understood as structured filters when a phrase is recognized.</small></div>
         </section>
 
         {error ? <div className="status-banner" role="status"><div><strong>Search is temporarily unavailable.</strong><span>{error}</span></div><button type="button" onClick={() => setRetryKey((value) => value + 1)}>Retry <ArrowRight size={15} aria-hidden="true" /></button></div> : null}
