@@ -115,10 +115,11 @@ export default function SearchPageClient() {
   const params = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
-  const safeParams = params ?? new URLSearchParams();`r`n  const safeParams = params ?? new URLSearchParams();`r`n  const paramsKey = safeParams.toString();
+  const safeParams = params ?? new URLSearchParams();
+  const paramsKey = safeParams.toString();
 
-  const query = safesafeParams.get("q") ?? "";
-  const language = safesafeParams.get("language") ?? "";
+  const query = safeParams.get("q") ?? "";
+  const language = safeParams.get("language") ?? "";
   const year = safeParams.get("year") ?? safeParams.get("year_from") ?? "";
   const genre = safeParams.get("genre") ?? "";
   const provider = safeParams.get("provider") ?? "";
@@ -231,13 +232,13 @@ export default function SearchPageClient() {
     }
 
     const qs = next.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+    router.push(qs ? `${pathname}?${qs}` : pathname ?? "/search");
   }
 
   function resetFilters() {
     const next = new URLSearchParams();
     if (query.trim()) next.set("q", query.trim());
-    router.push(next.toString() ? `${pathname}?${next.toString()}` : pathname);
+    router.push(next.toString() ? `${pathname ?? "/search"}?${next.toString()}` : pathname ?? "/search");
   }
 
   const chips = useMemo(() => {
