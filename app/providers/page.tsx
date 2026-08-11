@@ -1,2 +1,9 @@
-// Canonical route wrapper. Source of truth: ../../src/app/providers/page
-export { default } from "../../src/app/providers/page";
+import ProviderDirectoryClient from "@/components/ProviderDirectoryClient";
+
+export const metadata = {
+  title: "OTT providers",
+};
+
+export default function ProvidersPage() {
+  return <ProviderDirectoryClient />;
+}

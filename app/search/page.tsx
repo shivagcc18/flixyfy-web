@@ -1,2 +1,14 @@
-// Canonical route wrapper. Source of truth: ../../src/app/search/page
-export { default } from "../../src/app/search/page";
+import { Suspense } from "react";
+import SearchPageClient from "@/components/SearchPageClient";
+
+export const metadata = {
+  title: "Search intelligence",
+};
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="loading-panel">Loading search...</div>}>
+      <SearchPageClient />
+    </Suspense>
+  );
+}

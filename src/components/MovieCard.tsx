@@ -1,29 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import { languageName } from "@/lib/languages";
+import { useState } from "react";
 import { movieRoute, type Movie } from "@/lib/api";
-import PosterImage from "./PosterImage";
 
 export default function MovieCard({ movie }: { movie: Movie }) {
+  const [posterFailed, setPosterFailed] = useState(false);
   const route = movieRoute(movie);
-  const displayLanguage = movie.language_name ?? languageName(movie.original_language);
-  const labelParts = [movie.title, movie.release_year ? String(movie.release_year) : null, displayLanguage].filter(Boolean);
+  const language = movie.language_name ?? movie.original_language ?? "Language unknown";
+  const year = movie.release_year ?? "Year unknown";
 
   return (
-    <Link className="movie-card" href={route} aria-label={"Open " + labelParts.join(", ") + " details"}>
-      <div className="movie-card-poster-wrap">
-        <PosterImage src={movie.poster_url} alt={movie.title + " poster"} fallbackLabel={movie.title} />
-        {movie.domain === "historical" ? <span className="movie-domain-badge historical">Classic</span> : null}
-        <span className="poster-hover-title">{movie.title}</span>
-      </div>
-      <div className="movie-card-body">
-        <h3>{movie.title}</h3>
-        <div className="movie-card-meta">
-          <span>{movie.release_year ?? "-"}</span>
-          <span>{displayLanguage}</span>
-        </div>
-      </div>
+    <Link
+      className="movie-card"
+      href={route}
+      aria-label={`Open ${movie.title}, ${year}, ${language}`}
+    >
+      <span className="poster-wrap">
+        {movie.poster_url && !posterFailed ? (
+          <img
+            src={movie.poster_url}
+            alt={`${movie.title} poster`}
+            loading="lazy"
+            onError={() => setPosterFailed(true)}
+          />
+        ) : (
+          <span className="poster-fallback" aria-label={`${movie.title} poster unavailable`}>
+            <span>{movie.title.slice(0, 1)}</span>
+            <small>Poster unavailable</small>
+          </span>
+        )}
+      </span>
+      <span className="movie-card-body">
+        <strong className="movie-card-title">{movie.title}</strong>
+        <span className="movie-card-meta">{year} · {language}</span>
+      </span>
     </Link>
   );
 }

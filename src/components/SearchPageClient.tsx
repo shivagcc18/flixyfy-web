@@ -1,260 +1,418 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, RotateCcw, SearchX, SlidersHorizontal, X } from "lucide-react";
+import { RotateCcw, SearchX, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { apiFetch, normalizePosterUrl, type Movie, type SearchResponse } from "@/lib/api";
-import { getYearOptions, isYearValidForDomain } from "@/lib/search-helpers";
-import { languageName } from "@/lib/languages";
-import { mergeSearchParams, parseSearchIntent, serializeSearchParams } from "@/lib/search-interpretation";
+import { apiFetch, type Movie, type SearchEntity, type SearchResponse } from "@/lib/api";
 import AppShell from "./AppShell";
 import MovieCard from "./MovieCard";
 import SearchInput from "./SearchInput";
 
-type ProviderFilter = { provider_key: string; provider_name: string };
-type MovieListResponse = { items?: Movie[]; results?: Movie[]; total: number; page?: number; limit: number };
-
-const genreQueries = ["Action", "Comedy", "Drama", "Romance", "Thriller", "Family"];
-
-function normalizeResponseMovie(movie: Movie): Movie {
-  return { ...movie, poster_url: normalizePosterUrl(movie.poster_url ?? (movie as unknown as { poster?: string }).poster ?? (movie as unknown as { poster_path?: string }).poster_path) };
-}
-
-function toResponse(items: Movie[], response: MovieListResponse, query: string, domain: "current" | "historical"): SearchResponse {
-  const limit = response.limit || 48;
-  const page = response.page || 1;
-  return { query, total: response.total, limit, offset: (page - 1) * limit, items: items.map(normalizeResponseMovie), domain };
-}
-
-function Chip({ label, onClear }: { label: string; onClear: () => void }) {
-  return <button type="button" className="filter-chip" onClick={onClear} aria-label={"Clear " + label}>{label}<X size={12} aria-hidden="true" /></button>;
-}
-
-function SearchSkeleton() {
-  return <div className="movie-grid search-results" aria-label="Loading results" aria-busy="true">{Array.from({ length: 10 }, (_, index) => <div className="skeleton-card grid-skeleton" key={index}><div className="skeleton-poster" /><div className="skeleton-line long" /><div className="skeleton-line short" /></div>)}</div>;
-}
-
-type DomainSegmentedControlProps = {
-  domain: "current" | "historical";
-  // eslint-disable-next-line no-unused-vars
-  onChange: (value: "current" | "historical") => void;
+type ProviderFilter = {
+  provider_key: string;
+  provider_name: string;
 };
 
-function DomainSegmentedControl({ domain, onChange }: DomainSegmentedControlProps) {
-  return (
-    <div className="domain-segmented-control" role="group" aria-label="Movie era">
-      <button type="button" className={domain === "current" ? "active" : undefined} aria-pressed={domain === "current"} onClick={() => onChange("current")}>
-        <span>Current</span>
-        <small>2000-2026</small>
-      </button>
-      <button type="button" className={domain === "historical" ? "active" : undefined} aria-pressed={domain === "historical"} onClick={() => onChange("historical")}>
-        <span>Classics</span>
-        <small>1960-1999</small>
-      </button>
-    </div>
-  );
+type MovieListResponse = {
+  items?: Movie[];
+  results?: Movie[];
+  total: number;
+  page?: number;
+  limit: number;
+};
+
+const languageOptions = [
+  { value: "", label: "Any language" },
+  { value: "hi", label: "Hindi" },
+  { value: "te", label: "Telugu" },
+  { value: "ta", label: "Tamil" },
+  { value: "ml", label: "Malayalam" },
+  { value: "kn", label: "Kannada" },
+  { value: "bn", label: "Bengali" },
+  { value: "mr", label: "Marathi" },
+];
+
+const genreOptions = [
+  "",
+  "Action",
+  "Comedy",
+  "Drama",
+  "Romance",
+  "Thriller",
+  "Crime",
+  "Family",
+  "History",
+  "Horror",
+].map((value) => ({ value, label: value || "Any genre" }));
+
+const sortOptions = [
+  { value: "relevance", label: "Relevance" },
+  { value: "popular", label: "Popularity" },
+];
+
+const currentYear = new Date().getFullYear();
+const yearOptions = [
+  { value: "", label: "Any year" },
+  ...Array.from({ length: currentYear - 1949 }, (_, index) => {
+    const value = String(currentYear - index);
+    return { value, label: value };
+  }),
+];
+
+function emptyEntities(): SearchResponse["entities"] {
+  return { providers: [], languages: [], genres: [], people: [], years: [] };
+}
+
+function entityFromValue(key: string, name: string): SearchEntity {
+  return { key, name, matched: name };
+}
+
+function moviesToSearchResponse({
+  items,
+  total,
+  limit,
+  offset,
+  query,
+  provider,
+  providerName,
+  language,
+  genre,
+  year,
+}: {
+  items: Movie[];
+  total: number;
+  limit: number;
+  offset: number;
+  query: string;
+  provider: string;
+  providerName: string;
+  language: string;
+  genre: string;
+  year: string;
+}): SearchResponse {
+  const languageName = languageOptions.find((item) => item.value === language)?.label;
+  return {
+    query,
+    normalized_query: query.trim().toLowerCase(),
+    residual_query: query.trim(),
+    intent_summary: "Movie discovery",
+    entities: {
+      ...emptyEntities(),
+      providers: provider ? [entityFromValue(provider, providerName || provider)] : [],
+      languages: language && languageName ? [entityFromValue(language, languageName)] : [],
+      genres: genre ? [entityFromValue(genre, genre)] : [],
+      years: year ? [entityFromValue(year, year)] : [],
+    },
+    total,
+    limit,
+    offset,
+    items,
+    facets: { providers: [], languages: [], years: [] },
+  };
 }
 
 export default function SearchPageClient() {
   const params = useSearchParams();
-  const pathname = usePathname() ?? "/search";
+  const pathname = usePathname();
   const router = useRouter();
-  const paramsKey = params?.toString() ?? "";
-  const rawQuery = params?.get("q") ?? "";
-  const language = params?.get("language") ?? "";
-  const genre = params?.get("genre") ?? "";
-  const provider = params?.get("provider") ?? "";
-  const personId = params?.get("person_id") ?? "";
-  const contentType = params?.get("content_type") ?? "";
-  const domain = params?.get("domain") === "historical" ? "historical" : "current";
-  const year = params?.get("year") ?? "";
-  const yearFrom = params?.get("year_from") ?? "";
-  const yearTo = params?.get("year_to") ?? "";
-  const effectiveYear = isYearValidForDomain(year, domain) ? year : "";
-  const yearOptions = getYearOptions(domain);
-  const [data, setData] = useState<SearchResponse | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const safeParams = params ?? new URLSearchParams();`r`n  const safeParams = params ?? new URLSearchParams();`r`n  const paramsKey = safeParams.toString();
+
+  const query = safesafeParams.get("q") ?? "";
+  const language = safesafeParams.get("language") ?? "";
+  const year = safeParams.get("year") ?? safeParams.get("year_from") ?? "";
+  const genre = safeParams.get("genre") ?? "";
+  const provider = safeParams.get("provider") ?? "";
+  const sort = safeParams.get("sort") === "popular" ? "popular" : "relevance";
+
+  const [result, setResult] = useState<{
+    key: string;
+    data: SearchResponse | null;
+    error: string;
+  }>({ key: "", data: null, error: "" });
   const [providers, setProviders] = useState<ProviderFilter[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [retryKey, setRetryKey] = useState(0);
 
-  const intent = useMemo(() => parseSearchIntent(rawQuery, providers), [rawQuery, providers]);
-  const inferredProvider = provider || intent.provider || "";
-  const inferredLanguage = language || intent.language || "";
-  const inferredGenre = genre || intent.genre || "";
-  const interpretedQuery = intent.chips.length ? intent.query : rawQuery;
+  const hasFilters = Boolean(language || year || genre || provider || sort !== "relevance");
+  const shouldSearch = Boolean(query.trim() || hasFilters);
+  const requestKey = [query.trim(), language, year, genre, provider, sort].join("\u0001");
+  const data = result.key === requestKey ? result.data : null;
+  const error = result.key === requestKey ? result.error : "";
+  const loading = shouldSearch && result.key !== requestKey;
+
   useEffect(() => {
     let active = true;
     apiFetch<{ items?: ProviderFilter[] }>("/api/v4/providers")
-      .then((response) => { if (active) setProviders(response.items ?? []); })
-      .catch(() => { if (active) setProviders([]); });
-    return () => { active = false; };
+      .then((response) => {
+        if (active) setProviders(response.items ?? []);
+      })
+      .catch(() => {
+        if (active) setProviders([]);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (!filtersOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setFiltersOpen(false);
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [filtersOpen]);
-
-  useEffect(() => {
-    if (!rawQuery || !providers.length) return;
-    const nextValues: Record<string, string | undefined> = {
-      q: interpretedQuery,
-      person_id: personId,
-      provider: provider || intent.provider,
-      language: language || intent.language,
-      genre: genre || intent.genre,
-      domain: domain === "current" ? intent.domain : domain,
-      content_type: contentType || intent.contentType,
-      year_from: yearFrom || intent.yearFrom,
-      year_to: yearTo || intent.yearTo,
-      year,
-    };
-    const next = serializeSearchParams(nextValues);
-    if (next !== paramsKey) router.replace(next ? pathname + "?" + next : pathname);
-  }, [rawQuery, providers, interpretedQuery, intent, personId, provider, language, genre, domain, contentType, year, yearFrom, yearTo, paramsKey, pathname, router]);
-
-  useEffect(() => {
-    if (!year || isYearValidForDomain(year, domain)) return;
-    const next = new URLSearchParams(paramsKey);
-    next.delete("year");
-    next.delete("year_from");
-    next.delete("year_to");
-    const queryString = next.toString();
-    router.replace(queryString ? pathname + "?" + queryString : pathname);
-  }, [year, domain, paramsKey, pathname, router]);
-
-  useEffect(() => {
     let active = true;
-    const timer = window.setTimeout(() => {
-      setData(null);
-      setError("");
-      const hasFilters = Boolean(personId || inferredLanguage || effectiveYear || inferredProvider || inferredGenre || contentType || domain !== "current" || yearFrom || yearTo);
-      if (!interpretedQuery.trim() && !hasFilters) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      const apiParams = new URLSearchParams({ limit: "48", domain });
-      if (interpretedQuery.trim()) apiParams.set("q", interpretedQuery.trim());
-      if (personId) apiParams.set("person_id", personId);
-      if (inferredProvider) apiParams.set("provider", inferredProvider);
-      if (inferredLanguage) apiParams.set("language", inferredLanguage);
-      if (inferredGenre) apiParams.set("genre", inferredGenre);
-      if (effectiveYear) apiParams.set("year", effectiveYear);
-      if (yearFrom) apiParams.set("year_from", yearFrom);
-      if (yearTo) apiParams.set("year_to", yearTo);
-      if (contentType) apiParams.set("content_type", contentType);
-      const path = personId ? "/api/v1/search/intelligence?" + apiParams.toString() : interpretedQuery.trim() ? "/api/v4/search?" + apiParams.toString() : "/api/v4/" + domain + "?" + apiParams.toString();
-      apiFetch<MovieListResponse>(path)
-        .then((response) => { if (active) setData(toResponse(response.items ?? response.results ?? [], response, interpretedQuery, domain)); })
-        .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Search failed"); })
-        .finally(() => { if (active) setLoading(false); });
-    }, 0);
-    return () => { active = false; window.clearTimeout(timer); };
-  }, [personId, interpretedQuery, inferredProvider, inferredLanguage, inferredGenre, effectiveYear, yearFrom, yearTo, contentType, domain, retryKey]);
 
-  function navigate(values: Record<string, string | undefined>) {
-    const next = serializeSearchParams(values);
-    router.push(next ? pathname + "?" + next : pathname);
-  }
+    if (!shouldSearch) {
+      return () => {
+        active = false;
+      };
+    }
 
-  function navigateMerged(values: Record<string, string | undefined>) {
-    const next = mergeSearchParams(paramsKey, values);
-    router.push(next ? pathname + "?" + next : pathname);
-  }
+    const apiParams = new URLSearchParams();
+    apiParams.set("limit", "48");
+    if (query.trim()) apiParams.set("q", query.trim());
+    if (provider) apiParams.set("provider", provider);
+    if (language) apiParams.set("language", language);
+    if (genre) apiParams.set("genre", genre);
+    if (year) {
+      apiParams.set("year_from", year);
+      apiParams.set("year_to", year);
+    }
+    if (query.trim() || sort === "popular") apiParams.set("sort", sort);
+
+    const path = query.trim()
+      ? `/api/v4/search?${apiParams.toString()}`
+      : `/api/v4/movies?${apiParams.toString()}`;
+
+    apiFetch<MovieListResponse>(path)
+      .then((response) => {
+        if (!active) return;
+        const items = response.items ?? response.results ?? [];
+        const limit = response.limit || 48;
+        const page = response.page || 1;
+        const providerName =
+          provider === "youtube"
+            ? "YouTube"
+            : providers.find((item) => item.provider_key === provider)?.provider_name ?? provider;
+
+        setResult({
+          key: requestKey,
+          error: "",
+          data: moviesToSearchResponse({
+            items,
+            total: response.total,
+            limit,
+            offset: (page - 1) * limit,
+            query,
+            provider,
+            providerName,
+            language,
+            genre,
+            year,
+          }),
+        });
+      })
+      .catch((reason: unknown) => {
+        if (!active) return;
+        setResult({
+          key: requestKey,
+          data: null,
+          error: reason instanceof Error ? reason.message : "Search failed",
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [query, provider, language, genre, year, sort, shouldSearch, requestKey, providers]);
 
   function setFilter(name: string, value: string) {
-    const values: Record<string, string | undefined> = { [name]: value || undefined };
-    if (name === "domain") {
-      values.domain = value;
-      if (value === "historical") values.year = isYearValidForDomain(effectiveYear, "historical") ? effectiveYear : undefined;
-      if (value === "current") values.year = isYearValidForDomain(effectiveYear, "current") ? effectiveYear : undefined;
-    }
+    const next = new URLSearchParams(paramsKey);
+    if (value) next.set(name, value);
+    else next.delete(name);
+
     if (name === "year") {
-      values.year_from = undefined;
-      values.year_to = undefined;
+      next.delete("year_from");
+      next.delete("year_to");
     }
-    navigateMerged(values);
+
+    const qs = next.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
   }
 
-  function clearFilter(name: string) {
-    if (name === "years" || name === "year") {
-      navigateMerged({ year: undefined, year_from: undefined, year_to: undefined });
-      return;
-    }
-    navigateMerged({ [name]: undefined });
+  function resetFilters() {
+    const next = new URLSearchParams();
+    if (query.trim()) next.set("q", query.trim());
+    router.push(next.toString() ? `${pathname}?${next.toString()}` : pathname);
   }
 
-  function clearAll() {
-    router.push(pathname);
-  }
+  const chips = useMemo(() => {
+    if (!data) return [];
+    return [
+      ...data.entities.people.map((item) => ({ ...item, type: "Person" })),
+      ...data.entities.providers.map((item) => ({ ...item, type: "Provider" })),
+      ...data.entities.languages.map((item) => ({ ...item, type: "Language" })),
+      ...data.entities.genres.map((item) => ({ ...item, type: "Genre" })),
+      ...data.entities.years.map((item) => ({ ...item, type: "Year" })),
+    ];
+  }, [data]);
 
-  const inferredIntentKeys = new Set(intent.chips.map((chip) => chip.key));
-  const activeChips = [
-    personId ? { key: "person_id", label: "Person: " + (rawQuery || personId) } : null,
-    inferredLanguage && !inferredIntentKeys.has("language") ? { key: "language", label: "Language: " + languageName(inferredLanguage) } : null,
-    inferredGenre && !inferredIntentKeys.has("genre") ? { key: "genre", label: "Genre: " + inferredGenre } : null,
-    inferredProvider && !inferredIntentKeys.has("provider") ? { key: "provider", label: "Provider: " + (providers.find((item) => item.provider_key === inferredProvider)?.provider_name ?? intent.providerName ?? inferredProvider) } : null,
-    domain === "historical" && !inferredIntentKeys.has("domain") ? { key: "domain", label: "Indian classics" } : null,
-    effectiveYear && !inferredIntentKeys.has("year") ? { key: "year", label: "Year: " + effectiveYear } : null,
-    yearFrom && yearTo && !inferredIntentKeys.has("year") ? { key: "years", label: "Years: " + yearFrom + "-" + yearTo } : null,
-    contentType && !inferredIntentKeys.has("content_type") ? { key: "content_type", label: contentType === "web-series" ? "Web series" : contentType } : null,
-  ].filter(Boolean) as { key: string; label: string }[];
+  const activeFilters = useMemo(() => {
+    const providerName =
+      provider === "youtube"
+        ? "YouTube"
+        : providers.find((item) => item.provider_key === provider)?.provider_name ?? provider;
+
+    return [
+      language ? { key: "language", label: languageOptions.find((item) => item.value === language)?.label ?? language } : null,
+      year ? { key: "year", label: year } : null,
+      genre ? { key: "genre", label: genre } : null,
+      provider ? { key: "provider", label: providerName } : null,
+      sort !== "relevance" ? { key: "sort", label: "Popularity" } : null,
+    ].filter((item): item is { key: string; label: string } => Boolean(item));
+  }, [language, year, genre, provider, sort, providers]);
 
   return (
     <AppShell>
       <main className="page-content search-page">
-        <section className="search-header" aria-labelledby="search-heading">
-          <h1 id="search-heading">Find the next Indian movie to watch.</h1>
-          <SearchInput initialValue={rawQuery} large key={rawQuery} />
-          {activeChips.length || intent.chips.length ? (
-            <div className="parsed-search" aria-live="polite"><div className="parsed-chip-row">
-              {intent.chips.map((chip) => <Chip key={chip.key} label={chip.label + ": " + chip.value} onClear={() => clearFilter(chip.key)} />)}
-              {activeChips.map((chip) => <Chip key={"active-" + chip.key} label={chip.label} onClear={() => clearFilter(chip.key)} />)}
-            </div></div>
-          ) : null}
-          <DomainSegmentedControl domain={domain} onChange={(value) => setFilter("domain", value)} />
-          <button className="mobile-filter-toggle" type="button" onClick={() => setFiltersOpen(true)} aria-expanded={filtersOpen} aria-controls="search-filter-panel"><SlidersHorizontal size={16} />Filters</button>
-          <div className={filtersOpen ? "filter-panel filters-open" : "filter-panel"} id="search-filter-panel" role={filtersOpen ? "dialog" : undefined} aria-modal={filtersOpen ? "true" : undefined} aria-label="Search filters">
-            <div className="filter-panel-heading">
-              <div><strong>Filters</strong><span>Refine this search</span></div>
-              <button type="button" onClick={() => setFiltersOpen(false)} aria-label="Close filters"><X size={18} aria-hidden="true" /></button>
-            </div>
-            <div className="filter-bar" aria-label="Supported search filters">
-              <label><span>Language</span><select value={inferredLanguage} onChange={(event) => event.target.value ? setFilter("language", event.target.value) : clearFilter("language")}><option value="">Any language</option>{Object.entries({ te: "Telugu", hi: "Hindi", ta: "Tamil", ml: "Malayalam", kn: "Kannada", bn: "Bengali", mr: "Marathi", bho: "Bhojpuri", gu: "Gujarati", or: "Odia", as: "Assamese", pa: "Punjabi", ur: "Urdu" }).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-              <label><span>Year</span><select value={effectiveYear} onChange={(event) => setFilter("year", event.target.value)}>{yearOptions.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</select></label>
-              <label><span>Provider</span><select value={inferredProvider} onChange={(event) => setFilter("provider", event.target.value)}><option value="">Any provider</option>{providers.map((item) => <option value={item.provider_key} key={item.provider_key}>{item.provider_name}</option>)}</select></label>
-              <button type="button" onClick={clearAll} disabled={!activeChips.length && !interpretedQuery}><RotateCcw size={15} aria-hidden="true" />Reset</button>
-            </div>
-            <div className="genre-tools" aria-label="Genre search shortcuts"><span>Genres</span>{genreQueries.map((item) => <button type="button" key={item} onClick={() => navigate({ q: item + " movies" })}>{item}</button>)}</div>
-            <div className="filter-panel-actions">
-              <button type="button" onClick={clearAll} disabled={!activeChips.length && !interpretedQuery}>Reset filters</button>
-              <button type="button" onClick={() => setFiltersOpen(false)}>Apply</button>
-            </div>
+        <section className="search-header">
+          <small>SEARCH</small>
+          <h1>Find exactly what you want to watch</h1>
+          <p className="page-lead">Search by movie, actor, director, language, genre, year or provider.</p>
+          <SearchInput initialValue={query} large key={query} />
+        </section>
+
+        <section className="search-tools" aria-label="Search tools">
+          <div className="search-tools-top">
+            <button
+              type="button"
+              className="mobile-filter-trigger"
+              aria-expanded={filtersOpen}
+              onClick={() => setFiltersOpen((current) => !current)}
+            >
+              <SlidersHorizontal size={17} aria-hidden="true" />
+              Filters{activeFilters.length ? ` (${activeFilters.length})` : ""}
+            </button>
+
+            {activeFilters.length ? (
+              <div className="active-filter-chips" aria-label="Active filters">
+                {activeFilters.map((item) => (
+                  <button type="button" onClick={() => setFilter(item.key, "")} key={`${item.key}-${item.label}`}>
+                    {item.label}<X size={13} aria-hidden="true" />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <span className="filter-hint">Combine language, year, provider and genre.</span>
+            )}
+          </div>
+
+          <div className={`filter-bar${filtersOpen ? " open" : ""}`}>
+            <label>
+              <span>Language</span>
+              <select value={language} onChange={(event) => setFilter("language", event.target.value)}>
+                {languageOptions.map((item) => (
+                  <option value={item.value} key={item.value}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Year</span>
+              <select value={year} onChange={(event) => setFilter("year", event.target.value)}>
+                {yearOptions.map((item) => (
+                  <option value={item.value} key={item.value}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Genre</span>
+              <select value={genre} onChange={(event) => setFilter("genre", event.target.value)}>
+                {genreOptions.map((item) => (
+                  <option value={item.value} key={item.value}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Provider</span>
+              <select value={provider} onChange={(event) => setFilter("provider", event.target.value)}>
+                <option value="">Any provider</option>
+                <option value="youtube">YouTube</option>
+                {providers.map((item) => (
+                  <option value={item.provider_key} key={item.provider_key}>{item.provider_name}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Sort</span>
+              <select value={sort} onChange={(event) => setFilter("sort", event.target.value)}>
+                {sortOptions.map((item) => (
+                  <option value={item.value} key={item.value}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+            <button className="reset-filter" type="button" onClick={resetFilters} disabled={!hasFilters}>
+              <RotateCcw size={15} aria-hidden="true" />
+              Reset
+            </button>
           </div>
         </section>
 
-        {error ? <div className="status-banner" role="status"><div><strong>Search is temporarily unavailable.</strong><span>{error}</span></div><button type="button" onClick={() => setRetryKey((value) => value + 1)}>Retry <ArrowRight size={15} aria-hidden="true" /></button></div> : null}
-        {loading && !data && !error ? <SearchSkeleton /> : null}
+        {!query && !hasFilters ? (
+          <section className="search-empty">
+            <Sparkles size={34} aria-hidden="true" />
+            <h2>Try a natural search</h2>
+            <p>NTR movies on Netflix, Telugu action movies, RRR, or Hindi movies from 2022.</p>
+          </section>
+        ) : null}
+
+        {error ? (
+          <section className="error-panel">
+            <h2>Search failed</h2>
+            <p>{error}</p>
+          </section>
+        ) : null}
+
+        {loading && !data && !error ? (
+          <div className="skeleton-grid" aria-label="Loading search results" aria-busy="true">
+            {Array.from({ length: 12 }, (_, index) => <span key={index} />)}
+          </div>
+        ) : null}
 
         {data ? (
-          <section className="results-section" aria-labelledby="results-heading">
-            <div className="results-toolbar"><div><small>RESULTS</small><h2 id="results-heading">{data.total.toLocaleString()} titles found</h2></div><div className="active-chips" aria-label="Active filters">{activeChips.map((chip) => <span key={chip.key}>{chip.label}</span>)}</div></div>
-            {data.items.length ? <div className="movie-grid search-results">{data.items.map((movie) => <MovieCard movie={movie} key={movie.canonical_movie_id} />)}</div> : <section className="empty-state"><SearchX size={22} aria-hidden="true" /><div><strong>No matching title found.</strong><span>Try a shorter title, search all providers, or clear one filter.</span></div><div className="empty-actions"><button type="button" onClick={() => navigate({ q: interpretedQuery || undefined })}>Search all providers</button>{interpretedQuery ? <button type="button" onClick={() => navigate({ q: interpretedQuery })}>Search only for {interpretedQuery}</button> : null}<button type="button" onClick={clearAll}>Clear filters</button></div></section>}
-          </section>
+          <>
+            {chips.length ? (
+              <section className="intelligence-panel">
+                <div className="intelligence-title">
+                  <Sparkles size={18} aria-hidden="true" />
+                  <div><span>UNDERSTOOD</span><strong>{data.intent_summary}</strong></div>
+                </div>
+                <div className="entity-chips">
+                  {chips.map((item) => (
+                    <span key={`${item.type}-${item.key}`}><small>{item.type}</small>{item.name}</span>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <div className="results-toolbar">
+              <div>
+                <small>RESULTS</small>
+                <h2>{data.total.toLocaleString()} movies</h2>
+              </div>
+            </div>
+
+            {data.items.length ? (
+              <div className="movie-grid search-results">
+                {data.items.map((movie) => (
+                  <MovieCard movie={movie} key={movie.canonical_movie_id} />
+                ))}
+              </div>
+            ) : (
+              <section className="search-empty">
+                <SearchX size={36} aria-hidden="true" />
+                <h2>No matching movie found</h2>
+                <p>Remove one filter or try a shorter movie or person name.</p>
+              </section>
+            )}
+          </>
         ) : null}
       </main>
     </AppShell>
   );
 }
+
+

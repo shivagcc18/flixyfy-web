@@ -2,13 +2,11 @@
   "name": "flixyfy-web",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "lint": "eslint"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.4",

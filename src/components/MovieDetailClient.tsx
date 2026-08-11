@@ -1,18 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Clock3, Languages, Star } from "lucide-react";
-import {
-  apiFetch,
-  movieApiPath,
-  normalizePosterUrl,
-  type AvailabilityOption,
-  type Movie,
-  type Provider,
-} from "@/lib/api";
+import { apiFetch, movieApiPath, type AvailabilityOption, type Movie, type Provider } from "@/lib/api";
 import AppShell from "./AppShell";
 import ProviderButtons from "./ProviderButtons";
-import PosterImage from "./PosterImage";
 
 type Person = {
   person_id?: number | null;
@@ -37,14 +29,13 @@ type BackendMovieDetail = MovieDetail & {
   youtube_versions?: AvailabilityOption[];
 };
 
-type DetailResult = {
-  routeKey: string;
-  movie: MovieDetail | null;
-  error: string;
-};
-
 export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
-  const [result, setResult] = useState<DetailResult | null>(null);
+  const [result, setResult] = useState<{
+    tmdbId: string;
+    movie: MovieDetail | null;
+    error: string;
+  } | null>(null);
+  const [posterFailedFor, setPosterFailedFor] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -52,17 +43,14 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
     apiFetch<BackendMovieDetail>(movieApiPath(tmdbId))
       .then((response) => {
         if (!active) return;
-        const ott = (response.providers ?? []).map((item) => ({
-          ...item,
-          media_kind: "ott" as const,
-        }));
+        const ott = (response.providers ?? []).map((item) => ({ ...item, media_kind: "ott" as const }));
         const youtube = (response.youtube ?? response.youtube_versions ?? []).map((item) => ({
           ...item,
           media_kind: "youtube" as const,
         }));
 
         setResult({
-          routeKey: tmdbId,
+          tmdbId,
           error: "",
           movie: {
             ...response,
@@ -78,7 +66,7 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
       .catch((reason: unknown) => {
         if (!active) return;
         setResult({
-          routeKey: tmdbId,
+          tmdbId,
           movie: null,
           error: reason instanceof Error ? reason.message : "Movie not found",
         });
@@ -89,9 +77,14 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
     };
   }, [tmdbId]);
 
-  const current = result?.routeKey === tmdbId ? result : null;
-  const movie = current?.movie ?? null;
-  const error = current?.error ?? "";
+  const movie = result?.tmdbId === tmdbId ? result.movie : null;
+  const error = result?.tmdbId === tmdbId ? result.error : "";
+  const posterFailed = posterFailedFor === tmdbId;
+
+  const directors = useMemo(
+    () => movie?.crew.filter((person) => (person.role ?? "").toLowerCase().includes("director")).slice(0, 4) ?? [],
+    [movie],
+  );
 
   if (error) {
     return (
@@ -110,14 +103,16 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
     return (
       <AppShell>
         <main className="page-content">
-          <div className="loading-panel">Loading movie...</div>
+          <div className="detail-loading" aria-busy="true">
+            <span className="detail-loading-poster" />
+            <span className="detail-loading-copy" />
+          </div>
         </main>
       </AppShell>
     );
   }
 
-  const rating = movie.imdb_rating ?? movie.tmdb_rating ?? movie.rating;
-  const ratingSource = movie.imdb_rating != null ? "IMDb" : movie.tmdb_rating != null || movie.rating != null ? "TMDB" : null;
+  const rating = movie.tmdb_rating ?? movie.imdb_rating;
   const availability = movie.availability ?? movie.providers ?? [];
   const ottProviders = movie.providers?.length
     ? movie.providers
@@ -125,7 +120,6 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
   const youtubeAvailability = availability.filter(
     (item) => "media_kind" in item && item.media_kind === "youtube",
   );
-  const backdrop = normalizePosterUrl(movie.backdrop_url);
 
   return (
     <AppShell>
@@ -133,20 +127,22 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
         <section
           className="detail-hero"
           style={
-            backdrop
+            movie.backdrop_url
               ? {
-                  backgroundImage: `linear-gradient(90deg,rgba(5,5,5,.98) 0%,rgba(5,5,5,.78) 58%,rgba(5,5,5,.94) 100%),url("${backdrop}")`,
+                  backgroundImage: `linear-gradient(90deg,rgba(7,16,24,.98) 0%,rgba(7,16,24,.78) 54%,rgba(7,16,24,.95) 100%),url("${movie.backdrop_url}")`,
                 }
               : undefined
           }
         >
           <div className="detail-poster">
-            <PosterImage
-              src={movie.poster_url}
-              alt={`${movie.title} poster`}
-              fallbackLabel={movie.title}
-              detail
-            />
+            {movie.poster_url && !posterFailed ? (
+              <img src={movie.poster_url} alt={`${movie.title} poster`} onError={() => setPosterFailedFor(tmdbId)} />
+            ) : (
+              <div className="poster-fallback">
+                <span>{movie.title[0]}</span>
+                <small>Poster unavailable</small>
+              </div>
+            )}
           </div>
 
           <div className="detail-copy">
@@ -154,21 +150,29 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
               {movie.domain === "current" ? "INDIAN MOVIE" : "INDIAN CLASSIC"}
             </span>
             <h1>{movie.title}</h1>
+
             {movie.original_title && movie.original_title !== movie.title ? (
               <p className="original-title">{movie.original_title}</p>
             ) : null}
 
             <div className="detail-meta">
-              <span><CalendarDays size={17} aria-hidden="true" />{movie.release_year ?? "-"}</span>
+              <span><CalendarDays size={17} aria-hidden="true" />{movie.release_year ?? "Year unknown"}</span>
               {movie.runtime ? <span><Clock3 size={17} aria-hidden="true" />{movie.runtime} min</span> : null}
               <span><Languages size={17} aria-hidden="true" />{movie.language_name ?? movie.original_language ?? "Unknown"}</span>
-              {ratingSource && rating != null ? <span data-rating-source={ratingSource}><Star size={17} aria-hidden="true" /><strong>{ratingSource}</strong>{Number(rating).toFixed(1)}</span> : null}
+              {rating ? <span><Star size={17} aria-hidden="true" />Rating {Number(rating).toFixed(1)}</span> : null}
             </div>
 
             {movie.genres.length ? (
               <div className="genre-row">
                 {movie.genres.map((genre) => <span key={genre.genre_id}>{genre.genre_name}</span>)}
               </div>
+            ) : null}
+
+            {directors.length ? (
+              <p className="director-line">
+                <strong>Director{directors.length > 1 ? "s" : ""}:</strong>{" "}
+                {directors.map((person) => person.name).join(", ")}
+              </p>
             ) : null}
 
             <p className="detail-overview">{movie.overview || "Overview is not available."}</p>
@@ -182,8 +186,8 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
 
               <section className="watch-panel youtube-panel" aria-labelledby="youtube-watch-title">
                 <span className="section-kicker youtube-kicker">WATCH FREE ON YOUTUBE</span>
-                <h2 id="youtube-watch-title">Approved full-movie links</h2>
-                <ProviderButtons providers={youtubeAvailability} limit={3} />
+                <h2 id="youtube-watch-title">Full-movie links</h2>
+                <ProviderButtons providers={youtubeAvailability} maxItems={3} />
               </section>
             </div>
           </div>
@@ -202,7 +206,9 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
                   </div>
                 ))}
               </div>
-            ) : <p className="provider-empty">Cast data is not listed in this snapshot.</p>}
+            ) : (
+              <p className="provider-empty">Cast data is not available for this movie yet.</p>
+            )}
           </div>
 
           <div>
@@ -217,7 +223,9 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
                   </div>
                 ))}
               </div>
-            ) : <p className="provider-empty">Crew data is not listed in this snapshot.</p>}
+            ) : (
+              <p className="provider-empty">Crew data is not available for this movie yet.</p>
+            )}
           </div>
         </section>
       </main>

@@ -1,8 +1,4 @@
-/* global AbortSignal */
-
-import { normalizePosterUrl } from "@/lib/poster-normalizer";
-
-const configuredApiBase = process.env.NEXT_PUBLIC_FLIXYFY_API_URL?.trim();
+﻿const configuredApiBase = process.env.NEXT_PUBLIC_FLIXYFY_API_URL?.trim();
 
 export const API_BASE =
   configuredApiBase?.replace(/\/+$/, "") ??
@@ -66,7 +62,6 @@ export type Movie = {
   poster_url?: string | null;
   backdrop_url?: string | null;
   tmdb_rating?: number | null;
-  rating?: number | null;
   imdb_rating?: number | null;
   provider_count: number;
   youtube_video_count?: number;
@@ -100,8 +95,7 @@ export function movieRoute(movie: Movie): string {
 
 export function movieApiPath(routeKey: string): string {
   const decoded = decodeURIComponent(routeKey);
-  const domain = decoded.toUpperCase().startsWith("HIST:") ? "historical" : "current";
-  return `/api/v4/${domain}/${encodeURIComponent(decoded)}`;
+  return `/api/v4/current/${encodeURIComponent(decoded)}`;
 }
 
 export type SearchEntity = {
@@ -113,23 +107,33 @@ export type SearchEntity = {
 
 export type SearchResponse = {
   query: string;
+  normalized_query: string;
+  residual_query: string;
+  intent_summary: string;
+  entities: {
+    providers: SearchEntity[];
+    languages: SearchEntity[];
+    genres: SearchEntity[];
+    people: SearchEntity[];
+    years: SearchEntity[];
+  };
   total: number;
   limit: number;
   offset: number;
   items: Movie[];
-  domain?: "current" | "historical";
+  facets: {
+    providers: { name: string; count: number }[];
+    languages: { name: string; count: number }[];
+    years: { name: string; count: number }[];
+  };
 };
 
-export { normalizePosterUrl };
-
-export async function apiFetch<T>(path: string, timeoutMs = 15000, externalSignal?: AbortSignal): Promise<T> {
+export async function apiFetch<T>(path: string, timeoutMs = 15000): Promise<T> {
   if (!API_BASE) {
     throw new Error("NEXT_PUBLIC_FLIXYFY_API_URL is required for production API requests");
   }
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
-  const abortExternal = () => controller.abort();
-  externalSignal?.addEventListener("abort", abortExternal, { once: true });
   try {
     const response = await fetch(`${API_BASE}${path}`, {
       cache: "no-store",
@@ -142,12 +146,16 @@ export async function apiFetch<T>(path: string, timeoutMs = 15000, externalSigna
     return (await response.json()) as T;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
-      if (externalSignal?.aborted) throw error;
       throw new Error("Request timed out");
     }
     throw error;
   } finally {
-    externalSignal?.removeEventListener("abort", abortExternal);
     window.clearTimeout(timeout);
   }
+}
+
+export function normalizePosterUrl(src: string | null | undefined): string {
+  if (!src) return "";
+  if (src.startsWith("http")) return src;
+  return src.startsWith("/") ? src : `/${src}`;
 }
