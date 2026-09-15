@@ -1,9 +1,19 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { RotateCcw, SearchX, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { apiFetch, type Movie, type SearchEntity, type SearchResponse } from "@/lib/api";
+import {
+  apiFetch,
+  intelligenceMovieToMovie,
+  type Movie,
+  type PersonEntityResponse,
+  type PersonIntelligenceResponse,
+  type PersonSearchEntity,
+  type SearchEntity,
+  type SearchResponse,
+} from "@/lib/api";
+import { resolvePersonQuery } from "@/lib/person-search";
 import AppShell from "./AppShell";
 import MovieCard from "./MovieCard";
 import SearchInput from "./SearchInput";
@@ -123,6 +133,7 @@ export default function SearchPageClient() {
   const year = safeParams.get("year") ?? safeParams.get("year_from") ?? "";
   const genre = safeParams.get("genre") ?? "";
   const provider = safeParams.get("provider") ?? "";
+  const personId = safeParams.get("person_id") ?? "";
   const sort = safeParams.get("sort") === "popular" ? "popular" : "relevance";
 
   const [result, setResult] = useState<{
@@ -131,11 +142,12 @@ export default function SearchPageClient() {
     error: string;
   }>({ key: "", data: null, error: "" });
   const [providers, setProviders] = useState<ProviderFilter[]>([]);
+  const [people, setPeople] = useState<PersonSearchEntity[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const hasFilters = Boolean(language || year || genre || provider || sort !== "relevance");
-  const shouldSearch = Boolean(query.trim() || hasFilters);
-  const requestKey = [query.trim(), language, year, genre, provider, sort].join("\u0001");
+  const shouldSearch = Boolean(query.trim() || hasFilters || personId);
+  const requestKey = [query.trim(), personId, language, year, genre, provider, sort].join("\u0001");
   const data = result.key === requestKey ? result.data : null;
   const error = result.key === requestKey ? result.error : "";
   const loading = shouldSearch && result.key !== requestKey;
@@ -163,33 +175,94 @@ export default function SearchPageClient() {
       };
     }
 
-    const apiParams = new URLSearchParams();
-    apiParams.set("limit", "48");
-    if (query.trim()) apiParams.set("q", query.trim());
-    if (provider) apiParams.set("provider", provider);
-    if (language) apiParams.set("language", language);
-    if (genre) apiParams.set("genre", genre);
-    if (year) {
-      apiParams.set("year_from", year);
-      apiParams.set("year_to", year);
-    }
-    if (query.trim() || sort === "popular") apiParams.set("sort", sort);
+    async function search() {
+      try {
+        const filterParams = new URLSearchParams();
+        filterParams.set("limit", "48");
+        if (provider) filterParams.set("provider", provider);
+        if (language) filterParams.set("language", language);
+        if (genre) filterParams.set("genre", genre);
+        if (year) {
+          filterParams.set("year_from", year);
+          filterParams.set("year_to", year);
+        }
+        if (sort === "popular") filterParams.set("sort", sort);
 
-    const path = query.trim()
-      ? `/api/v4/search?${apiParams.toString()}`
-      : `/api/v4/movies?${apiParams.toString()}`;
+        let selectedPerson: PersonSearchEntity | null = null;
+        if (query.trim()) {
+          try {
+            const rawPersonQuery = query.trim().replace(/\s+/g, " ");
+            const personLookupQuery =
+              rawPersonQuery
+                .replace(/^(?:movies?|films?)\s+(?:of|by|with)\s+/i, "")
+                .replace(/\s+(?:movies?|films?|filmography)\s*$/i, "")
+                .trim() || rawPersonQuery;
 
-    apiFetch<MovieListResponse>(path)
-      .then((response) => {
+            const entityResponse = await apiFetch<PersonEntityResponse>(
+              `/api/v1/search/entities?q=${encodeURIComponent(personLookupQuery)}`,
+            );
+            if (!active) return;
+            const candidates = entityResponse.items ?? entityResponse.entities ?? [];
+            selectedPerson = personId
+              ? candidates.find((person) => person.person_id === personId) ?? null
+              : null;
+
+            if (!selectedPerson && !personId) {
+              const resolution = resolvePersonQuery(personLookupQuery, candidates);
+              if (resolution.kind === "person") selectedPerson = resolution.person;
+              if (resolution.kind === "choices") {
+                setPeople(resolution.people);
+                setResult({ key: requestKey, data: null, error: "" });
+                return;
+              }
+            }
+          } catch {
+            // Entity resolution is an enhancement; ordinary movie search remains available.
+          }
+        }
+
+        const providerName = provider === "youtube"
+          ? "YouTube"
+          : providers.find((item) => item.provider_key === provider)?.provider_name ?? provider;
+
+        if (selectedPerson) {
+          const intelligenceParams = new URLSearchParams(filterParams);
+          intelligenceParams.set("person_id", selectedPerson.person_id);
+          const response = await apiFetch<PersonIntelligenceResponse>(
+            `/api/v1/search/intelligence?${intelligenceParams.toString()}`,
+          );
+          if (!active) return;
+          const items = (response.items ?? response.results ?? response.movies ?? []).map(intelligenceMovieToMovie);
+          const data = moviesToSearchResponse({
+            items,
+            total: response.total ?? items.length,
+            limit: response.limit || 48,
+            offset: ((response.page || 1) - 1) * (response.limit || 48),
+            query,
+            provider,
+            providerName,
+            language,
+            genre,
+            year,
+          });
+          data.intent_summary = `Filmography for ${selectedPerson.display_name}`;
+          data.entities.people = [entityFromValue(selectedPerson.person_id, selectedPerson.display_name)];
+          setPeople([]);
+          setResult({ key: requestKey, error: "", data });
+          return;
+        }
+
+        const movieParams = new URLSearchParams(filterParams);
+        if (query.trim()) movieParams.set("q", query.trim());
+        if (query.trim() && sort === "relevance") movieParams.set("sort", sort);
+        const path = query.trim()
+          ? `/api/v4/search?${movieParams.toString()}`
+          : `/api/v4/movies?${movieParams.toString()}`;
+        const response = await apiFetch<MovieListResponse>(path);
         if (!active) return;
         const items = response.items ?? response.results ?? [];
         const limit = response.limit || 48;
-        const page = response.page || 1;
-        const providerName =
-          provider === "youtube"
-            ? "YouTube"
-            : providers.find((item) => item.provider_key === provider)?.provider_name ?? provider;
-
+        setPeople([]);
         setResult({
           key: requestKey,
           error: "",
@@ -197,7 +270,7 @@ export default function SearchPageClient() {
             items,
             total: response.total,
             limit,
-            offset: (page - 1) * limit,
+            offset: ((response.page || 1) - 1) * limit,
             query,
             provider,
             providerName,
@@ -206,20 +279,22 @@ export default function SearchPageClient() {
             year,
           }),
         });
-      })
-      .catch((reason: unknown) => {
+      } catch (reason: unknown) {
         if (!active) return;
+        setPeople([]);
         setResult({
           key: requestKey,
           data: null,
           error: reason instanceof Error ? reason.message : "Search failed",
         });
-      });
+      }
+    }
 
+    void search();
     return () => {
       active = false;
     };
-  }, [query, provider, language, genre, year, sort, shouldSearch, requestKey, providers]);
+  }, [query, personId, provider, language, genre, year, sort, shouldSearch, requestKey, providers]);
 
   function setFilter(name: string, value: string) {
     const next = new URLSearchParams(paramsKey);
@@ -235,9 +310,16 @@ export default function SearchPageClient() {
     router.push(qs ? `${pathname}?${qs}` : pathname ?? "/search");
   }
 
+  function choosePerson(person: PersonSearchEntity) {
+    const next = new URLSearchParams(paramsKey);
+    next.set("person_id", person.person_id);
+    router.push(`${pathname ?? "/search"}?${next.toString()}`);
+  }
+
   function resetFilters() {
     const next = new URLSearchParams();
     if (query.trim()) next.set("q", query.trim());
+    if (personId) next.set("person_id", personId);
     router.push(next.toString() ? `${pathname ?? "/search"}?${next.toString()}` : pathname ?? "/search");
   }
 
@@ -352,6 +434,22 @@ export default function SearchPageClient() {
           </div>
         </section>
 
+        {people.length ? (
+          <section className="person-disambiguation" aria-labelledby="person-choice-title">
+            <div>
+              <small>CHOOSE A PERSON</small>
+              <h2 id="person-choice-title">Which person did you mean?</h2>
+            </div>
+            <div className="person-choices">
+              {people.map((person) => (
+                <button type="button" key={person.person_id} onClick={() => choosePerson(person)}>
+                  <strong>{person.display_name}</strong>
+                  {person.disambiguation ? <span>{person.disambiguation}</span> : null}
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null}
         {!query && !hasFilters ? (
           <section className="search-empty">
             <Sparkles size={34} aria-hidden="true" />

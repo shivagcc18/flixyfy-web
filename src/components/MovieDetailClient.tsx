@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { CalendarDays, Clock3, Languages, Star } from "lucide-react";
-import { apiFetch, movieApiPath, type AvailabilityOption, type Movie, type Provider } from "@/lib/api";
+import {
+  apiFetch,
+  movieApiPath,
+  normalizeBackdropUrl,
+  normalizePosterUrl,
+  type AvailabilityOption,
+  type Movie,
+  type Provider,
+} from "@/lib/api";
 import AppShell from "./AppShell";
 import ProviderButtons from "./ProviderButtons";
 
@@ -30,8 +39,18 @@ type BackendMovieDetail = MovieDetail & {
 };
 
 export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
+  const searchParams = useSearchParams();
+  const domainParam = searchParams?.get("domain") ?? null;
+
+  const requestedDomain: Movie["domain"] | null =
+    domainParam === "current" || domainParam === "historical"
+      ? domainParam
+      : null;
+
+  const requestKey = `${tmdbId}|${requestedDomain ?? "auto"}`;
+
   const [result, setResult] = useState<{
-    tmdbId: string;
+    requestKey: string;
     movie: MovieDetail | null;
     error: string;
   } | null>(null);
@@ -40,33 +59,91 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
   useEffect(() => {
     let active = true;
 
-    apiFetch<BackendMovieDetail>(movieApiPath(tmdbId))
-      .then((response) => {
+
+    const normalizeMovieDetail = (response: BackendMovieDetail): MovieDetail => {
+      const ott = (response.providers ?? []).map((item) => ({
+        ...item,
+        media_kind: "ott" as const,
+      }));
+
+      const youtube = (response.youtube ?? response.youtube_versions ?? []).map((item) => ({
+        ...item,
+        media_kind: "youtube" as const,
+      }));
+
+      return {
+        ...response,
+        poster_url: normalizePosterUrl(response.poster_url) || null,
+        backdrop_url: normalizeBackdropUrl(response.backdrop_url) || null,
+        providers: response.providers ?? [],
+        availability: [...ott, ...youtube],
+        genres: response.genres ?? [],
+        languages: response.languages ?? [],
+        cast: response.cast ?? [],
+        crew: response.crew ?? [],
+      };
+    };
+
+    const loadMovieDetail = async (): Promise<MovieDetail> => {
+      if (requestedDomain) {
+        const response = await apiFetch<BackendMovieDetail>(
+          movieApiPath(tmdbId, requestedDomain),
+        );
+
+        return normalizeMovieDetail(response);
+      }
+
+      const [currentResult, historicalResult] = await Promise.allSettled([
+        apiFetch<BackendMovieDetail>(movieApiPath(tmdbId, "current")),
+        apiFetch<BackendMovieDetail>(movieApiPath(tmdbId, "historical")),
+      ]);
+
+      if (
+        currentResult.status === "fulfilled" &&
+        historicalResult.status === "fulfilled"
+      ) {
+        throw new Error(
+          `Movie domain conflict: ${tmdbId} exists in both current and historical catalogs`,
+        );
+      }
+
+      if (currentResult.status === "fulfilled") {
+        return normalizeMovieDetail(currentResult.value);
+      }
+
+      if (historicalResult.status === "fulfilled") {
+        return normalizeMovieDetail(historicalResult.value);
+      }
+
+      const currentError = currentResult.reason;
+      const historicalError = historicalResult.reason;
+
+      if (currentError instanceof Error) {
+        throw currentError;
+      }
+
+      if (historicalError instanceof Error) {
+        throw historicalError;
+      }
+
+      throw new Error("Movie not found");
+    };
+
+    loadMovieDetail()
+      .then((movie) => {
         if (!active) return;
-        const ott = (response.providers ?? []).map((item) => ({ ...item, media_kind: "ott" as const }));
-        const youtube = (response.youtube ?? response.youtube_versions ?? []).map((item) => ({
-          ...item,
-          media_kind: "youtube" as const,
-        }));
 
         setResult({
-          tmdbId,
+          requestKey,
           error: "",
-          movie: {
-            ...response,
-            providers: response.providers ?? [],
-            availability: [...ott, ...youtube],
-            genres: response.genres ?? [],
-            languages: response.languages ?? [],
-            cast: response.cast ?? [],
-            crew: response.crew ?? [],
-          },
+          movie,
         });
       })
       .catch((reason: unknown) => {
         if (!active) return;
+
         setResult({
-          tmdbId,
+          requestKey,
           movie: null,
           error: reason instanceof Error ? reason.message : "Movie not found",
         });
@@ -75,10 +152,10 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
     return () => {
       active = false;
     };
-  }, [tmdbId]);
+  }, [requestKey, requestedDomain, tmdbId]);
 
-  const movie = result?.tmdbId === tmdbId ? result.movie : null;
-  const error = result?.tmdbId === tmdbId ? result.error : "";
+  const movie = result?.requestKey === requestKey ? result.movie : null;
+  const error = result?.requestKey === requestKey ? result.error : "";
   const posterFailed = posterFailedFor === tmdbId;
 
   const directors = useMemo(

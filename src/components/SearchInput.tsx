@@ -52,6 +52,8 @@ export default function SearchInput({
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const request = useRef(0);
+  const focused = useRef(false);
+  const submittedValue = useRef(initialValue.trim());
 
   useEffect(() => {
     const timer = window.setTimeout(() => setRecent(readRecent()), 0);
@@ -82,8 +84,8 @@ export default function SearchInput({
           release_year: item.release_year ?? undefined,
         }));
         setItems(suggestions);
-        setOpen(suggestions.length > 0);
-        setActiveIndex(suggestions.length > 0 ? 0 : -1);
+        setOpen(focused.current && query !== submittedValue.current && suggestions.length > 0);
+        setActiveIndex(-1);
       } catch {
         if (id === request.current) {
           setItems([]);
@@ -108,6 +110,8 @@ export default function SearchInput({
     const next = query.trim();
     if (!next) return;
     writeRecent(next);
+    submittedValue.current = next;
+    focused.current = false;
     setRecent(readRecent());
     setOpen(false);
     setActiveIndex(-1);
@@ -116,10 +120,6 @@ export default function SearchInput({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (open && activeIndex >= 0 && displayed[activeIndex]) {
-      goToSearch(displayed[activeIndex].entity_name);
-      return;
-    }
     goToSearch(value);
   }
 
@@ -161,7 +161,10 @@ export default function SearchInput({
     <div
       className={large ? "search-input-shell large" : "search-input-shell"}
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          focused.current = false;
+          setOpen(false);
+        }
       }}
     >
       <form className="search-form" onSubmit={submit} role="search">
@@ -176,12 +179,14 @@ export default function SearchInput({
               setItems([]);
               setActiveIndex(-1);
             }
-            setOpen(true);
+            setOpen(nextValue.trim() !== submittedValue.current);
           }}
           onFocus={() => {
+            focused.current = true;
             const nextRecent = readRecent();
             setRecent(nextRecent);
-            if (items.length > 0 || nextRecent.length > 0) setOpen(true);
+            const editing = value.trim() !== submittedValue.current;
+            if ((editing && items.length > 0) || (value.trim().length < 2 && nextRecent.length > 0)) setOpen(true);
           }}
           onKeyDown={onKeyDown}
           placeholder={placeholder}
