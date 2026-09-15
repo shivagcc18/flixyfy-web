@@ -10,6 +10,7 @@ export default function FlixyfyLogo() {
       width={1254}
       height={1254}
       sizes="(max-width: 768px) 58px, (min-width: 1600px) 68px, 64px"
+      unoptimized
       priority
       className="brand-logo"
     />

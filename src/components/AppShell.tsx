@@ -1,15 +1,17 @@
-﻿"use client";
+"use client";
 
 import type React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, Search, Tv2 } from "lucide-react";
+import { House, Languages, Search, Tv2, Users } from "lucide-react";
 import { useEffect } from "react";
 import FlixyfyLogo from "./FlixyfyLogo";
 
 const navigation = [
-  { href: "/", label: "Discover", icon: Compass },
+  { href: "/", label: "Home", icon: House },
   { href: "/search", label: "Search", icon: Search },
+  { href: "/search?mode=people", label: "People", icon: Users },
+  { href: "/#language-title", label: "Languages", icon: Languages },
   { href: "/providers", label: "Providers", icon: Tv2 },
 ] as const;
 

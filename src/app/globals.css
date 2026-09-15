@@ -27,6 +27,7 @@ body{
   --gold-primary: #FFD54A;
   --gold-highlight: #FFE88A;
   --gold-strong: #FFC928;
+  --gold-border: #C99A12;
 }
 body { background: #050505; color: #f5f5f5; }
 .brand { flex-shrink: 0; }
