@@ -176,7 +176,10 @@ export default function HomeClient() {
         setAggregateAttempted(true);
         setHomeError("");
       } catch {
-        if (active) setAggregateAttempted(true);
+        if (active) {
+          setAggregateAttempted(true);
+          setHomeError("Movie data is temporarily unavailable.");
+        }
       }
     }
 
@@ -192,7 +195,7 @@ export default function HomeClient() {
   );
 
   useEffect(() => {
-    if (!aggregateAttempted || aggregateLoaded) return;
+    if (!aggregateAttempted || aggregateLoaded || homeError) return;
 
     let active = true;
     const currentYear = new Date().getFullYear();
@@ -275,7 +278,7 @@ export default function HomeClient() {
     return () => {
       active = false;
     };
-  }, [aggregateAttempted, aggregateLoaded]);
+  }, [aggregateAttempted, aggregateLoaded, homeError]);
   const fallbackHeroMovies = useMemo(() => {
     const candidates = allMovieItems.filter((movie) => movie.poster_url);
 
@@ -385,13 +388,18 @@ export default function HomeClient() {
             </div>
           </div>
 
-          <div className="target-hero-art v3-hero-art" aria-label="Movie artwork">
+          <div
+            className="target-hero-art v3-hero-art"
+            style={{ minHeight: "clamp(184px, 31vw, 322px)" }}
+            aria-label="Movie artwork"
+          >
             {heroMovies.length > 0 ? (
               <>
-                <div className="target-hero-backdrop">
+                <div className="target-hero-backdrop" style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
                   <img
                     src={heroBackdropMovie?.backdrop_url || heroBackdropMovie?.poster_url || ""}
                     alt=""
+                    style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
                   />
                 </div>
                 <div className="target-hero-stack v3-hero-stack">
@@ -402,7 +410,11 @@ export default function HomeClient() {
                       key={movie.canonical_movie_id}
                       aria-label={"Open " + movie.title}
                     >
-                      <img src={movie.poster_url || ""} alt="" />
+                      <img
+                        src={movie.poster_url || ""}
+                        alt=""
+                        style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
+                      />
                     </a>
                   ))}
                 </div>

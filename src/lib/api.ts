@@ -248,6 +248,11 @@ export function normalizeTmdbImageUrl(
     return value;
   }
 
+  // Preserve an API value that already contains the TMDB image path prefix.
+  if (value.startsWith("/t/p/")) {
+    return `https://image.tmdb.org${value}`;
+  }
+
   const path = value.startsWith("/") ? value : `/${value}`;
 
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
