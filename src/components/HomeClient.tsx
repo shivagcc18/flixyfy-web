@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -202,7 +202,7 @@ export default function HomeClient() {
 
     async function loadFullCatalogRails() {
       try {
-        const homeResponse = await apiFetch<HomePayload>("/api/v4/home?limit=36");
+        const homeResponse = await apiFetch<HomePayload>("/api/v4/home?limit=18");
         setCurrentItems((homeResponse.current?.items ?? []).map((item) => homeApiMovieToMovie(item, "current")));
         setHistoricalItems((homeResponse.historical?.items ?? []).map((item) => homeApiMovieToMovie(item, "historical")));
         const languageSections = await Promise.all(
@@ -422,7 +422,7 @@ export default function HomeClient() {
             ) : (
               <div className="target-hero-art-fallback">
                 <strong>FLIXYFY</strong>
-                <small>FIND ┬╖ WATCH ┬╖ ENJOY</small>
+                <small>FIND â”¬â•– WATCH â”¬â•– ENJOY</small>
               </div>
             )}
           </div>
@@ -509,3 +509,4 @@ export default function HomeClient() {
     </AppShell>
   );
 }
+

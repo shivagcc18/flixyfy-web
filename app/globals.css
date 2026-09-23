@@ -990,36 +990,31 @@ textarea:focus-visible {
 }
 /* END FLIXYFY_HOME_HERO_CONTAINMENT_FIX_V1 */
 
-/* FLIXYFY_CRYSTAL_GOLD_V1_START */
+/* FLIXYFY_BLACK_GOLD_GLITTER_FINAL_V1_START */
 :root {
-  --flixyfy-crystal-gold: #f6d77a;
-  --flixyfy-crystal-gold-bright: #fff0b0;
-  --flixyfy-crystal-gold-deep: #d4aa43;
-  --flixyfy-text-white: #ffffff;
-  --flixyfy-text-soft: rgba(255, 255, 255, 0.84);
-  --flixyfy-text-muted: rgba(255, 255, 255, 0.68);
+  --flixyfy-black: #050505;
+  --flixyfy-black-soft: #0b0b0b;
+  --flixyfy-white: #ffffff;
+  --flixyfy-white-soft: rgba(255, 255, 255, 0.86);
+  --flixyfy-white-muted: rgba(255, 255, 255, 0.68);
+  --flixyfy-gold-deep: #8c5b08;
+  --flixyfy-gold: #d4af37;
+  --flixyfy-gold-light: #f4d56b;
+  --flixyfy-gold-highlight: #fff3b0;
 }
 
+/* Black base + white readable content. */
+html,
 body {
-  color: var(--flixyfy-text-white);
+  background: var(--flixyfy-black);
+  color: var(--flixyfy-white);
 }
 
 main h1,
 main h2,
-main h3 {
-  color: var(--flixyfy-crystal-gold) !important;
-}
-
-header nav a,
-nav a {
-  color: var(--flixyfy-crystal-gold) !important;
-}
-
-header nav a:hover,
-header nav a:focus-visible,
-nav a:hover,
-nav a:focus-visible {
-  color: var(--flixyfy-crystal-gold-bright) !important;
+main h3,
+main h4 {
+  color: var(--flixyfy-white) !important;
 }
 
 main p,
@@ -1027,20 +1022,123 @@ main li,
 main label,
 main small,
 footer {
-  color: var(--flixyfy-text-soft);
+  color: var(--flixyfy-white-soft);
+}
+
+/* Metallic gold UI accents, not flat yellow. */
+nav a,
+header a,
+main a:not([role="button"]) {
+  color: var(--flixyfy-gold-light) !important;
 }
 
 button,
-[role="button"],
+[role="button"] {
+  border-color: rgba(212, 175, 55, 0.72);
+}
+
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline-color: var(--flixyfy-gold-highlight);
+}
+
 input,
 select,
 textarea {
-  color: var(--flixyfy-text-white);
+  color: var(--flixyfy-white);
+  border-color: rgba(212, 175, 55, 0.65);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--flixyfy-text-muted);
+  color: var(--flixyfy-white-muted);
 }
-/* FLIXYFY_CRYSTAL_GOLD_V1_END */
+
+/*
+  Premium glitter-gold is intentionally selective.
+  The hero's emphasized inner span and explicit brand-glitter classes get the
+  sparkling foil effect; normal reading text remains white.
+*/
+.flixyfy-glitter-text,
+.flixyfy-brand-glitter,
+main h1 > span {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent;
+  background-image:
+    radial-gradient(circle at 8% 18%, #fff8cf 0 1.2px, transparent 1.8px),
+    radial-gradient(circle at 24% 64%, #ffffff 0 1px, transparent 1.7px),
+    radial-gradient(circle at 43% 24%, #fff6b4 0 1.1px, transparent 1.8px),
+    radial-gradient(circle at 61% 76%, #ffffff 0 1.2px, transparent 1.9px),
+    radial-gradient(circle at 79% 32%, #fff2a0 0 1px, transparent 1.7px),
+    radial-gradient(circle at 94% 68%, #ffffff 0 1.1px, transparent 1.8px),
+    linear-gradient(
+      112deg,
+      #8c5b08 0%,
+      #d29a17 11%,
+      #fff0a8 21%,
+      #c88708 31%,
+      #ffd95a 43%,
+      #fff8cf 50%,
+      #d39b16 59%,
+      #ffdf69 71%,
+      #fff0a0 82%,
+      #a86e08 100%
+    );
+  background-size:
+    31px 31px,
+    37px 37px,
+    41px 41px,
+    47px 47px,
+    53px 53px,
+    59px 59px,
+    220% 100%;
+  background-position:
+    0 0,
+    4px 7px,
+    13px 3px,
+    7px 17px,
+    19px 11px,
+    2px 23px,
+    0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  text-shadow:
+    0 0 1px rgba(255, 247, 191, 0.45),
+    0 0 10px rgba(212, 175, 55, 0.20);
+  font-weight: 900;
+  animation: flixyfyGoldShimmer 6s linear infinite;
+}
+
+@keyframes flixyfyGoldShimmer {
+  0%   { background-position: 0 0, 4px 7px, 13px 3px, 7px 17px, 19px 11px, 2px 23px, 0% 50%; }
+  50%  { background-position: 2px 1px, 3px 9px, 15px 2px, 5px 19px, 17px 13px, 4px 21px, 100% 50%; }
+  100% { background-position: 0 0, 4px 7px, 13px 3px, 7px 17px, 19px 11px, 2px 23px, 200% 50%; }
+}
+
+/* Small gold UI text should look metallic, not glittered. */
+[class*="text-yellow"],
+[class*="text-amber"] {
+  color: var(--flixyfy-gold-light) !important;
+}
+
+/*
+  Render below-fold homepage sections only when they approach the viewport.
+  This reduces initial layout/paint work while preserving their eventual content.
+*/
+main > section:not(:first-of-type) {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 640px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flixyfy-glitter-text,
+  .flixyfy-brand-glitter,
+  main h1 > span {
+    animation: none;
+    background-position: 50% 50%;
+  }
+}
+/* FLIXYFY_BLACK_GOLD_GLITTER_FINAL_V1_END */
 
