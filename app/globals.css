@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root{
   --bg:#050505;
@@ -989,3 +989,58 @@ textarea:focus-visible {
   }
 }
 /* END FLIXYFY_HOME_HERO_CONTAINMENT_FIX_V1 */
+
+/* FLIXYFY_CRYSTAL_GOLD_V1_START */
+:root {
+  --flixyfy-crystal-gold: #f6d77a;
+  --flixyfy-crystal-gold-bright: #fff0b0;
+  --flixyfy-crystal-gold-deep: #d4aa43;
+  --flixyfy-text-white: #ffffff;
+  --flixyfy-text-soft: rgba(255, 255, 255, 0.84);
+  --flixyfy-text-muted: rgba(255, 255, 255, 0.68);
+}
+
+body {
+  color: var(--flixyfy-text-white);
+}
+
+main h1,
+main h2,
+main h3 {
+  color: var(--flixyfy-crystal-gold) !important;
+}
+
+header nav a,
+nav a {
+  color: var(--flixyfy-crystal-gold) !important;
+}
+
+header nav a:hover,
+header nav a:focus-visible,
+nav a:hover,
+nav a:focus-visible {
+  color: var(--flixyfy-crystal-gold-bright) !important;
+}
+
+main p,
+main li,
+main label,
+main small,
+footer {
+  color: var(--flixyfy-text-soft);
+}
+
+button,
+[role="button"],
+input,
+select,
+textarea {
+  color: var(--flixyfy-text-white);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--flixyfy-text-muted);
+}
+/* FLIXYFY_CRYSTAL_GOLD_V1_END */
+
