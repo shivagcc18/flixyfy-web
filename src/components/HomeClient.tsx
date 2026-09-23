@@ -202,7 +202,7 @@ export default function HomeClient() {
 
     async function loadFullCatalogRails() {
       try {
-        const homeResponse = await apiFetch<HomePayload>("/api/v4/home?limit=18");
+        const homeResponse = await apiFetch<HomePayload>("/api/v4/home?limit=12");
         setCurrentItems((homeResponse.current?.items ?? []).map((item) => homeApiMovieToMovie(item, "current")));
         setHistoricalItems((homeResponse.historical?.items ?? []).map((item) => homeApiMovieToMovie(item, "historical")));
         const languageSections = await Promise.all(
@@ -509,4 +509,5 @@ export default function HomeClient() {
     </AppShell>
   );
 }
+
 
