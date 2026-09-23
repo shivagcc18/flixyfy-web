@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -355,7 +355,9 @@ export default function HomeClient() {
   return (
     <AppShell>
       <main className="page-content flixyfy-target-home v3-home">
-        <section
+        {/* FLIXYFY_HERO_STARS_V1_START */}
+<div className="flixyfy-hero-stars-host">
+<section
           className="target-hero v3-target-hero"
           style={heroStyle}
           aria-labelledby="target-home-title"
@@ -427,6 +429,17 @@ export default function HomeClient() {
             )}
           </div>
         </section>
+  <div className="flixyfy-hero-stars-overlay" aria-hidden="true">
+    <img
+      src="/brand/flixyfy-hero-stars-v1.webp"
+      alt=""
+      className="flixyfy-hero-stars-image"
+      decoding="async"
+      fetchPriority="high"
+    />
+  </div>
+</div>
+{/* FLIXYFY_HERO_STARS_V1_END */}
 
         <section
           className="content-section poster-section target-primary-rail"
