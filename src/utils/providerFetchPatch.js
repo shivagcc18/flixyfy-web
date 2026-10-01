@@ -8,6 +8,8 @@
 // - Home heading is Indian Movies (full count).
 // - Small GET cache/dedupe for faster repeat clicks.
 
+import API_BASE from "../config/api";
+
 const PROVIDER_ALIASES = {
   "": "all",
   all: "all",
@@ -253,7 +255,7 @@ async function fixIndianHeadingCount() {
   if (/Indian Movies\s*\(\s*[\d,]+\s*\)/i.test(target.textContent || "")) return;
 
   try {
-    const data = await fetchFlixyfyJson("https://flixyfy-api-fresh-production.up.railway.app/api/v4/movies?page=1&limit=1", { ttlMs: 300000, timeoutMs: 8000 });
+    const data = await fetchFlixyfyJson(`${API_BASE}/api/v4/movies?page=1&limit=1`, { ttlMs: 300000, timeoutMs: 8000 });
     const total = Number(data?.total || 0);
     target.textContent = total > 0 ? `Indian Movies (${total.toLocaleString("en-IN")})` : "Indian Movies";
   } catch (_) {
