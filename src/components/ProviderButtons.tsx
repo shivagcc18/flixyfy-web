@@ -1,18 +1,8 @@
 import { ExternalLink, PlayCircle } from "lucide-react";
 import type { AvailabilityOption, Provider } from "@/lib/api";
+import { approvedProviderActions } from "@/lib/providerActions.mjs";
 
 type ProviderButtonItem = Provider | AvailabilityOption;
-
-const navigableKinds = new Set(["DIRECT", "SEARCH", "HOME"]);
-const approvedTypes = new Set(["flatrate", "rent", "buy", "free"]);
-
-function isApprovedNavigable(item: ProviderButtonItem) {
-  return Boolean(
-    item.button_url &&
-      navigableKinds.has(item.navigation_kind) &&
-      approvedTypes.has(item.availability_type),
-  );
-}
 
 function itemKey(provider: ProviderButtonItem) {
   return "availability_id" in provider && provider.availability_id
@@ -29,19 +19,7 @@ export default function ProviderButtons({
   compact?: boolean;
   maxItems?: number;
 }) {
-  const seen = new Set<string>();
-  const approved = providers
-    .filter(isApprovedNavigable)
-    .filter((provider) => {
-      const isYouTube = "media_kind" in provider && provider.media_kind === "youtube";
-      const dedupeKey = isYouTube
-        ? `youtube-${("video_id" in provider && provider.video_id) || provider.button_url}`
-        : `ott-${provider.provider_key}`;
-      if (seen.has(dedupeKey)) return false;
-      seen.add(dedupeKey);
-      return true;
-    })
-    .slice(0, maxItems ?? providers.length);
+  const approved = approvedProviderActions(providers, maxItems);
 
   if (!approved.length) {
     return <p className="provider-empty">No approved watch link is available right now.</p>;
