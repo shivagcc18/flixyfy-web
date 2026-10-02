@@ -76,6 +76,21 @@ function sitemapEntry(movie) {
   return `  <url>\n    <loc>${xmlEscape(loc)}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ""}\n  </url>`;
 }
 
+function validateMovieEntries(entries) {
+  const seenUrls = new Set();
+  const result = { duplicate_urls: 0, wrong_host_urls: 0, preview_urls: 0, railway_urls: 0, malformed_urls: 0 };
+  for (const entry of entries) {
+    const loc = entry.match(/<loc>(.*?)<\/loc>/)?.[1];
+    if (!loc || !/^https:\/\/www\.flixyfy\.com\/movie\/[^\s<>]+$/.test(loc)) result.malformed_urls += 1;
+    if (loc && seenUrls.has(loc)) result.duplicate_urls += 1;
+    if (loc) seenUrls.add(loc);
+    if (loc && !loc.startsWith(`${SITE_URL}/`)) result.wrong_host_urls += 1;
+    if (loc && /vercel\.app|preview/i.test(loc)) result.preview_urls += 1;
+    if (loc && /railway/i.test(loc)) result.railway_urls += 1;
+  }
+  return result;
+}
+
 function urlset(entries) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join("\n")}\n</urlset>\n`;
 }
@@ -91,36 +106,24 @@ async function main() {
   const servingTotal = domains.reduce((sum, domain) => sum + domain.total, 0);
   const movies = domains.flatMap((domain) => domain.rows);
   const byId = new Map();
-  const seenUrls = new Set();
-  let duplicateUrls = 0;
-  let wrongHostUrls = 0;
-  let previewUrls = 0;
-  let railwayUrls = 0;
-  let malformedUrls = 0;
   let missingRouteKeyCount = 0;
   for (const movie of movies) {
     const id = movie.canonical_movie_id || movie.movie_id || movie.id;
     const entry = sitemapEntry(movie);
-    if (!entry) {
+    if (!entry || !id) {
       missingRouteKeyCount += 1;
       continue;
     }
     if (id && byId.has(String(id))) throw new Error(`Duplicate serving canonical movie id: ${id}`);
-    const loc = entry.match(/<loc>(.*?)<\/loc>/)?.[1];
-    if (!loc || !/^https:\/\/www\.flixyfy\.com\/movie\/[^\s<>]+$/.test(loc)) malformedUrls += 1;
-    if (loc && seenUrls.has(loc)) duplicateUrls += 1;
-    if (loc) seenUrls.add(loc);
-    if (loc && !loc.startsWith(`${SITE_URL}/`)) wrongHostUrls += 1;
-    if (loc && /vercel\.app|preview/i.test(loc)) previewUrls += 1;
-    if (loc && /railway/i.test(loc)) railwayUrls += 1;
     if (id) byId.set(String(id), entry);
   }
   if (missingRouteKeyCount) throw new Error(`Serving rows missing an indexable movie route: ${missingRouteKeyCount}`);
-  if (duplicateUrls || wrongHostUrls || previewUrls || railwayUrls || malformedUrls) {
-    throw new Error(`Generated sitemap validation failed: ${JSON.stringify({ duplicateUrls, wrongHostUrls, previewUrls, railwayUrls, malformedUrls })}`);
-  }
 
   const movieEntries = [...byId.values()].sort((left, right) => left.localeCompare(right));
+  const validation = validateMovieEntries(movieEntries);
+  if (Object.values(validation).some((value) => value !== 0)) {
+    throw new Error(`Generated sitemap validation failed: ${JSON.stringify(validation)}`);
+  }
   if (movieEntries.length > 50_000) throw new Error(`Movie sitemap exceeds 50,000 URL limit: ${movieEntries.length}`);
   const coreEntries = CORE_PATHS.map((url) => `  <url>\n    <loc>${SITE_URL}${url}</loc>\n  </url>`);
   const movieMap = urlset(movieEntries);
@@ -142,11 +145,7 @@ async function main() {
     sitemap_movie_url_count: movieEntries.length,
     missing_from_sitemap: servingTotal - movieEntries.length,
     extra_in_sitemap: movieEntries.length - servingTotal,
-    duplicate_urls: duplicateUrls,
-    wrong_host_urls: wrongHostUrls,
-    preview_urls: previewUrls,
-    railway_urls: railwayUrls,
-    malformed_urls: malformedUrls,
+    ...validation,
     future_unpublished_candidate_urls: byId.has("TMDB:1441228") ? 1 : 0,
     core_url_count: coreEntries.length,
     lastmod_policy: "Only valid serving-row updated_at values are emitted; no generated or constant dates are used.",
@@ -163,4 +162,4 @@ if (require.main === module) main().catch((error) => {
   process.exitCode = 1;
 });
 
-module.exports = { CORE_PATHS, getRouteKey, main, sitemapEntry, urlset };
+module.exports = { CORE_PATHS, getRouteKey, main, sitemapEntry, urlset, validateMovieEntries };

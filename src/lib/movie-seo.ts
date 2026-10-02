@@ -3,6 +3,20 @@ import type { MovieDetail } from "@/lib/api";
 
 const SITE_ORIGIN = "https://www.flixyfy.com";
 
+export const SEARCH_METADATA: Metadata = {
+  title: "Search Indian Movies",
+  description: "Search FLIXYFY's movie catalog by title, people, language, year and provider.",
+  robots: { index: false, follow: true },
+  alternates: { canonical: null },
+  openGraph: {
+    type: "website",
+    title: "Search Indian Movies | FLIXYFY",
+    description: "Search FLIXYFY's movie catalog by title, people, language, year and provider.",
+    url: `${SITE_ORIGIN}/search`,
+  },
+  twitter: { card: "summary", title: "Search Indian Movies | FLIXYFY" },
+};
+
 export function movieCanonicalUrl(movie: MovieDetail, routeKey: string): string {
   const canonicalKey = movie.canonical_movie_id || routeKey;
   return `${SITE_ORIGIN}/movie/${encodeURIComponent(canonicalKey)}`;
