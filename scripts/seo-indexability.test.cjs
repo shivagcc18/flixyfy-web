@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { CORE_PATHS, sitemapEntry } = require("./generate-sitemap-v9.cjs");
+const { CORE_PATHS, sitemapEntry, validateMovieEntries } = require("./generate-sitemap-v9.cjs");
 
 test("generated movie sitemap entries use canonical www movie routes without query strings", () => {
   const entry = sitemapEntry({ canonical_movie_id: "TMDB:123", domain: "current", updated_at: "2026-09-30 12:00:00" });
@@ -14,8 +14,13 @@ test("core sitemap contains only implemented static routes", () => {
   assert.equal(new Set(CORE_PATHS).size, CORE_PATHS.length);
 });
 
+test("duplicate movie sitemap URLs are detected", () => {
+  const entry = sitemapEntry({ canonical_movie_id: "TMDB:123", domain: "current" });
+  assert.equal(validateMovieEntries([entry, entry]).duplicate_urls, 1);
+});
+
 test("movie metadata has a canonical www URL and factual title structure", async () => {
-  const { movieMetadata, movieCanonicalUrl } = await import("../src/lib/movie-seo.ts");
+  const { movieMetadata, movieCanonicalUrl, SEARCH_METADATA } = await import("../src/lib/movie-seo.ts");
   const movie = {
     canonical_movie_id: "TMDB:123",
     tmdb_id: 123,
@@ -34,6 +39,10 @@ test("movie metadata has a canonical www URL and factual title structure", async
   assert.equal(metadata.title.absolute, "Example Film (2024) – Where to Watch in India | FLIXYFY");
   assert.equal(metadata.alternates.canonical, "https://www.flixyfy.com/movie/TMDB%3A123");
   assert.equal(metadata.openGraph.url, "https://www.flixyfy.com/movie/TMDB%3A123");
+  assert.equal(SEARCH_METADATA.robots.index, false);
+  assert.equal(SEARCH_METADATA.robots.follow, true);
+  assert.equal(SEARCH_METADATA.alternates.canonical, null);
+  assert.equal(SEARCH_METADATA.openGraph.url, "https://www.flixyfy.com/search");
 });
 
 test("Movie JSON-LD emits only supported fields and remains safe to parse", async () => {

@@ -1,12 +1,8 @@
 import { Suspense } from "react";
 import SearchPageClient from "@/components/SearchPageClient";
+import { SEARCH_METADATA } from "@/lib/movie-seo";
 
-export const metadata = {
-  title: "Search Indian Movies",
-  description: "Search FLIXYFY's movie catalog by title, people, language, year and provider.",
-  robots: { index: false, follow: true },
-  alternates: { canonical: null },
-};
+export const metadata = SEARCH_METADATA;
 
 export default function SearchPage() {
   return (
