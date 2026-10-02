@@ -119,6 +119,8 @@ export default function HomeClient() {
       try {
         const response = await apiFetch<HomeDiscoveryPayload>(
           "/api/v4/discovery/home",
+          15000,
+          "default",
         );
         const languageKeys = ["te", "hi", "ta", "kn", "ml"] as const;
         const languages = response.languages;
