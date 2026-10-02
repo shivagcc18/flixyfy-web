@@ -31,7 +31,9 @@ export default function ProviderButtons({
     <div className={compact ? "provider-buttons compact" : "provider-buttons"}>
       {approved.map((provider) => {
         const isYouTube = "media_kind" in provider && provider.media_kind === "youtube";
-        const presentation = providerPresentation(provider.provider_key, provider.provider_name);
+        const presentation = isYouTube
+          ? providerPresentation("youtube", "YouTube")
+          : providerPresentation(provider.provider_key, provider.provider_name);
         const label = `Watch on ${presentation.label}`;
         return (
           <a
@@ -42,7 +44,11 @@ export default function ProviderButtons({
             key={itemKey(provider)}
             aria-label={label}
           >
-            <ProviderLogo providerKey={provider.provider_key} providerName={provider.provider_name} compact />
+            <ProviderLogo
+              providerKey={isYouTube ? "youtube" : provider.provider_key}
+              providerName={isYouTube ? "YouTube" : provider.provider_name}
+              compact
+            />
             <span>{label}</span>
             {isYouTube
               ? <PlayCircle size={compact ? 13 : 16} aria-hidden="true" />
