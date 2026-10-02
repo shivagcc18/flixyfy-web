@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://flixyfy.com/</loc>
-    <lastmod>2026-06-21</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
+    <loc>https://www.flixyfy.com/</loc>
   </url>
   <url>
-    <loc>https://flixyfy.com/about</loc>
-    <lastmod>2026-06-21</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <loc>https://www.flixyfy.com/providers</loc>
   </url>
   <url>
-    <loc>https://flixyfy.com/contact</loc>
-    <lastmod>2026-06-21</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <loc>https://www.flixyfy.com/contact</loc>
+  </url>
+  <url>
+    <loc>https://www.flixyfy.com/privacy</loc>
+  </url>
+  <url>
+    <loc>https://www.flixyfy.com/terms</loc>
+  </url>
+  <url>
+    <loc>https://www.flixyfy.com/copyright</loc>
   </url>
 </urlset>

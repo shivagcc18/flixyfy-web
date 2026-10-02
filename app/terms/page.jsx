@@ -1,5 +1,11 @@
 import Link from "next/link";
 
+export const metadata = {
+  title: "Terms of Service",
+  description: "Review the terms for using FLIXYFY's movie discovery and third-party watch links.",
+  alternates: { canonical: "/terms" },
+};
+
 export default function Page() {
   return (
     <main style={{minHeight:"100vh",background:"#070707",color:"#eee",padding:"100px 20px 60px"}}>

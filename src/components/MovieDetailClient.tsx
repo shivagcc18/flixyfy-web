@@ -10,6 +10,7 @@ import {
   normalizePosterUrl,
   type AvailabilityOption,
   type Movie,
+  type MovieDetail as ApiMovieDetail,
   type Provider,
 } from "@/lib/api";
 import AppShell from "./AppShell";
@@ -38,7 +39,7 @@ type BackendMovieDetail = MovieDetail & {
   youtube_versions?: AvailabilityOption[];
 };
 
-export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
+export default function MovieDetailClient({ tmdbId, initialMovie }: { tmdbId: string; initialMovie?: ApiMovieDetail | null }) {
   const searchParams = useSearchParams();
   const domainParam = searchParams?.get("domain") ?? null;
 
@@ -53,12 +54,18 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
     requestKey: string;
     movie: MovieDetail | null;
     error: string;
-  } | null>(null);
+  } | null>(() => initialMovie ? { requestKey, movie: initialMovie, error: "" } : null);
   const [posterFailedFor, setPosterFailedFor] = useState("");
 
   useEffect(() => {
     let active = true;
 
+    if (initialMovie) {
+      setResult({ requestKey, movie: initialMovie, error: "" });
+      return () => {
+        active = false;
+      };
+    }
 
     const normalizeMovieDetail = (response: BackendMovieDetail): MovieDetail => {
       const ott = (response.providers ?? []).map((item) => ({
@@ -152,7 +159,7 @@ export default function MovieDetailClient({ tmdbId }: { tmdbId: string }) {
     return () => {
       active = false;
     };
-  }, [requestKey, requestedDomain, tmdbId]);
+  }, [requestKey, requestedDomain, tmdbId, initialMovie]);
 
   const movie = result?.requestKey === requestKey ? result.movie : null;
   const error = result?.requestKey === requestKey ? result.error : "";
