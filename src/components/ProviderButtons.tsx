@@ -1,6 +1,8 @@
 import { ExternalLink, PlayCircle } from "lucide-react";
 import type { AvailabilityOption, Provider } from "@/lib/api";
 import { approvedProviderActions } from "@/lib/providerActions.mjs";
+import { providerPresentation } from "@/lib/providerPresentation";
+import ProviderLogo from "./ProviderLogo";
 
 type ProviderButtonItem = Provider | AvailabilityOption;
 
@@ -29,7 +31,8 @@ export default function ProviderButtons({
     <div className={compact ? "provider-buttons compact" : "provider-buttons"}>
       {approved.map((provider) => {
         const isYouTube = "media_kind" in provider && provider.media_kind === "youtube";
-        const label = provider.button_label || `Watch on ${provider.provider_name}`;
+        const presentation = providerPresentation(provider.provider_key, provider.provider_name);
+        const label = `Watch on ${presentation.label}`;
         return (
           <a
             className={`provider-button${isYouTube ? " youtube-provider-button" : ""}`}
@@ -39,6 +42,7 @@ export default function ProviderButtons({
             key={itemKey(provider)}
             aria-label={label}
           >
+            <ProviderLogo providerKey={provider.provider_key} providerName={provider.provider_name} compact />
             <span>{label}</span>
             {isYouTube
               ? <PlayCircle size={compact ? 13 : 16} aria-hidden="true" />

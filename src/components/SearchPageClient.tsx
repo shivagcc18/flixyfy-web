@@ -6,6 +6,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   apiFetch,
   intelligenceMovieToMovie,
+  normalizeBackdropUrl,
+  normalizePosterUrl,
   type Movie,
   type PersonEntityResponse,
   type PersonIntelligenceResponse,
@@ -24,12 +26,27 @@ type ProviderFilter = {
 };
 
 type MovieListResponse = {
-  items?: Movie[];
-  results?: Movie[];
+  items?: ApiMovie[];
+  results?: ApiMovie[];
   total: number;
   page?: number;
   limit: number;
+  person_resolution?: {
+    resolved_person_ids?: string[];
+    resolved_person_names?: string[];
+    ambiguous?: boolean;
+  } | null;
 };
+
+type ApiMovie = Movie & { poster?: string | null; backdrop?: string | null };
+
+function normalizeSearchMovie(movie: ApiMovie): Movie {
+  return {
+    ...movie,
+    poster_url: normalizePosterUrl(movie.poster ?? movie.poster_url) || null,
+    backdrop_url: normalizeBackdropUrl(movie.backdrop ?? movie.backdrop_url) || null,
+  };
+}
 
 const languageOptions = [
   { value: "", label: "Any language" },
@@ -188,36 +205,63 @@ export default function SearchPageClient() {
         }
         if (sort === "popular") filterParams.set("sort", sort);
 
-        let selectedPerson: PersonSearchEntity | null = null;
-        if (query.trim()) {
-          try {
-            const rawPersonQuery = query.trim().replace(/\s+/g, " ");
-            const personLookupQuery =
-              rawPersonQuery
-                .replace(/^(?:movies?|films?)\s+(?:of|by|with)\s+/i, "")
-                .replace(/\s+(?:movies?|films?|filmography)\s*$/i, "")
-                .trim() || rawPersonQuery;
+        const movieParams = new URLSearchParams(filterParams);
+        if (query.trim()) movieParams.set("q", query.trim());
+        if (query.trim() && sort === "relevance") movieParams.set("sort", sort);
+        const moviePath = query.trim()
+          ? `/api/v4/search?${movieParams.toString()}`
+          : `/api/v4/movies?${movieParams.toString()}`;
 
+        let selectedPerson: PersonSearchEntity | null = null;
+        let movieResponse: MovieListResponse | null = null;
+        if (personId) {
+          try {
             const entityResponse = await apiFetch<PersonEntityResponse>(
-              `/api/v1/search/entities?q=${encodeURIComponent(personLookupQuery)}`,
+              `/api/v1/search/entities?q=${encodeURIComponent(query.trim())}`,
             );
             if (!active) return;
             const candidates = entityResponse.items ?? entityResponse.entities ?? [];
-            selectedPerson = personId
-              ? candidates.find((person) => person.person_id === personId) ?? null
-              : null;
-
-            if (!selectedPerson && !personId) {
-              const resolution = resolvePersonQuery(personLookupQuery, candidates);
+            selectedPerson = candidates.find((person) => person.person_id === personId) ?? null;
+          } catch {
+            // Keep an explicit person route usable if its entity lookup is unavailable.
+          }
+        } else {
+          movieResponse = await apiFetch<MovieListResponse>(moviePath);
+          if (!active) return;
+          const personResolution = movieResponse.person_resolution;
+          const personIds = personResolution?.resolved_person_ids ?? [];
+          const personNames = personResolution?.resolved_person_names ?? [];
+          if (personResolution && !personResolution.ambiguous && personIds.length === 1 && personNames[0]) {
+            selectedPerson = {
+              entity_type: "person",
+              person_id: personIds[0],
+              display_name: personNames[0],
+              aliases: [],
+            };
+          } else if (personResolution?.ambiguous) {
+            const rawPersonQuery = query.trim().replace(/\s+/g, " ");
+            const personLookupQuery = rawPersonQuery
+              .replace(/^(?:movies?|films?)\s+(?:of|by|with)\s+/i, "")
+              .replace(/\s+(?:movies?|films?|filmography)\s*$/i, "")
+              .trim() || rawPersonQuery;
+            try {
+              const entityResponse = await apiFetch<PersonEntityResponse>(
+                `/api/v1/search/entities?q=${encodeURIComponent(personLookupQuery)}`,
+              );
+              if (!active) return;
+              const resolution = resolvePersonQuery(
+                personLookupQuery,
+                entityResponse.items ?? entityResponse.entities ?? [],
+              );
               if (resolution.kind === "person") selectedPerson = resolution.person;
               if (resolution.kind === "choices") {
                 setPeople(resolution.people);
                 setResult({ key: requestKey, data: null, error: "" });
                 return;
               }
+            } catch {
+              // Ambiguous matches fall back to the ordinary movie results.
             }
-          } catch {
-            // Entity resolution is an enhancement; ordinary movie search remains available.
           }
         }
 
@@ -252,15 +296,9 @@ export default function SearchPageClient() {
           return;
         }
 
-        const movieParams = new URLSearchParams(filterParams);
-        if (query.trim()) movieParams.set("q", query.trim());
-        if (query.trim() && sort === "relevance") movieParams.set("sort", sort);
-        const path = query.trim()
-          ? `/api/v4/search?${movieParams.toString()}`
-          : `/api/v4/movies?${movieParams.toString()}`;
-        const response = await apiFetch<MovieListResponse>(path);
+        const response = movieResponse ?? await apiFetch<MovieListResponse>(moviePath);
         if (!active) return;
-        const items = response.items ?? response.results ?? [];
+        const items = (response.items ?? response.results ?? []).map(normalizeSearchMovie);
         const limit = response.limit || 48;
         setPeople([]);
         setResult({

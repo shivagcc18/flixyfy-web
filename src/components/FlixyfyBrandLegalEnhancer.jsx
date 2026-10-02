@@ -367,8 +367,7 @@ function installSearchFetchAccelerator() {
 
     const hostOk =
       url.hostname === window.location.hostname ||
-      url.hostname.includes("flixyfy-api") ||
-      url.hostname.includes("railway.app");
+      url.hostname.includes("flixyfy-api");
 
     return hostOk && url.pathname.toLowerCase().includes("search");
   }

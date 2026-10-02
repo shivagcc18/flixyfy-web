@@ -215,7 +215,7 @@ export async function apiFetch<T>(path: string, timeoutMs = 15000): Promise<T> {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(`${API_BASE}${path}`, {
+    const response = await fetch(path, {
       cache: "no-store",
       signal: controller.signal,
     });
