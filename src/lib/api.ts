@@ -208,7 +208,11 @@ export type SearchResponse = {
   };
 };
 
-export async function apiFetch<T>(path: string, timeoutMs = 15000): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  timeoutMs = 15000,
+  cache: "default" | "no-store" = "no-store",
+): Promise<T> {
   if (!API_BASE) {
     throw new Error("NEXT_PUBLIC_FLIXYFY_API_URL is required for production API requests");
   }
@@ -216,7 +220,7 @@ export async function apiFetch<T>(path: string, timeoutMs = 15000): Promise<T> {
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(path, {
-      cache: "no-store",
+      cache,
       signal: controller.signal,
     });
     if (!response.ok) {
