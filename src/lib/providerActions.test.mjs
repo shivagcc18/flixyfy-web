@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { approvedProviderActions, normalizeAvailabilityType } from "./providerActions.mjs";
+import { approvedProviderActions, normalizeAvailabilityType, providerActionIsNavigable } from "./providerActions.mjs";
 
 test("availability type case variants normalize consistently", () => {
   for (const [upper, lower] of [
@@ -54,6 +54,18 @@ test("different providers never deduplicate against each other", () => {
 test("an unknown provider without a logo remains an eligible action", () => {
   const unknown = action("regional_service_without_logo");
   assert.equal(approvedProviderActions([unknown])[0].button_url, unknown.button_url);
+});
+
+test("accepted label-only provider remains visible without becoming clickable", () => {
+  const labelOnly = { ...action("regional_service_without_logo"), button_url: null, navigation_kind: "LABEL_ONLY" };
+  assert.deepEqual(approvedProviderActions([labelOnly]), [labelOnly]);
+  assert.equal(providerActionIsNavigable(labelOnly), false);
+});
+
+test("provider fallback search and home routes remain clickable", () => {
+  assert.equal(providerActionIsNavigable(action("store", "RENT")), true);
+  assert.equal(providerActionIsNavigable({ ...action("home", "FLATRATE"), navigation_kind: "HOME" }), true);
+  assert.equal(providerActionIsNavigable({ ...action("bad", "FLATRATE"), navigation_kind: "UNAVAILABLE" }), false);
 });
 
 test("provider-filtered search and detail retain the same provider truth", () => {

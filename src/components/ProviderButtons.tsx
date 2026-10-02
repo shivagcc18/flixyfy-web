@@ -1,6 +1,6 @@
 import { ExternalLink, PlayCircle } from "lucide-react";
 import type { AvailabilityOption, Provider } from "@/lib/api";
-import { approvedProviderActions } from "@/lib/providerActions.mjs";
+import { approvedProviderActions, providerActionIsNavigable } from "@/lib/providerActions.mjs";
 import { providerPresentation } from "@/lib/providerPresentation";
 import ProviderLogo from "./ProviderLogo";
 
@@ -35,25 +35,29 @@ export default function ProviderButtons({
           ? providerPresentation("youtube", "YouTube")
           : providerPresentation(provider.provider_key, provider.provider_name);
         const label = `Watch on ${presentation.label}`;
-        return (
-          <a
-            className={`provider-button${isYouTube ? " youtube-provider-button" : ""}`}
-            href={provider.button_url ?? undefined}
-            target="_blank"
-            rel="noreferrer"
-            key={itemKey(provider)}
-            aria-label={label}
-          >
+        const canNavigate = providerActionIsNavigable(provider);
+        const className = `provider-button${isYouTube ? " youtube-provider-button" : ""}${canNavigate ? "" : " provider-button-label-only"}`;
+        const content = (
+          <>
             <ProviderLogo
               providerKey={isYouTube ? "youtube" : provider.provider_key}
               providerName={isYouTube ? "YouTube" : provider.provider_name}
               compact
             />
             <span>{label}</span>
-            {isYouTube
-              ? <PlayCircle size={compact ? 13 : 16} aria-hidden="true" />
-              : <ExternalLink size={compact ? 13 : 16} aria-hidden="true" />}
+            {canNavigate ? isYouTube
+              ? <PlayCircle size={compact ? 15 : 16} aria-hidden="true" />
+              : <ExternalLink size={compact ? 15 : 16} aria-hidden="true" /> : null}
+          </>
+        );
+        return canNavigate ? (
+          <a className={className} href={provider.button_url ?? undefined} target="_blank" rel="noreferrer" key={itemKey(provider)} aria-label={label}>
+            {content}
           </a>
+        ) : (
+          <span className={className} key={itemKey(provider)} aria-label={label} aria-disabled="true" title={`${label} — no approved provider route is available`}>
+            {content}
+          </span>
         );
       })}
     </div>

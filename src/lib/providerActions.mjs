@@ -1,22 +1,22 @@
-const navigableKinds = new Set(["DIRECT", "SEARCH", "HOME"]);
 const approvedTypes = new Set(["flatrate", "rent", "buy", "free", "ads"]);
+const navigableKinds = new Set(["DIRECT", "SEARCH", "HOME"]);
 
 export function normalizeAvailabilityType(value) {
   return String(value ?? "").trim().toLowerCase();
 }
 
-function isApprovedNavigable(item) {
-  return Boolean(
-    item.button_url &&
-      navigableKinds.has(item.navigation_kind) &&
-      approvedTypes.has(normalizeAvailabilityType(item.availability_type)),
-  );
+export function providerActionIsNavigable(item) {
+  return Boolean(item.button_url && navigableKinds.has(String(item.navigation_kind ?? "").toUpperCase()));
+}
+
+function isApprovedDisplay(item) {
+  return approvedTypes.has(normalizeAvailabilityType(item.availability_type));
 }
 
 export function approvedProviderActions(providers, maxItems) {
   const seen = new Set();
   return providers
-    .filter(isApprovedNavigable)
+    .filter(isApprovedDisplay)
     .filter((provider) => {
       const isYouTube = "media_kind" in provider && provider.media_kind === "youtube";
       const dedupeKey = isYouTube
