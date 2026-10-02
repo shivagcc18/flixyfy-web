@@ -1,5 +1,11 @@
 import Link from "next/link";
 
+export const metadata = {
+  title: "Copyright and Takedown",
+  description: "Learn how to report an inaccurate or problematic third-party link on FLIXYFY.",
+  alternates: { canonical: "/copyright" },
+};
+
 export default function Page() {
   return (
     <main style={{minHeight:"100vh",background:"#070707",color:"#eee",padding:"100px 20px 60px"}}>

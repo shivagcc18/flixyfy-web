@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sitemap": "node scripts/generate-sitemap-v9.cjs",
+    "test:seo": "node --experimental-strip-types --test scripts/seo-indexability.test.cjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.4",

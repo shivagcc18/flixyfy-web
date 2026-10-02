@@ -1,15 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>https://flixyfy.com/sitemaps/core.xml</loc>
-    <lastmod>2026-06-15</lastmod>
+    <loc>https://www.flixyfy.com/sitemaps/core.xml</loc>
   </sitemap>
   <sitemap>
-    <loc>https://flixyfy.com/sitemaps/languages.xml</loc>
-    <lastmod>2026-06-15</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>https://flixyfy.com/sitemaps/movies_1.xml</loc>
-    <lastmod>2026-06-15</lastmod>
+    <loc>https://www.flixyfy.com/sitemaps/movies_1.xml</loc>
   </sitemap>
 </sitemapindex>
