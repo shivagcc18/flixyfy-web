@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Film, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import {
   apiFetch,
   normalizeBackdropUrl,
@@ -440,42 +440,6 @@ export default function HomeClient() {
   </div>
 </div>
 {/* FLIXYFY_HERO_STARS_V1_END */}
-
-        <section
-          className="content-section poster-section target-primary-rail"
-          aria-labelledby="discover-india-title"
-        >
-          <div className="section-heading target-section-heading">
-            <div>
-              <small>DISCOVER</small>
-              <h2 id="discover-india-title">Trending in India</h2>
-            </div>
-            <a href="/search">
-              Explore all <ArrowRight size={16} aria-hidden="true" />
-            </a>
-          </div>
-
-          {currentItems.length > 0 ? (
-            <div
-              className="poster-row target-poster-row"
-              tabIndex={0}
-              aria-label="Trending in India"
-            >
-              {currentItems.slice(0, 12).map((movie) => (
-                <MovieCard movie={movie} key={movie.canonical_movie_id} />
-              ))}
-            </div>
-          ) : (
-            <div className="target-home-data-state">
-              <Film size={21} aria-hidden="true" />
-              <span>
-                {homeError
-                  ? "Movie data is temporarily unavailable."
-                  : "Loading Indian movies..."}
-              </span>
-            </div>
-          )}
-        </section>
 
         <div id="language-movies" className="v3-language-movie-groups">
         {[

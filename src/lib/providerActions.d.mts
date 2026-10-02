@@ -8,6 +8,7 @@ export type ProviderAction = {
 };
 
 export function normalizeAvailabilityType(value: unknown): string;
+export function providerActionIsNavigable(item: ProviderAction): boolean;
 export function approvedProviderActions<T extends ProviderAction>(
   providers: T[],
   maxItems?: number,

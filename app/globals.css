@@ -342,12 +342,20 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,[t
 .youtube-kicker{color:#ff6680}
 
 .provider-buttons{display:flex;flex-wrap:wrap;gap:8px}
-.provider-buttons.compact{display:grid;margin-top:8px}
+.provider-buttons.compact{display:flex;flex-wrap:wrap;margin-top:8px}
 .provider-button{
-  min-height:40px;padding:0 12px;border:1px solid rgba(255,213,74,.24);border-radius:10px;
+  min-height:44px;padding:0 12px;border:1px solid rgba(255,213,74,.24);border-radius:10px;
   color:var(--text);background:rgba(255,213,74,.06);
-  display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:12px;font-weight:750;transition:.16s ease
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:12px;font-weight:750;transition:.16s ease;
+  white-space:nowrap;max-width:100%;flex:0 1 auto;line-height:1.2
 }
+.provider-button>span:not(.provider-logo):not(.provider-logo-fallback){white-space:nowrap}
+.provider-button-label-only{cursor:default;opacity:.88}
+.provider-button-label-only:hover{background:rgba(255,213,74,.06);color:var(--text);border-color:rgba(255,213,74,.24)}
+.provider-logo,.provider-logo-fallback{width:32px;height:28px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center}
+.provider-logo img{display:block;width:100%;height:100%;object-fit:contain}
+.provider-logo-fallback{border-radius:5px;color:var(--cyan);font-size:11px;font-weight:850;letter-spacing:.02em}
+.provider-logo.compact,.provider-logo-fallback.compact{width:28px;height:24px}
 .provider-button:hover{background:var(--cyan);color:#050505;border-color:var(--cyan)}
 .youtube-provider-button{border-color:rgba(255,0,51,.28);background:rgba(255,0,51,.07)}
 .youtube-provider-button:hover{background:#ff335c;border-color:#ff335c;color:white}
@@ -469,6 +477,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,[t
   }
   .mobile-nav a{display:grid;place-items:center;gap:1px;border-radius:12px;color:var(--text-muted);font-size:9px}
   .mobile-nav a.active{background:rgba(255,213,74,.1);color:var(--cyan)}
+  .provider-logo.compact,.provider-logo-fallback.compact{width:26px;height:24px}
 }
 
 @media(min-width:1500px){
