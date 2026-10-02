@@ -1,5 +1,5 @@
 const navigableKinds = new Set(["DIRECT", "SEARCH", "HOME"]);
-const approvedTypes = new Set(["flatrate", "rent", "buy", "free"]);
+const approvedTypes = new Set(["flatrate", "rent", "buy", "free", "ads"]);
 
 export function normalizeAvailabilityType(value) {
   return String(value ?? "").trim().toLowerCase();
