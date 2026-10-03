@@ -153,7 +153,6 @@ export default function PeopleLandingClient() {
 
         {PEOPLE_LANGUAGES.map(({ slug, name, subtitle }) => {
           const group = groups[slug] ?? emptyGroup();
-          if (!group.loading && !group.people.length && !group.error) return null;
           return (
             <section className="people-language-section" key={slug} aria-labelledby={`people-${slug}`}>
               <header className="people-language-heading">
@@ -169,6 +168,8 @@ export default function PeopleLandingClient() {
                 <div className="people-loading" role="status"><LoaderCircle size={18} className="people-spinner" aria-hidden="true" /> Gathering names from the catalog…</div>
               ) : group.error ? (
                 <p className="people-empty" role="status">This language group could not be loaded right now.</p>
+              ) : !group.people.length ? (
+                <p className="people-empty" role="status">No results were returned for this language by the current People endpoint.</p>
               ) : (
                 <>
                   <div className="people-portrait-rail">

@@ -164,7 +164,10 @@ export default function SearchPageClient() {
     error: string;
   }>({ key: "", data: null, error: "" });
   const [providers, setProviders] = useState<ProviderFilter[]>([]);
+  const providersRef = useRef<ProviderFilter[]>([]);
   const [people, setPeople] = useState<PersonSearchEntity[]>([]);
+  const [filmographyExhausted, setFilmographyExhausted] = useState(false);
+  const [searchRetry, setSearchRetry] = useState(0);
   const [filmographyPerson, setFilmographyPerson] = useState<{ key: string; name: string; roles: string[] } | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -181,7 +184,10 @@ export default function SearchPageClient() {
     let active = true;
     apiFetch<{ items?: ProviderFilter[] }>("/api/v4/providers")
       .then((response) => {
-        if (active) setProviders(response.items ?? []);
+        if (active) {
+          providersRef.current = response.items ?? [];
+          setProviders(providersRef.current);
+        }
       })
       .catch(() => {
         if (active) setProviders([]);
@@ -211,7 +217,7 @@ export default function SearchPageClient() {
       };
       try {
         const filterParams = new URLSearchParams();
-        filterParams.set("limit", "48");
+        filterParams.set("limit", personId ? "100" : "48");
         if (provider) filterParams.set("provider", provider);
         if (language) filterParams.set("language", language);
         if (genre) filterParams.set("genre", genre);
@@ -231,17 +237,8 @@ export default function SearchPageClient() {
         let selectedPerson: PersonSearchEntity | null = null;
         let movieResponse: MovieListResponse | null = null;
         if (personId) {
-          try {
-            const entityResponse = await apiFetch<PersonEntityResponse>(
-              `/api/v1/search/entities?q=${encodeURIComponent(query.trim())}`,
-            );
-            if (!active) return;
-            const candidates = entityResponse.items ?? entityResponse.entities ?? [];
-            selectedPerson = candidates.find((person) => person.person_id === personId) ?? null;
-          } catch {
-            // Keep an explicit person route usable if its entity lookup is unavailable.
-          }
-          selectedPerson ??= {
+          // A supplied stable ID is authoritative. The query text is a display label only.
+          selectedPerson = {
             entity_type: "person",
             person_id: personId,
             display_name: query.trim() || `Person ${personId}`,
@@ -289,7 +286,7 @@ export default function SearchPageClient() {
 
         const providerName = provider === "youtube"
           ? "YouTube"
-          : providers.find((item) => item.provider_key === provider)?.provider_name ?? provider;
+          : providersRef.current.find((item) => item.provider_key === provider)?.provider_name ?? provider;
 
         if (selectedPerson) {
           setFilmographyPerson({
@@ -318,6 +315,7 @@ export default function SearchPageClient() {
           });
           data.intent_summary = `Filmography for ${selectedPerson.display_name}`;
           data.entities.people = [entityFromValue(selectedPerson.person_id, selectedPerson.display_name)];
+          setFilmographyExhausted(items.length < (response.limit || 100));
           recordSearch(data.total);
           setPeople([]);
           setResult({ key: requestKey, error: "", data });
@@ -362,10 +360,10 @@ export default function SearchPageClient() {
     return () => {
       active = false;
     };
-  }, [query, personId, provider, language, genre, year, sort, shouldSearch, requestKey, providers]);
+  }, [query, personId, provider, language, genre, year, sort, shouldSearch, requestKey, searchRetry]);
 
   async function loadMore() {
-    if (!data || loadingMore || data.items.length >= data.total) return;
+    if (!data || loadingMore || (data.items.length >= data.total && (!personId || filmographyExhausted))) return;
     setLoadingMore(true);
     try {
       const page = Math.floor(data.offset / data.limit) + 2;
@@ -380,11 +378,11 @@ export default function SearchPageClient() {
         nextParams.set("year_to", year);
       }
       if (sort !== "relevance") nextParams.set("sort", sort);
-      if (query.trim()) nextParams.set("q", query.trim());
 
       let nextMovies: Movie[];
       let nextTotal = data.total;
       const selectedPersonId = personId || data.entities.people[0]?.key;
+      if (query.trim() && !selectedPersonId) nextParams.set("q", query.trim());
       const loadedBefore = data.items.length;
       if (selectedPersonId) {
         const personParams = new URLSearchParams(nextParams);
@@ -392,6 +390,7 @@ export default function SearchPageClient() {
         const response = await apiFetch<PersonIntelligenceResponse>(`/api/v1/search/intelligence?${personParams.toString()}`);
         nextMovies = (response.items ?? response.results ?? response.movies ?? []).map(intelligenceMovieToMovie);
         nextTotal = response.total ?? nextTotal;
+        setFilmographyExhausted(nextMovies.length < (response.limit || data.limit));
       } else {
         const endpoint = query.trim() ? "/api/v4/search" : "/api/v4/movies";
         const response = await apiFetch<MovieListResponse>(`${endpoint}?${nextParams.toString()}`);
@@ -599,13 +598,14 @@ export default function SearchPageClient() {
 
         {error ? (
           <section className="error-panel">
-            <h2>Search failed</h2>
+            <h2>{personId ? "Filmography could not be loaded" : "Search failed"}</h2>
             <p>{error}</p>
+            {personId ? <button type="button" onClick={() => { setResult({ key: "", data: null, error: "" }); setSearchRetry((value) => value + 1); }}>Try again</button> : null}
           </section>
         ) : null}
 
         {loading && !data && !error ? (
-          <div className="skeleton-grid" aria-label="Loading search results" aria-busy="true">
+          <div className="skeleton-grid" aria-label={personId ? "Loading filmography" : "Loading search results"} aria-busy="true">
             {Array.from({ length: 12 }, (_, index) => <span key={index} />)}
           </div>
         ) : null}
@@ -640,8 +640,9 @@ export default function SearchPageClient() {
               <div>
                 <small>{personId ? "FILMOGRAPHY" : "RESULTS"}</small>
                 {personId ? <h2>Filmography</h2> : <h2>{data.total.toLocaleString()} movies</h2>}
-                {personId ? <p className="people-filmography-count">{data.total.toLocaleString()} movies in the current catalog</p> : null}
-                <p className="mt-1 text-sm text-neutral-400">Showing {Math.min(data.items.length, data.total).toLocaleString()} of {data.total.toLocaleString()}</p>
+                {personId ? <p className="people-filmography-count">{data.items.length.toLocaleString()} movie results returned by the current serving API</p> : null}
+                <p className="mt-1 text-sm text-neutral-400">{personId ? `Showing ${data.items.length.toLocaleString()} returned results` : `Showing ${Math.min(data.items.length, data.total).toLocaleString()} of ${data.total.toLocaleString()}`}</p>
+                {personId && data.items.length >= 100 && !filmographyExhausted ? <p className="people-filmography-count" role="status">A further page may be available from the serving API.</p> : null}
               </div>
             </div>
 
@@ -654,11 +655,11 @@ export default function SearchPageClient() {
             ) : (
               <section className="search-empty">
                 <SearchX size={36} aria-hidden="true" />
-                <h2>No matching movie found</h2>
-                <p>Remove one filter or try a shorter movie or person name.</p>
+                <h2>{personId ? "No filmography available" : "No matching movie found"}</h2>
+                <p>{personId ? "The current serving API returned no movies for this Person ID." : "Remove one filter or try a shorter movie or person name."}</p>
               </section>
             )}
-            {data.items.length < data.total ? (
+            {data.items.length < data.total || (personId && data.items.length >= 100 && !filmographyExhausted) ? (
               <div className="mt-6 flex justify-center">
                 <button type="button" className="load-more-button rounded-md border border-amber-400 px-5 py-3 text-sm font-semibold text-amber-200 transition hover:bg-amber-300 hover:text-black disabled:opacity-60" onClick={() => void loadMore()} disabled={loadingMore}>
                   {loadingMore ? "Loading…" : "Load more"}

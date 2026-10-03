@@ -26,6 +26,7 @@ test("People landing is data-driven across the five requested language groups", 
   assert.match(client, /api\/v4\/historical\/people/);
   assert.match(client, /api\/v4\/people/);
   assert.match(client, /people-portrait-rail/);
+  assert.match(client, /No results were returned for this language by the current People endpoint/);
 });
 
 test("person cards preserve stable IDs in the filmography route", async () => {
@@ -38,6 +39,22 @@ test("person cards preserve stable IDs in the filmography route", async () => {
   assert.match(search, /\/api\/v1\/search\/intelligence/);
   assert.match(search, /FILMOGRAPHY/);
   assert.match(search, /person_result_opened|trackPersonResultOpened/);
+  const directIdBranch = search.split("if (personId) {")[1]?.split("} else {")[0] ?? "";
+  assert.match(directIdBranch, /person_id: personId/);
+  assert.doesNotMatch(directIdBranch, /search\/entities|resolvePersonQuery/);
+  assert.match(search, /filterParams\.set\("limit", personId \? "100" : "48"\)/);
+  assert.match(search, /The current serving API returned no movies for this Person ID/);
+  assert.match(search, /Filmography could not be loaded/);
+  assert.match(search, /setSearchRetry\(\(value\) => value \+ 1\)/);
+});
+
+test("a full Person page offers a next-page check instead of assuming the count is complete", async () => {
+  const search = await read("../components/SearchPageClient.tsx");
+  assert.match(search, /filmographyExhausted/);
+  assert.match(search, /personId && data\.items\.length >= 100 && !filmographyExhausted/);
+  assert.match(search, /personParams\.set\("person_id", selectedPersonId\)/);
+  assert.match(search, /setFilmographyExhausted\(nextMovies\.length < \(response\.limit \|\| data\.limit\)\)/);
+  assert.match(search, /if \(query\.trim\(\) && !selectedPersonId\) nextParams\.set\("q", query\.trim\(\)\)/);
 });
 
 test("catalog merge de-duplicates only by stable ID and initials are a safe portrait fallback", () => {
