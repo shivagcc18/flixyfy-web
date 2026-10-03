@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RotateCcw, SearchX, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -19,6 +19,7 @@ import { resolvePersonQuery } from "@/lib/person-search";
 import AppShell from "./AppShell";
 import MovieCard from "./MovieCard";
 import SearchInput from "./SearchInput";
+import { claimEvent, hashEventKey, trackFilterApplied, trackLoadMore, trackNoResultSearch, trackPersonResultOpened, trackSearch } from "@/lib/analytics";
 
 type ProviderFilter = {
   provider_key: string;
@@ -166,6 +167,7 @@ export default function SearchPageClient() {
   const [people, setPeople] = useState<PersonSearchEntity[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const trackedSearchKeys = useRef(new Set<string>());
 
   const hasFilters = Boolean(language || year || genre || provider || (safeParams.has("sort") && sort !== "relevance"));
   const shouldSearch = Boolean(query.trim() || hasFilters || personId);
@@ -198,6 +200,27 @@ export default function SearchPageClient() {
     }
 
     async function search() {
+      const recordSearch = (resultCount: number) => {
+        if (!query.trim()) return;
+        const eventKey = hashEventKey(requestKey);
+        if (claimEvent(trackedSearchKeys.current, eventKey)) {
+          trackSearch(query, {
+            resultCount,
+            searchSource: personId ? "person_search" : "search_page",
+            languageFilter: language,
+            yearFilter: year,
+            providerFilter: provider,
+          });
+        }
+        if (resultCount === 0 && claimEvent(trackedSearchKeys.current, `${eventKey}:none`)) {
+          trackNoResultSearch(query, {
+            searchSource: personId ? "person_search" : "search_page",
+            languageFilter: language,
+            yearFilter: year,
+            providerFilter: provider,
+          });
+        }
+      };
       try {
         const filterParams = new URLSearchParams();
         filterParams.set("limit", "48");
@@ -296,6 +319,7 @@ export default function SearchPageClient() {
           });
           data.intent_summary = `Filmography for ${selectedPerson.display_name}`;
           data.entities.people = [entityFromValue(selectedPerson.person_id, selectedPerson.display_name)];
+          recordSearch(data.total);
           setPeople([]);
           setResult({ key: requestKey, error: "", data });
           return;
@@ -305,6 +329,7 @@ export default function SearchPageClient() {
         if (!active) return;
         const items = (response.items ?? response.results ?? []).map(normalizeSearchMovie);
         const limit = response.limit || 48;
+        recordSearch(response.total);
         setPeople([]);
         setResult({
           key: requestKey,
@@ -360,6 +385,7 @@ export default function SearchPageClient() {
       let nextMovies: Movie[];
       let nextTotal = data.total;
       const selectedPersonId = personId || data.entities.people[0]?.key;
+      const loadedBefore = data.items.length;
       if (selectedPersonId) {
         const personParams = new URLSearchParams(nextParams);
         personParams.set("person_id", selectedPersonId);
@@ -372,6 +398,14 @@ export default function SearchPageClient() {
         nextMovies = (response.items ?? response.results ?? []).map(normalizeSearchMovie);
         nextTotal = response.total ?? nextTotal;
       }
+      const currentIds = new Set(data.items.map((movie) => movie.canonical_movie_id));
+      const appendedCount = nextMovies.filter((movie) => !currentIds.has(movie.canonical_movie_id)).length;
+      trackLoadMore("search", loadedBefore, loadedBefore + appendedCount, {
+        language_filter: language || "all",
+        year_filter: year || "all",
+        provider_filter: provider || "all",
+        genre_filter: genre || "all",
+      });
       setResult((current) => {
         if (current.key !== requestKey || !current.data) return current;
         const existing = new Set(current.data.items.map((movie) => movie.canonical_movie_id));
@@ -396,6 +430,10 @@ export default function SearchPageClient() {
   }
 
   function setFilter(name: string, value: string) {
+    const currentValue = name === "year"
+      ? safeParams.get("year") ?? safeParams.get("year_from") ?? ""
+      : safeParams.get(name) ?? "";
+    if (currentValue === value) return;
     const next = new URLSearchParams(paramsKey);
     if (value) next.set(name, value);
     else next.delete(name);
@@ -405,17 +443,20 @@ export default function SearchPageClient() {
       next.delete("year_to");
     }
 
+    trackFilterApplied(name === "year" ? "year" : name, value || "all", "search");
     const qs = next.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname ?? "/search");
   }
 
   function choosePerson(person: PersonSearchEntity) {
+    trackPersonResultOpened(person.person_id);
     const next = new URLSearchParams(paramsKey);
     next.set("person_id", person.person_id);
     router.push(`${pathname ?? "/search"}?${next.toString()}`);
   }
 
   function resetFilters() {
+    if (hasFilters) trackFilterApplied("reset", "all", "search");
     const next = new URLSearchParams();
     if (query.trim()) next.set("q", query.trim());
     if (personId) next.set("person_id", personId);

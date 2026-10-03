@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { movieRoute, normalizePosterUrl, type Movie } from "@/lib/api";
+import { trackMovieOpened } from "@/lib/analytics";
 
 export default function MovieCard({ movie }: { movie: Movie }) {
   const [posterFailed, setPosterFailed] = useState(false);
+  const pathname = usePathname();
   const route = movieRoute(movie);
   const language =
     movie.language_name ?? movie.original_language ?? "Language unknown";
@@ -17,6 +20,13 @@ export default function MovieCard({ movie }: { movie: Movie }) {
       className="movie-card"
       href={route}
       aria-label={`Open ${movie.title}, ${year}, ${language}`}
+      onClick={() => trackMovieOpened({
+        canonicalMovieId: movie.canonical_movie_id,
+        tmdbId: movie.tmdb_id,
+        movieLanguage: movie.original_language ?? movie.language_name,
+        releaseYear: movie.release_year,
+        sourceContext: pathname === "/" ? "home" : pathname?.startsWith("/search") ? "search" : "movie_list",
+      })}
     >
       <span className="poster-wrap">
         {posterUrl && !posterFailed ? (

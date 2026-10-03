@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import AppShell from "./AppShell";
 import ProviderLogo from "./ProviderLogo";
 import { providerPresentation } from "@/lib/providerPresentation";
+import { trackFilterApplied } from "@/lib/analytics";
 
 type ProviderRow = {
   provider_key: string;
@@ -77,6 +78,7 @@ export default function ProviderDirectoryClient() {
               key={provider.provider_key}
               href={`/search?provider=${encodeURIComponent(provider.provider_key)}`}
               aria-label={`Browse ${presentation.label} movies`}
+              onClick={() => trackFilterApplied("provider", provider.provider_key, "provider_directory")}
             >
               <ProviderLogo providerKey={provider.provider_key} providerName={provider.provider_name} />
               <div className="provider-wordmark-large">{presentation.label}</div>

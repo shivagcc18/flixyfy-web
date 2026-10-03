@@ -10,6 +10,7 @@ import {
   type Movie,
 } from "@/lib/api";
 import AppShell from "./AppShell";
+import { trackFilterApplied, trackMovieOpened } from "@/lib/analytics";
 import MovieCard from "./MovieCard";
 import SearchInput from "./SearchInput";
 
@@ -385,6 +386,17 @@ export default function HomeClient() {
                 <a
                   href={shortcut.href}
                   key={shortcut.label}
+                  onClick={() => {
+                    try {
+                      const target = new URL(shortcut.href, window.location.origin);
+                      for (const key of ["language", "year", "provider"]) {
+                        const value = target.searchParams.get(key);
+                        if (value) trackFilterApplied(key, value, "home_discovery");
+                      }
+                    } catch {
+                      // Discovery shortcuts remain navigable if analytics cannot parse the target.
+                    }
+                  }}
                 >
                   {shortcut.label}
                 </a>
@@ -413,6 +425,13 @@ export default function HomeClient() {
                       className={"target-hero-poster target-hero-poster-" + (index + 1)}
                       key={movie.canonical_movie_id}
                       aria-label={"Open " + movie.title}
+                      onClick={() => trackMovieOpened({
+                        canonicalMovieId: movie.canonical_movie_id,
+                        tmdbId: movie.tmdb_id,
+                        movieLanguage: movie.original_language ?? movie.language_name,
+                        releaseYear: movie.release_year,
+                        sourceContext: "home_hero",
+                      })}
                     >
                       <img
                         src={movie.poster_url || ""}
@@ -467,7 +486,10 @@ export default function HomeClient() {
                 <small>DISCOVER</small>
                 <h2 id={`section-${section.key}`}>{section.title}</h2>
               </div>
-              <a href={section.key === "new-releases" ? `/search?year=${new Date().getFullYear()}` : section.key === "classics" ? "/search?q=Indian%20classics" : "language" in section ? `/search?language=${section.language}` : "/search"}>
+              <a href={section.key === "new-releases" ? `/search?year=${new Date().getFullYear()}` : section.key === "classics" ? "/search?q=Indian%20classics" : "language" in section ? `/search?language=${section.language}` : "/search"} onClick={() => {
+                if (section.key === "new-releases") trackFilterApplied("year", String(new Date().getFullYear()), "home_section");
+                if ("language" in section) trackFilterApplied("language", section.language, "home_section");
+              }}>
                 View all <ArrowRight size={16} aria-hidden="true" />
               </a>
             </div>

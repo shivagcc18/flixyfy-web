@@ -3,6 +3,7 @@ import type { AvailabilityOption, Provider } from "@/lib/api";
 import { approvedProviderActions, providerActionIsNavigable } from "@/lib/providerActions.mjs";
 import { providerPresentation } from "@/lib/providerPresentation";
 import ProviderLogo from "./ProviderLogo";
+import { trackProviderClicked, trackYoutubeClicked, type MovieAnalyticsContext } from "@/lib/analytics";
 
 type ProviderButtonItem = Provider | AvailabilityOption;
 
@@ -16,10 +17,12 @@ export default function ProviderButtons({
   providers,
   compact = false,
   maxItems,
+  movieContext,
 }: {
   providers: ProviderButtonItem[];
   compact?: boolean;
   maxItems?: number;
+  movieContext?: MovieAnalyticsContext;
 }) {
   const approved = approvedProviderActions(providers, maxItems);
 
@@ -29,7 +32,7 @@ export default function ProviderButtons({
 
   return (
     <div className={compact ? "provider-buttons compact" : "provider-buttons"}>
-      {approved.map((provider) => {
+      {approved.map((provider, index) => {
         const isYouTube = "media_kind" in provider && provider.media_kind === "youtube";
         const presentation = isYouTube
           ? providerPresentation("youtube", "YouTube")
@@ -51,7 +54,11 @@ export default function ProviderButtons({
           </>
         );
         return canNavigate ? (
-          <a className={className} href={provider.button_url ?? undefined} target="_blank" rel="noreferrer" key={itemKey(provider)} aria-label={label}>
+          <a className={className} href={provider.button_url ?? undefined} target="_blank" rel="noreferrer" key={itemKey(provider)} aria-label={label} onClick={() => {
+            if (!movieContext) return;
+            if (isYouTube) trackYoutubeClicked(movieContext, index + 1);
+            else trackProviderClicked(movieContext, presentation.label, provider.availability_type, provider.navigation_kind);
+          }}>
             {content}
           </a>
         ) : (

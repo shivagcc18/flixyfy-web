@@ -265,13 +265,25 @@ export default function MovieDetailClient({ tmdbId, initialMovie }: { tmdbId: st
               <section className="watch-panel ott-panel" aria-labelledby="ott-watch-title">
                 <span className="section-kicker">WHERE TO WATCH IN INDIA</span>
                 <h2 id="ott-watch-title">OTT and store options</h2>
-                <ProviderButtons providers={ottProviders} />
+                <ProviderButtons providers={ottProviders} movieContext={{
+                  canonicalMovieId: movie.canonical_movie_id,
+                  tmdbId: movie.tmdb_id,
+                  movieLanguage: movie.original_language ?? movie.language_name,
+                  releaseYear: movie.release_year,
+                  sourceContext: "movie_detail",
+                }} />
               </section>
 
               <section className="watch-panel youtube-panel" aria-labelledby="youtube-watch-title">
                 <span className="section-kicker youtube-kicker">WATCH FREE ON YOUTUBE</span>
                 <h2 id="youtube-watch-title">Full-movie links</h2>
-                <ProviderButtons providers={youtubeAvailability} maxItems={3} />
+                <ProviderButtons providers={youtubeAvailability} maxItems={3} movieContext={{
+                  canonicalMovieId: movie.canonical_movie_id,
+                  tmdbId: movie.tmdb_id,
+                  movieLanguage: movie.original_language ?? movie.language_name,
+                  releaseYear: movie.release_year,
+                  sourceContext: "movie_detail",
+                }} />
               </section>
             </div>
           </div>
