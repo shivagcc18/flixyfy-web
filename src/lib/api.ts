@@ -18,6 +18,7 @@ export type Provider = {
   provider_key: string;
   provider_name: string;
   availability_type: string;
+  provider_type?: string | null;
   provider_category?: string | null;
   button_url: string | null;
   button_label: string;

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import FlixyfyBrandLegalEnhancer from "../src/components/FlixyfyBrandLegalEnhancer"; // FLIXYFY_SEARCH_PROVIDER_BRAND_PROD_FIX_V1_0_1_LINT_LAYOUT_REPAIR
+import AnalyticsRuntime from "@/components/AnalyticsRuntime";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,7 +57,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}      <FlixyfyBrandLegalEnhancer />{/* FLIXYFY_SEARCH_PROVIDER_BRAND_PROD_FIX_V1_0_1_LINT_LAYOUT_REPAIR */}
+      <body className="min-h-full flex flex-col">{children}<AnalyticsRuntime /><FlixyfyBrandLegalEnhancer />{/* FLIXYFY_SEARCH_PROVIDER_BRAND_PROD_FIX_V1_0_1_LINT_LAYOUT_REPAIR */}
 </body>
     </html>
   );
