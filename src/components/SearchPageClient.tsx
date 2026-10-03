@@ -609,7 +609,7 @@ export default function SearchPageClient() {
             )}
             {data.items.length < data.total ? (
               <div className="mt-6 flex justify-center">
-                <button type="button" className="rounded-md border border-amber-400 px-5 py-3 text-sm font-semibold text-amber-200 transition hover:bg-amber-300 hover:text-black disabled:opacity-60" onClick={() => void loadMore()} disabled={loadingMore}>
+                <button type="button" className="load-more-button rounded-md border border-amber-400 px-5 py-3 text-sm font-semibold text-amber-200 transition hover:bg-amber-300 hover:text-black disabled:opacity-60" onClick={() => void loadMore()} disabled={loadingMore}>
                   {loadingMore ? "Loading…" : "Load more"}
                 </button>
               </div>
