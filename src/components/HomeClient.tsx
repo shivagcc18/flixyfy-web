@@ -372,8 +372,8 @@ export default function HomeClient() {
             </div>
 
             <h1 id="target-home-title">
-              <span>Indian movies in every language.</span>
-              <strong>Know where to watch.</strong>
+              <span className="flixyfy-metallic-gold">Indian movies in every language.</span>
+              <strong className="flixyfy-metallic-gold">Know where to watch.</strong>
             </h1>
 
             <SearchInput large />
@@ -484,7 +484,7 @@ export default function HomeClient() {
             <div className="section-heading target-section-heading">
               <div>
                 <small>DISCOVER</small>
-                <h2 id={`section-${section.key}`}>{section.title}</h2>
+                <h2 id={`section-${section.key}`} className="flixyfy-metallic-gold">{section.title}</h2>
               </div>
               <a href={section.key === "new-releases" ? `/search?year=${new Date().getFullYear()}` : section.key === "classics" ? "/search?q=Indian%20classics" : "language" in section ? `/search?language=${section.language}` : "/search"} onClick={() => {
                 if (section.key === "new-releases") trackFilterApplied("year", String(new Date().getFullYear()), "home_section");

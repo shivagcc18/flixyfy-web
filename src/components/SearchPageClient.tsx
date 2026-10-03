@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { RotateCcw, SearchX, SlidersHorizontal, Sparkles, X } from "lucide-react";
+import { RotateCcw, SearchX, SlidersHorizontal, Sparkles, UserRound, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   apiFetch,
@@ -165,6 +165,7 @@ export default function SearchPageClient() {
   }>({ key: "", data: null, error: "" });
   const [providers, setProviders] = useState<ProviderFilter[]>([]);
   const [people, setPeople] = useState<PersonSearchEntity[]>([]);
+  const [filmographyPerson, setFilmographyPerson] = useState<{ key: string; name: string; roles: string[] } | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const trackedSearchKeys = useRef(new Set<string>());
@@ -240,6 +241,12 @@ export default function SearchPageClient() {
           } catch {
             // Keep an explicit person route usable if its entity lookup is unavailable.
           }
+          selectedPerson ??= {
+            entity_type: "person",
+            person_id: personId,
+            display_name: query.trim() || `Person ${personId}`,
+            aliases: [],
+          };
         } else {
           movieResponse = await apiFetch<MovieListResponse>(moviePath);
           if (!active) return;
@@ -285,6 +292,11 @@ export default function SearchPageClient() {
           : providers.find((item) => item.provider_key === provider)?.provider_name ?? provider;
 
         if (selectedPerson) {
+          setFilmographyPerson({
+            key: requestKey,
+            name: selectedPerson.display_name,
+            roles: selectedPerson.roles ?? [],
+          });
           const intelligenceParams = new URLSearchParams(filterParams);
           intelligenceParams.set("person_id", selectedPerson.person_id);
           const response = await apiFetch<PersonIntelligenceResponse>(
@@ -314,6 +326,7 @@ export default function SearchPageClient() {
 
         const response = movieResponse ?? await apiFetch<MovieListResponse>(moviePath);
         if (!active) return;
+        setFilmographyPerson(null);
         const items = (response.items ?? response.results ?? []).map(normalizeSearchMovie);
         const limit = response.limit || 48;
         recordSearch(response.total);
@@ -599,6 +612,16 @@ export default function SearchPageClient() {
 
         {data ? (
           <>
+            {personId ? (
+              <section className="people-filmography-hero" aria-labelledby="filmography-person-name">
+                <span className="people-filmography-avatar" aria-hidden="true"><UserRound size={38} strokeWidth={1.35} /></span>
+                <div>
+                  <p>PERSON</p>
+                  <h1 id="filmography-person-name">{filmographyPerson?.key === requestKey ? filmographyPerson.name : data.entities.people[0]?.name ?? query}</h1>
+                  {filmographyPerson?.key === requestKey && filmographyPerson.roles.length ? <p>{filmographyPerson.roles.join(" · ")}</p> : null}
+                </div>
+              </section>
+            ) : null}
             {chips.length ? (
               <section className="intelligence-panel">
                 <div className="intelligence-title">
@@ -615,8 +638,9 @@ export default function SearchPageClient() {
 
             <div className="results-toolbar">
               <div>
-                <small>RESULTS</small>
-                <h2>{data.total.toLocaleString()} movies</h2>
+                <small>{personId ? "FILMOGRAPHY" : "RESULTS"}</small>
+                {personId ? <h2>Filmography</h2> : <h2>{data.total.toLocaleString()} movies</h2>}
+                {personId ? <p className="people-filmography-count">{data.total.toLocaleString()} movies in the current catalog</p> : null}
                 <p className="mt-1 text-sm text-neutral-400">Showing {Math.min(data.items.length, data.total).toLocaleString()} of {data.total.toLocaleString()}</p>
               </div>
             </div>

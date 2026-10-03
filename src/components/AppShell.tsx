@@ -3,15 +3,14 @@
 import type React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Languages, Search, Tv2, Users } from "lucide-react";
+import { House, Search, Tv2, Users } from "lucide-react";
 import { useEffect } from "react";
 import FlixyfyLogo from "./FlixyfyLogo";
 
 const navigation = [
   { href: "/", label: "Home", icon: House },
   { href: "/search", label: "Search", icon: Search },
-  { href: "/search?mode=people", label: "People", icon: Users },
-  { href: "/#language-title", label: "Languages", icon: Languages },
+  { href: "/people", label: "People", icon: Users },
   { href: "/providers", label: "Providers", icon: Tv2 },
 ] as const;
 
@@ -145,7 +144,7 @@ export default function AppShell({
                   aria-current={active ? "page" : undefined}
                 >
                   <Icon aria-hidden="true" size={18} />
-                  <span>{label}</span>
+                  <span className={active ? "flixyfy-metallic-gold" : undefined}>{label}</span>
                 </Link>
               );
             })}
@@ -186,7 +185,7 @@ export default function AppShell({
               aria-current={active ? "page" : undefined}
             >
               <Icon aria-hidden="true" size={19} />
-              <span>{label}</span>
+              <span className={active ? "flixyfy-metallic-gold" : undefined}>{label}</span>
             </Link>
           );
         })}

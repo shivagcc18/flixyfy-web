@@ -48,7 +48,7 @@ export default function MovieCard({ movie }: { movie: Movie }) {
       </span>
 
       <span className="movie-card-body">
-        <strong className="movie-card-title">{movie.title}</strong>
+        <strong className="movie-card-title flixyfy-metallic-gold">{movie.title}</strong>
         <span className="movie-card-meta">
           <span className="movie-card-year">{year}</span>
           <span className="movie-card-meta-separator" aria-hidden="true">·</span>
