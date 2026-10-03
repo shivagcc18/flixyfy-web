@@ -57,7 +57,7 @@ export default function ProviderButtons({
           <a className={className} href={provider.button_url ?? undefined} target="_blank" rel="noreferrer" key={itemKey(provider)} aria-label={label} onClick={() => {
             if (!movieContext) return;
             if (isYouTube) trackYoutubeClicked(movieContext, index + 1);
-            else trackProviderClicked(movieContext, presentation.label, provider.availability_type, provider.navigation_kind);
+            else trackProviderClicked(movieContext, presentation.label, provider.provider_type ?? provider.availability_type, provider.navigation_kind);
           }}>
             {content}
           </a>

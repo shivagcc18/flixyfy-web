@@ -117,6 +117,34 @@ export function trackNoResultSearch(searchTerm: unknown, context: Omit<SearchAna
   });
 }
 
+/** Emit one search result pair per logical request, including across effect replay. */
+export function trackSearchResultsOnce(
+  seen: Set<string>,
+  requestKey: string,
+  searchTerm: unknown,
+  resultCount: number,
+  context: Omit<SearchAnalyticsContext, "resultCount"> = {},
+): void {
+  if (!sanitizeSearchTerm(searchTerm)) return;
+  const eventKey = hashEventKey(requestKey);
+  if (claimEvent(seen, eventKey)) trackSearch(searchTerm, { ...context, resultCount });
+  if (resultCount === 0 && claimEvent(seen, `${eventKey}:none`)) {
+    trackNoResultSearch(searchTerm, context);
+  }
+}
+
+/** Track only a real filter change, not a rerender or a repeated selected value. */
+export function trackFilterChange(
+  currentValue: string,
+  nextValue: string,
+  filterType: string,
+  surface = "search",
+): boolean {
+  if (currentValue === nextValue) return false;
+  trackFilterApplied(filterType, nextValue || "all", surface);
+  return true;
+}
+
 export function trackMovieOpened(movie: MovieAnalyticsContext): void {
   emit("movie_opened", {
     canonical_movie_id: safeValue(movie.canonicalMovieId),

@@ -19,7 +19,7 @@ import { resolvePersonQuery } from "@/lib/person-search";
 import AppShell from "./AppShell";
 import MovieCard from "./MovieCard";
 import SearchInput from "./SearchInput";
-import { claimEvent, hashEventKey, trackFilterApplied, trackLoadMore, trackNoResultSearch, trackPersonResultOpened, trackSearch } from "@/lib/analytics";
+import { trackFilterApplied, trackFilterChange, trackLoadMore, trackPersonResultOpened, trackSearchResultsOnce } from "@/lib/analytics";
 
 type ProviderFilter = {
   provider_key: string;
@@ -201,25 +201,12 @@ export default function SearchPageClient() {
 
     async function search() {
       const recordSearch = (resultCount: number) => {
-        if (!query.trim()) return;
-        const eventKey = hashEventKey(requestKey);
-        if (claimEvent(trackedSearchKeys.current, eventKey)) {
-          trackSearch(query, {
-            resultCount,
-            searchSource: personId ? "person_search" : "search_page",
-            languageFilter: language,
-            yearFilter: year,
-            providerFilter: provider,
-          });
-        }
-        if (resultCount === 0 && claimEvent(trackedSearchKeys.current, `${eventKey}:none`)) {
-          trackNoResultSearch(query, {
-            searchSource: personId ? "person_search" : "search_page",
-            languageFilter: language,
-            yearFilter: year,
-            providerFilter: provider,
-          });
-        }
+        trackSearchResultsOnce(trackedSearchKeys.current, requestKey, query, resultCount, {
+          searchSource: personId ? "person_search" : "search_page",
+          languageFilter: language,
+          yearFilter: year,
+          providerFilter: provider,
+        });
       };
       try {
         const filterParams = new URLSearchParams();
@@ -433,7 +420,7 @@ export default function SearchPageClient() {
     const currentValue = name === "year"
       ? safeParams.get("year") ?? safeParams.get("year_from") ?? ""
       : safeParams.get(name) ?? "";
-    if (currentValue === value) return;
+    if (!trackFilterChange(currentValue, value, name === "year" ? "year" : name, "search")) return;
     const next = new URLSearchParams(paramsKey);
     if (value) next.set(name, value);
     else next.delete(name);
@@ -443,7 +430,6 @@ export default function SearchPageClient() {
       next.delete("year_to");
     }
 
-    trackFilterApplied(name === "year" ? "year" : name, value || "all", "search");
     const qs = next.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname ?? "/search");
   }
