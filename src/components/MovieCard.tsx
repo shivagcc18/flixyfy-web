@@ -50,7 +50,9 @@ export default function MovieCard({ movie }: { movie: Movie }) {
       <span className="movie-card-body">
         <strong className="movie-card-title">{movie.title}</strong>
         <span className="movie-card-meta">
-          {year} · {language}
+          <span className="movie-card-year">{year}</span>
+          <span className="movie-card-meta-separator" aria-hidden="true">·</span>
+          <span className="movie-card-language">{language}</span>
         </span>
       </span>
     </Link>
