@@ -1,9 +1,8 @@
 import { Suspense } from "react";
 import SearchPageClient from "@/components/SearchPageClient";
+import { SEARCH_METADATA } from "@/lib/movie-seo";
 
-export const metadata = {
-  title: "Search intelligence",
-};
+export const metadata = SEARCH_METADATA;
 
 export default function SearchPage() {
   return (

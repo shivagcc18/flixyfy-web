@@ -1,5 +1,11 @@
 import Link from "next/link";
 
+export const metadata = {
+  title: "Contact",
+  description: "Report a movie identity, availability, third-party link or copyright concern to FLIXYFY.",
+  alternates: { canonical: "/contact" },
+};
+
 export default function Page() {
   return (
     <main style={{minHeight:"100vh",background:"#070707",color:"#eee",padding:"100px 20px 60px"}}>

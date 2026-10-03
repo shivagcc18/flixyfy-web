@@ -1,5 +1,11 @@
 import Link from "next/link";
 
+export const metadata = {
+  title: "Privacy Policy",
+  description: "Read FLIXYFY's current privacy information for its movie discovery service.",
+  alternates: { canonical: "/privacy" },
+};
+
 export default function Page() {
   return (
     <main style={{minHeight:"100vh",background:"#070707",color:"#eee",padding:"100px 20px 60px"}}>
