@@ -75,6 +75,7 @@ const genreOptions = [
 const sortOptions = [
   { value: "relevance", label: "Relevance" },
   { value: "popular", label: "Popularity" },
+  { value: "newest", label: "Newest" },
 ];
 
 const currentYear = new Date().getFullYear();
@@ -151,7 +152,10 @@ export default function SearchPageClient() {
   const genre = safeParams.get("genre") ?? "";
   const provider = safeParams.get("provider") ?? "";
   const personId = safeParams.get("person_id") ?? "";
-  const sort = safeParams.get("sort") === "popular" ? "popular" : "relevance";
+  const rawSort = safeParams.get("sort");
+  const sort = rawSort === "popular" || rawSort === "newest" || rawSort === "relevance"
+    ? rawSort
+    : query.trim() ? "relevance" : "newest";
 
   const [result, setResult] = useState<{
     key: string;
@@ -161,8 +165,9 @@ export default function SearchPageClient() {
   const [providers, setProviders] = useState<ProviderFilter[]>([]);
   const [people, setPeople] = useState<PersonSearchEntity[]>([]);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const hasFilters = Boolean(language || year || genre || provider || sort !== "relevance");
+  const hasFilters = Boolean(language || year || genre || provider || (safeParams.has("sort") && sort !== "relevance"));
   const shouldSearch = Boolean(query.trim() || hasFilters || personId);
   const requestKey = [query.trim(), personId, language, year, genre, provider, sort].join("\u0001");
   const data = result.key === requestKey ? result.data : null;
@@ -203,7 +208,7 @@ export default function SearchPageClient() {
           filterParams.set("year_from", year);
           filterParams.set("year_to", year);
         }
-        if (sort === "popular") filterParams.set("sort", sort);
+        if (sort !== "relevance") filterParams.set("sort", sort);
 
         const movieParams = new URLSearchParams(filterParams);
         if (query.trim()) movieParams.set("q", query.trim());
@@ -334,6 +339,62 @@ export default function SearchPageClient() {
     };
   }, [query, personId, provider, language, genre, year, sort, shouldSearch, requestKey, providers]);
 
+  async function loadMore() {
+    if (!data || loadingMore || data.items.length >= data.total) return;
+    setLoadingMore(true);
+    try {
+      const page = Math.floor(data.offset / data.limit) + 2;
+      const nextParams = new URLSearchParams();
+      nextParams.set("page", String(page));
+      nextParams.set("limit", String(data.limit));
+      if (provider) nextParams.set("provider", provider);
+      if (language) nextParams.set("language", language);
+      if (genre) nextParams.set("genre", genre);
+      if (year) {
+        nextParams.set("year_from", year);
+        nextParams.set("year_to", year);
+      }
+      if (sort !== "relevance") nextParams.set("sort", sort);
+      if (query.trim()) nextParams.set("q", query.trim());
+
+      let nextMovies: Movie[];
+      let nextTotal = data.total;
+      const selectedPersonId = personId || data.entities.people[0]?.key;
+      if (selectedPersonId) {
+        const personParams = new URLSearchParams(nextParams);
+        personParams.set("person_id", selectedPersonId);
+        const response = await apiFetch<PersonIntelligenceResponse>(`/api/v1/search/intelligence?${personParams.toString()}`);
+        nextMovies = (response.items ?? response.results ?? response.movies ?? []).map(intelligenceMovieToMovie);
+        nextTotal = response.total ?? nextTotal;
+      } else {
+        const endpoint = query.trim() ? "/api/v4/search" : "/api/v4/movies";
+        const response = await apiFetch<MovieListResponse>(`${endpoint}?${nextParams.toString()}`);
+        nextMovies = (response.items ?? response.results ?? []).map(normalizeSearchMovie);
+        nextTotal = response.total ?? nextTotal;
+      }
+      setResult((current) => {
+        if (current.key !== requestKey || !current.data) return current;
+        const existing = new Set(current.data.items.map((movie) => movie.canonical_movie_id));
+        const appended = nextMovies.filter((movie) => !existing.has(movie.canonical_movie_id));
+        return {
+          ...current,
+          data: {
+            ...current.data,
+            items: [...current.data.items, ...appended],
+            total: nextTotal,
+            offset: (page - 1) * current.data.limit,
+          },
+        };
+      });
+    } catch (reason: unknown) {
+      setResult((current) => current.key === requestKey
+        ? { ...current, error: reason instanceof Error ? reason.message : "Could not load more results" }
+        : current);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
   function setFilter(name: string, value: string) {
     const next = new URLSearchParams(paramsKey);
     if (value) next.set(name, value);
@@ -383,9 +444,9 @@ export default function SearchPageClient() {
       year ? { key: "year", label: year } : null,
       genre ? { key: "genre", label: genre } : null,
       provider ? { key: "provider", label: providerName } : null,
-      sort !== "relevance" ? { key: "sort", label: "Popularity" } : null,
+      safeParams.has("sort") && sort !== "relevance" ? { key: "sort", label: sort === "newest" ? "Newest" : "Popularity" } : null,
     ].filter((item): item is { key: string; label: string } => Boolean(item));
-  }, [language, year, genre, provider, sort, providers]);
+  }, [language, year, genre, provider, sort, providers, safeParams]);
 
   return (
     <AppShell>
@@ -529,6 +590,7 @@ export default function SearchPageClient() {
               <div>
                 <small>RESULTS</small>
                 <h2>{data.total.toLocaleString()} movies</h2>
+                <p className="mt-1 text-sm text-neutral-400">Showing {Math.min(data.items.length, data.total).toLocaleString()} of {data.total.toLocaleString()}</p>
               </div>
             </div>
 
@@ -545,6 +607,15 @@ export default function SearchPageClient() {
                 <p>Remove one filter or try a shorter movie or person name.</p>
               </section>
             )}
+            {data.items.length < data.total ? (
+              <div className="mt-6 flex justify-center">
+                <button type="button" className="rounded-md border border-amber-400 px-5 py-3 text-sm font-semibold text-amber-200 transition hover:bg-amber-300 hover:text-black disabled:opacity-60" onClick={() => void loadMore()} disabled={loadingMore}>
+                  {loadingMore ? "Loading…" : "Load more"}
+                </button>
+              </div>
+            ) : data.items.length > 0 ? (
+              <p className="mt-6 text-center text-sm text-neutral-400" role="status">You’ve reached the end of the results.</p>
+            ) : null}
           </>
         ) : null}
       </main>
