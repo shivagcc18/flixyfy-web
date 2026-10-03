@@ -167,6 +167,7 @@ export default function SearchPageClient() {
   const providersRef = useRef<ProviderFilter[]>([]);
   const [people, setPeople] = useState<PersonSearchEntity[]>([]);
   const [filmographyExhausted, setFilmographyExhausted] = useState(false);
+  const [filmographyPaginationLimited, setFilmographyPaginationLimited] = useState(false);
   const [searchRetry, setSearchRetry] = useState(0);
   const [filmographyPerson, setFilmographyPerson] = useState<{ key: string; name: string; roles: string[] } | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -316,6 +317,7 @@ export default function SearchPageClient() {
           data.intent_summary = `Filmography for ${selectedPerson.display_name}`;
           data.entities.people = [entityFromValue(selectedPerson.person_id, selectedPerson.display_name)];
           setFilmographyExhausted(items.length < (response.limit || 100));
+          setFilmographyPaginationLimited(false);
           recordSearch(data.total);
           setPeople([]);
           setResult({ key: requestKey, error: "", data });
@@ -391,6 +393,7 @@ export default function SearchPageClient() {
         nextMovies = (response.items ?? response.results ?? response.movies ?? []).map(intelligenceMovieToMovie);
         nextTotal = response.total ?? nextTotal;
         setFilmographyExhausted(nextMovies.length < (response.limit || data.limit));
+        setFilmographyPaginationLimited(nextMovies.length === 0 && data.items.length >= 100);
       } else {
         const endpoint = query.trim() ? "/api/v4/search" : "/api/v4/movies";
         const response = await apiFetch<MovieListResponse>(`${endpoint}?${nextParams.toString()}`);
@@ -643,6 +646,7 @@ export default function SearchPageClient() {
                 {personId ? <p className="people-filmography-count">{data.items.length.toLocaleString()} movie results returned by the current serving API</p> : null}
                 <p className="mt-1 text-sm text-neutral-400">{personId ? `Showing ${data.items.length.toLocaleString()} returned results` : `Showing ${Math.min(data.items.length, data.total).toLocaleString()} of ${data.total.toLocaleString()}`}</p>
                 {personId && data.items.length >= 100 && !filmographyExhausted ? <p className="people-filmography-count" role="status">A further page may be available from the serving API.</p> : null}
+                {personId && filmographyPaginationLimited ? <p className="people-filmography-count" role="status">The API returned no further page; the full filmography count remains unverified.</p> : null}
               </div>
             </div>
 

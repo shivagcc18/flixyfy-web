@@ -1606,7 +1606,7 @@ main .movie-card-title.flixyfy-metallic-gold {
 
 .site-header { height:88px; }
 .site-header-inner { gap:clamp(14px,2vw,28px); }
-.brand-logo { width:96px; height:96px; max-width:96px; flex:0 0 96px; filter:brightness(1.16) contrast(1.08) saturate(1.08) drop-shadow(0 0 9px rgba(236,183,65,.22)); }
+.brand-logo { width:96px; height:96px; max-width:96px; flex:0 0 96px; filter:brightness(1.18) contrast(1.12) saturate(1.08) drop-shadow(0 0 9px rgba(236,183,65,.22)); }
 .primary-nav a,.header-search { min-height:44px; padding-inline:12px; gap:7px; font-size:14px; }
 .primary-nav a svg,.header-search svg { width:18px; height:18px; }
 .primary-nav { gap:4px; }

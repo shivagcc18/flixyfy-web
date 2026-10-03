@@ -55,6 +55,7 @@ test("a full Person page offers a next-page check instead of assuming the count 
   assert.match(search, /personParams\.set\("person_id", selectedPersonId\)/);
   assert.match(search, /setFilmographyExhausted\(nextMovies\.length < \(response\.limit \|\| data\.limit\)\)/);
   assert.match(search, /if \(query\.trim\(\) && !selectedPersonId\) nextParams\.set\("q", query\.trim\(\)\)/);
+  assert.match(search, /The API returned no further page; the full filmography count remains unverified/);
 });
 
 test("catalog merge de-duplicates only by stable ID and initials are a safe portrait fallback", () => {
@@ -76,6 +77,6 @@ test("four-item mobile navigation and metallic display gold keep white movie yea
   assert.match(css, /\.brand-logo\s*\{\s*width:56px/);
   assert.match(css, /#FFF4A8[^}]+#D28A12/s);
   assert.match(css, /\.movie-card-meta \.movie-card-year\s*\{\s*color:\s*#fff\s*!important/);
-  assert.match(css, /filter:brightness\(1\.16\) contrast\(1\.08\)[^;]*drop-shadow/);
+  assert.match(css, /filter:brightness\(1\.18\) contrast\(1\.12\)[^;]*drop-shadow/);
   assert.match(logo, /\(max-width: 620px\) 56px/);
 });
