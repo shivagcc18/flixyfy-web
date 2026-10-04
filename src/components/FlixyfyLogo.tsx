@@ -9,7 +9,7 @@ export default function FlixyfyLogo() {
       alt="FLIXYFY"
       width={1254}
       height={1254}
-      sizes="(max-width: 620px) 56px, (max-width: 768px) 60px, 96px"
+      sizes="(max-width: 620px) 62px, (max-width: 820px) 66px, (max-width: 1100px) 92px, 102px"
       priority
       className="brand-logo"
     />

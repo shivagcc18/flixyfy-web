@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, LoaderCircle, UserRound } from "lucide-react";
+import { ArrowRight, LoaderCircle, Search, UserRound } from "lucide-react";
 import AppShell from "./AppShell";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, type PersonEntityResponse, type PersonSearchEntity } from "@/lib/api";
 import {
   mergePeopleCatalogs,
   PEOPLE_LANGUAGES,
@@ -47,7 +47,42 @@ function initialsColor(name: string) {
   return value % 3;
 }
 
+function PersonPortrait({ person, name, tone }: { person: PeopleCatalogItem; name: string; tone: number }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageUrl = (() => {
+    const raw = person.photo_url ?? person.profile_image_url ?? person.profile_path;
+    if (!raw) return null;
+    const value = raw.trim();
+    if (value.startsWith("/")) return `https://image.tmdb.org/t/p/w342${value}`;
+    return /^https?:\/\//i.test(value) ? value : null;
+  })();
+
+  return (
+    <span className={`people-portrait people-portrait-tone-${tone}`}>
+      {imageUrl && !imageFailed ? (
+        <img
+          className="people-portrait-image"
+          src={imageUrl}
+          alt={`${name} portrait`}
+          loading="lazy"
+          decoding="async"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <>
+          <span className="people-portrait-inner"><UserRound size={38} strokeWidth={1.35} aria-hidden="true" /></span>
+          <span className="people-initials" aria-hidden="true">{personInitials(name)}</span>
+          <span className="sr-only">Portrait unavailable; initials {personInitials(name)}</span>
+        </>
+      )}
+    </span>
+  );
+}
+
 export default function PeopleLandingClient() {
+  const [query, setQuery] = useState("");
+  const [searchPeople, setSearchPeople] = useState<PersonSearchEntity[]>([]);
+  const [searchState, setSearchState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [groups, setGroups] = useState<PeopleGroups>(() =>
     Object.fromEntries(PEOPLE_LANGUAGES.map(({ slug }) => [slug, emptyGroup()])),
   );
@@ -59,6 +94,36 @@ export default function PeopleLandingClient() {
       : `/api/v4/people?${new URLSearchParams({ ...query, domain }).toString()}`;
     return apiFetch<PeopleCatalogResponse>(path);
   }, []);
+
+  useEffect(() => {
+    const normalizedQuery = query.trim();
+    if (normalizedQuery.length < 2) {
+      setSearchPeople([]);
+      setSearchState("idle");
+      return;
+    }
+
+    let active = true;
+    setSearchState("loading");
+    const timeout = window.setTimeout(() => {
+      apiFetch<PersonEntityResponse>(`/api/v1/search/entities?q=${encodeURIComponent(normalizedQuery)}`)
+        .then((response) => {
+          if (!active) return;
+          setSearchPeople(response.items ?? response.entities ?? []);
+          setSearchState("ready");
+        })
+        .catch(() => {
+          if (!active) return;
+          setSearchPeople([]);
+          setSearchState("error");
+        });
+    }, 250);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
+  }, [query]);
 
   useEffect(() => {
     let active = true;
@@ -132,27 +197,67 @@ export default function PeopleLandingClient() {
     <AppShell>
       <main className="page-content people-page">
         <section className="people-hero" aria-labelledby="people-title">
-          <div className="people-hero-orbit" aria-hidden="true" />
           <div className="people-hero-copy">
-            <span className="people-eyebrow">Cinema legends</span>
-            <h1 id="people-title" className="flixyfy-metallic-gold people-display-gold">The Legends of Indian Cinema</h1>
-            <p>Icons. Stories. Generations. All in one place.</p>
-            <div className="people-hero-rule" aria-hidden="true" />
-            <span className="people-hero-caption">A living history, told through the people behind the films.</span>
+            <span className="people-eyebrow">FLIXYFY directory</span>
+            <h1 id="people-title" className="flixyfy-metallic-gold people-display-gold">Discover People</h1>
+            <p>Stars. Stories. Filmographies.</p>
           </div>
-          <span className="people-hero-word flixyfy-metallic-gold people-display-gold" aria-hidden="true">Legends</span>
         </section>
 
         <div className="people-catalog-heading">
           <div>
             <small>Across languages and generations</small>
-            <h2 className="flixyfy-metallic-gold people-display-gold">Legends</h2>
+            <h2 className="flixyfy-metallic-gold people-display-gold">People</h2>
           </div>
-          <p>Explore the artists connected to FLIXYFY’s film catalog.</p>
+          <p>Find a person and open their filmography.</p>
         </div>
+
+        <section className="people-search-section" aria-label="Search people">
+          <label className="people-search-box">
+            <Search size={21} aria-hidden="true" />
+            <span className="sr-only">Search actors, actresses, directors, and other film people</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search actors, actresses, directors…"
+              autoComplete="off"
+            />
+          </label>
+          {query.trim().length >= 2 ? (
+            <div className="people-search-results" aria-live="polite">
+              {searchState === "loading" ? <p className="people-search-message" role="status">Searching people…</p> : null}
+              {searchState === "error" ? <p className="people-search-message" role="status">People search is unavailable right now.</p> : null}
+              {searchState === "ready" && !searchPeople.length ? <p className="people-search-message" role="status">No people matched that search.</p> : null}
+              {searchPeople.length ? (
+                <div className="people-portrait-rail people-search-rail">
+                  {searchPeople.map((person) => {
+                    const name = person.display_name;
+                    const personId = String(person.person_id);
+                    const cardPerson = { person_id: personId, display_name: name, roles: person.roles };
+                    return (
+                      <a
+                        className="people-person-card"
+                        key={personId}
+                        href={peopleFilmographyHref(cardPerson)}
+                        aria-label={`Open ${name} filmography`}
+                        onClick={() => trackPersonResultOpened(personId, "people_directory_search")}
+                      >
+                        <PersonPortrait person={cardPerson} name={name} tone={initialsColor(name)} />
+                        <strong>{name}</strong>
+                        <span className="people-person-language">{person.disambiguation || person.roles?.join(", ") || "Filmography"}</span>
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
 
         {PEOPLE_LANGUAGES.map(({ slug, name, subtitle }) => {
           const group = groups[slug] ?? emptyGroup();
+          if (!group.loading && !group.people.length) return null;
           return (
             <section className="people-language-section" key={slug} aria-labelledby={`people-${slug}`}>
               <header className="people-language-heading">
@@ -185,10 +290,7 @@ export default function PeopleLandingClient() {
                           aria-label={`Open ${nameText} filmography`}
                           onClick={() => trackPersonResultOpened(personId, "people_legend_card")}
                         >
-                          <span className={`people-portrait people-portrait-tone-${initialsColor(nameText)}`} aria-hidden="true">
-                            <span className="people-portrait-inner"><UserRound size={38} strokeWidth={1.35} aria-hidden="true" /></span>
-                            <span className="people-initials">{personInitials(nameText)}</span>
-                          </span>
+                          <PersonPortrait person={person} name={nameText} tone={initialsColor(nameText)} />
                           <strong>{nameText}</strong>
                           <span className="people-person-language">{name.replace(" Legends", "")}</span>
                           <span className="people-card-arrow" aria-hidden="true"><ArrowRight size={15} /></span>
@@ -198,7 +300,7 @@ export default function PeopleLandingClient() {
                   </div>
                   {group.currentPage * PEOPLE_PAGE_SIZE < group.currentTotal || group.historicalPage * PEOPLE_PAGE_SIZE < group.historicalTotal ? (
                     <button className="people-load-more" type="button" onClick={() => void loadMore(slug)} disabled={group.loading}>
-                      {group.loading ? "Loading…" : "Load more legends"}
+                      {group.loading ? "Loading…" : "Load more people"}
                     </button>
                   ) : null}
                 </>

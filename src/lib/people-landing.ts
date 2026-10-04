@@ -24,11 +24,11 @@ export type PeopleCatalogResponse = {
 };
 
 export const PEOPLE_LANGUAGES: PeopleLanguage[] = [
-  { slug: "te", name: "Telugu Legends", subtitle: "Icons of Telugu cinema" },
-  { slug: "ta", name: "Tamil Legends", subtitle: "Stories from Tamil cinema" },
-  { slug: "kn", name: "Kannada Legends", subtitle: "Generations of Kannada cinema" },
-  { slug: "hi", name: "Hindi Legends", subtitle: "Stars across Hindi cinema" },
-  { slug: "ml", name: "Malayalam Legends", subtitle: "Masters of Malayalam cinema" },
+  { slug: "te", name: "Telugu", subtitle: "People connected to Telugu cinema" },
+  { slug: "hi", name: "Hindi", subtitle: "People connected to Hindi cinema" },
+  { slug: "ta", name: "Tamil", subtitle: "People connected to Tamil cinema" },
+  { slug: "ml", name: "Malayalam", subtitle: "People connected to Malayalam cinema" },
+  { slug: "kn", name: "Kannada", subtitle: "People connected to Kannada cinema" },
 ];
 
 export const PEOPLE_PAGE_SIZE = 24;

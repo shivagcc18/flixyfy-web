@@ -1,8 +1,8 @@
 import PeopleLandingClient from "@/components/PeopleLandingClient";
 
 export const metadata = {
-  title: "Cinema Legends | FLIXYFY",
-  description: "Explore people connected to Indian cinema across FLIXYFY’s film catalog.",
+  title: "People Directory | FLIXYFY",
+  description: "Discover actors, directors, and other people connected to Indian cinema on FLIXYFY.",
   robots: { index: false, follow: true },
 };
 

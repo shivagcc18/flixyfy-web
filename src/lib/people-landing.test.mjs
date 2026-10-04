@@ -19,14 +19,24 @@ test("primary navigation links People and omits Languages", async () => {
   assert.doesNotMatch(appShell, /label: "Languages"|from "lucide-react"[^\n]*Languages/);
 });
 
-test("People landing is data-driven across the five requested language groups", async () => {
+test("People landing is a full directory with data-backed language groups and backend-powered search", async () => {
   const client = await read("../components/PeopleLandingClient.tsx");
-  assert.deepEqual(PEOPLE_LANGUAGES.map(({ slug }) => slug), ["te", "ta", "kn", "hi", "ml"]);
+  assert.deepEqual(PEOPLE_LANGUAGES.map(({ slug }) => slug), ["te", "hi", "ta", "ml", "kn"]);
   assert.match(client, /PEOPLE_LANGUAGES\.map/);
   assert.match(client, /api\/v4\/historical\/people/);
   assert.match(client, /api\/v4\/people/);
+  assert.match(client, /Search actors, actresses, directors/);
+  assert.match(client, /api\/v1\/search\/entities/);
+  assert.match(client, /PersonSearchEntity/);
+  assert.match(client, /people_directory_search/);
   assert.match(client, /people-portrait-rail/);
-  assert.match(client, /No results were returned for this language by the current People endpoint/);
+  assert.match(client, /if \(!group\.loading && !group\.people\.length\) return null/);
+  assert.match(client, /profile_image_url/);
+  assert.match(client, /people-portrait-image/);
+  assert.match(client, /onError=\{\(\) => setImageFailed\(true\)\}/);
+  assert.doesNotMatch(client, /resolvePersonQuery/);
+  assert.match(client, /Discover People/);
+  assert.doesNotMatch(client, /Legends of Indian Cinema|Load more legends/);
 });
 
 test("person cards preserve stable IDs in the filmography route", async () => {
@@ -73,10 +83,11 @@ test("four-item mobile navigation and metallic display gold keep white movie yea
   const css = await read("../../app/globals.css");
   const logo = await read("../components/FlixyfyLogo.tsx");
   assert.match(css, /\.mobile-nav\s*\{\s*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
-  assert.match(css, /\.brand-logo\s*\{\s*width:96px/);
-  assert.match(css, /\.brand-logo\s*\{\s*width:56px/);
+  assert.match(css, /\.brand-logo\s*\{\s*width:102px/);
+  assert.match(css, /\.brand-logo\s*\{\s*width:62px/);
+  assert.match(css, /\.people-portrait\s*\{[^}]*border-color:var\(--legend-gold-ring\)/s);
   assert.match(css, /#FFF4A8[^}]+#D28A12/s);
   assert.match(css, /\.movie-card-meta \.movie-card-year\s*\{\s*color:\s*#fff\s*!important/);
   assert.match(css, /filter:brightness\(1\.18\) contrast\(1\.12\)[^;]*drop-shadow/);
-  assert.match(logo, /\(max-width: 620px\) 56px/);
+  assert.match(logo, /\(max-width: 620px\) 62px/);
 });
