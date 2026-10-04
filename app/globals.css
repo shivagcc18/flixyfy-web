@@ -1764,3 +1764,74 @@ main .movie-card-title.flixyfy-metallic-gold {
   .people-person-card:hover .people-portrait,
   .people-person-card:focus-visible .people-portrait { transform:none; }
 }
+
+/* People Directory provider-density correction */
+.people-page { max-width:1480px; padding-top:14px; padding-bottom:100px; overflow-x:clip; }
+.people-page-heading { display:flex; align-items:center; justify-content:space-between; min-height:54px; margin:0 0 10px; }
+.people-page-heading h1 { margin:0; font-family:Georgia,"Times New Roman",serif; font-size:clamp(27px,2.5vw,36px); font-weight:750; letter-spacing:.025em; line-height:1.1; text-transform:uppercase; }
+.people-page-heading p { margin:4px 0 0; color:#F1E9D8; font-size:14px; letter-spacing:.01em; }
+.people-page .flixyfy-metallic-gold { background-image:linear-gradient(180deg,#FFFBE0 0%,#FFF0A2 17%,#FFE06A 38%,#FFD23F 61%,#F4B92F 82%,#FFE98A 100%); background-blend-mode:normal; text-shadow:0 1px 0 rgba(91,59,5,.4),0 2px 5px rgba(0,0,0,.64),0 0 15px rgba(255,217,90,.2); }
+.people-search-section { margin:8px 0 12px; }
+.people-search-box { min-height:49px; gap:11px; padding:0 14px; border-color:rgba(255,217,90,.48); border-radius:12px; background:#0D0C09; box-shadow:inset 0 1px rgba(255,250,214,.06),0 6px 18px rgba(0,0,0,.18); }
+.people-search-box input { min-height:47px; font-size:15px; }
+.people-search-box input::placeholder { color:#B7AE98!important; }
+.people-language-filters { display:flex; gap:8px; max-width:100%; margin:0 0 18px; overflow-x:auto; padding:2px 2px 7px; scrollbar-width:thin; scrollbar-color:rgba(255,217,90,.38) transparent; }
+.people-language-filters button { flex:0 0 auto; min-height:36px; padding:0 15px; border:1px solid rgba(255,225,112,.35); border-radius:999px; background:rgba(17,15,10,.92); color:#F2EAD8; font-family:inherit; font-size:13px; font-weight:600; line-height:1; cursor:pointer; transition:color .16s ease,border-color .16s ease,background .16s ease,box-shadow .16s ease; }
+.people-language-filters button:hover,.people-language-filters button:focus-visible { border-color:#FFE67B; color:#FFF4C6; outline:2px solid rgba(255,217,90,.64); outline-offset:2px; }
+.people-language-filters button.is-selected { border-color:#FFE47A; background:linear-gradient(180deg,rgba(255,236,148,.18),rgba(213,158,27,.13)); color:#FFF3B8; box-shadow:0 0 16px rgba(255,217,90,.11),inset 0 1px rgba(255,249,211,.16); }
+.people-directory-results { min-height:180px; }
+.people-portrait-rail { grid-auto-columns:clamp(130px,11.5vw,164px); gap:clamp(10px,1.35vw,20px); padding:7px 5px 18px; }
+.people-person-card { min-height:0; gap:7px; padding:5px 4px 9px; border-radius:10px; }
+.people-person-card>strong { color:#FFF7E7!important; font-size:15px; font-weight:650; line-height:1.25; }
+.people-person-card:hover>strong,.people-person-card:focus-visible>strong { color:#FFF1AF!important; }
+.people-person-language { color:#DED4BE!important; font-size:11px; }
+.people-person-card:focus-visible { z-index:1; outline:2px solid #FFE36D; outline-offset:3px; }
+.people-portrait { width:clamp(112px,10vw,148px); border:2px solid #FFD95A; background:radial-gradient(circle at 50% 25%,rgba(255,244,168,.2),rgba(244,185,47,.12) 49%,#0a0906 78%); box-shadow:0 0 0 3px rgba(255,217,90,.16),0 0 18px rgba(255,217,90,.12),0 8px 20px rgba(0,0,0,.4),inset 0 0 18px rgba(255,244,168,.1); }
+.people-portrait-tone-1 { background:radial-gradient(circle at 50% 25%,rgba(255,244,168,.19),rgba(255,217,90,.1) 49%,#090806 78%); }
+.people-portrait-tone-2 { background:radial-gradient(circle at 50% 25%,rgba(255,244,168,.17),rgba(255,217,90,.09) 49%,#090806 78%); }
+.people-portrait-inner { color:rgba(255,244,198,.72); }
+.people-initials { color:#FFF2C7; text-shadow:0 1px 6px rgba(0,0,0,.86); }
+.people-person-card:hover .people-portrait,.people-person-card:focus-visible .people-portrait { transform:scale(1.035); border-color:#FFF4A8; box-shadow:0 0 0 5px rgba(255,217,90,.22),0 0 26px rgba(255,217,90,.28),0 9px 22px rgba(0,0,0,.43); }
+.people-search-message { margin:8px 2px; color:#FFF0B0!important; font-size:14px; }
+.people-empty-state { margin-top:12px; padding:20px 16px; border-color:rgba(255,217,90,.24); color:#FFE27A; }
+.people-empty-state p { color:#EEE4D0; font-size:13px; }
+.people-load-more { margin:3px 5px 0; border-color:rgba(255,217,90,.52); color:#FFF0AF; }
+.people-loading { min-height:100px; color:#EEE4D0; }
+.people-person-card .people-portrait { flex:0 0 auto; }
+@media (min-width:821px) {
+  .people-portrait-rail { grid-auto-columns:clamp(146px,11.4vw,166px); }
+  .people-portrait { width:clamp(132px,10.2vw,150px); }
+}
+@media (min-width:621px) and (max-width:820px) {
+  .people-page { padding-top:11px; }
+  .people-page-heading { min-height:49px; }
+  .people-page-heading h1 { font-size:29px; }
+  .people-page-heading p { font-size:13px; }
+  .people-portrait-rail { grid-auto-columns:138px; gap:11px; }
+  .people-portrait { width:126px; }
+  .people-language-filters { margin-bottom:14px; }
+}
+@media (max-width:620px) {
+  .people-page { width:calc(100% - 24px); padding-top:9px; padding-bottom:92px; }
+  .people-page-heading { min-height:0; margin-bottom:9px; }
+  .people-page-heading h1 { font-size:26px; }
+  .people-page-heading p { max-width:330px; margin-top:3px; font-size:12px; line-height:1.35; }
+  .people-search-section { margin:7px 0 10px; }
+  .people-search-box { min-height:47px; padding-inline:12px; }
+  .people-search-box input { min-height:45px; font-size:14px; }
+  .people-language-filters { gap:7px; margin-bottom:12px; padding-bottom:6px; }
+  .people-language-filters button { min-height:34px; padding-inline:13px; font-size:12px; }
+  .people-portrait-rail,.people-search-rail { grid-auto-columns:116px; gap:9px; padding-inline:2px; }
+  .people-portrait { width:106px; }
+  .people-person-card { gap:6px; padding-inline:3px; }
+  .people-person-card>strong { font-size:13px; }
+  .people-person-language { font-size:10px; }
+}
+@media (max-width:360px) {
+  .people-portrait-rail { grid-auto-columns:108px; gap:7px; }
+  .people-portrait { width:98px; }
+  .people-language-filters button { padding-inline:11px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .people-language-filters button { transition:none; }
+}

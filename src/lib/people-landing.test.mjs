@@ -19,23 +19,28 @@ test("primary navigation links People and omits Languages", async () => {
   assert.doesNotMatch(appShell, /label: "Languages"|from "lucide-react"[^\n]*Languages/);
 });
 
-test("People landing is a full directory with data-backed language groups and backend-powered search", async () => {
+test("People landing is a full directory with All People fallback, data-backed filters, and backend-powered search", async () => {
   const client = await read("../components/PeopleLandingClient.tsx");
   assert.deepEqual(PEOPLE_LANGUAGES.map(({ slug }) => slug), ["te", "hi", "ta", "ml", "kn"]);
   assert.match(client, /PEOPLE_LANGUAGES\.map/);
   assert.match(client, /api\/v4\/historical\/people/);
   assert.match(client, /api\/v4\/people/);
+  assert.match(client, /loadFilter\("all"\)/);
+  assert.match(client, /people-language-filters/);
+  assert.match(client, /Filter people by language/);
   assert.match(client, /Search actors, actresses, directors/);
   assert.match(client, /api\/v1\/search\/entities/);
   assert.match(client, /PersonSearchEntity/);
   assert.match(client, /people_directory_search/);
   assert.match(client, /people-portrait-rail/);
-  assert.match(client, /if \(!group\.loading && !group\.people\.length\) return null/);
   assert.match(client, /profile_image_url/);
   assert.match(client, /people-portrait-image/);
   assert.match(client, /onError=\{\(\) => setImageFailed\(true\)\}/);
   assert.doesNotMatch(client, /resolvePersonQuery/);
-  assert.match(client, /Discover People/);
+  assert.match(client, /Find your favourite actors, actresses and filmmakers/);
+  assert.match(client, /<h1 id="people-title"/);
+  assert.doesNotMatch(client, /people-hero|Across languages and generations|Stars\. Stories\. Filmographies/);
+  assert.doesNotMatch(client, /people_legend_card|people_legend/);
   assert.doesNotMatch(client, /Legends of Indian Cinema|Load more legends/);
 });
 
@@ -44,7 +49,7 @@ test("person cards preserve stable IDs in the filmography route", async () => {
   assert.equal(peopleFilmographyHref(person), "/search?person_id=1234&q=Test+Person");
   const client = await read("../components/PeopleLandingClient.tsx");
   const search = await read("../components/SearchPageClient.tsx");
-  assert.match(client, /trackPersonResultOpened\(personId, "people_legend_card"\)/);
+  assert.match(client, /trackPersonResultOpened\(personId, searching \? "people_directory_search" : "people_directory"\)/);
   assert.match(search, /personParams\.set\("person_id", selectedPersonId\)/);
   assert.match(search, /\/api\/v1\/search\/intelligence/);
   assert.match(search, /FILMOGRAPHY/);
