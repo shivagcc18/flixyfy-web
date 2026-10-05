@@ -90,9 +90,14 @@ test("four-item mobile navigation and metallic display gold keep white movie yea
   assert.match(css, /\.mobile-nav\s*\{\s*grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(css, /\.brand-logo\s*\{\s*width:102px/);
   assert.match(css, /\.brand-logo\s*\{\s*width:62px/);
-  assert.match(css, /\.people-portrait\s*\{[^}]*border-color:var\(--legend-gold-ring\)/s);
-  assert.match(css, /#FFF4A8[^}]+#D28A12/s);
+  assert.match(css, /\.people-portrait\s*\{\s*border:2px solid var\(--people-gold-ring\)/);
+  assert.match(css, /--people-gold-highlight:#FFF8C7/);
+  assert.match(css, /--people-gold-bright:#FFE88A/);
+  assert.match(css, /--people-gold-mid:#FFD34F/);
+  assert.match(css, /--people-gold-depth:#C98A12/);
+  assert.match(css, /\.people-display-gold \{ font-family:Cambria,Georgia,serif/);
+  assert.doesNotMatch(css, /--legend-gold-/);
   assert.match(css, /\.movie-card-meta \.movie-card-year\s*\{\s*color:\s*#fff\s*!important/);
-  assert.match(css, /filter:brightness\(1\.18\) contrast\(1\.12\)[^;]*drop-shadow/);
+  assert.match(css, /filter: brightness\(1\.38\) contrast\(1\.22\) saturate\(1\.1\)[^;]*drop-shadow/);
   assert.match(logo, /\(max-width: 620px\) 62px/);
 });
