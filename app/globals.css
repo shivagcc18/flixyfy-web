@@ -16,16 +16,16 @@
   --focus:#FFE88A;
   --rating:#FFC928;
   --youtube:#ff0033;
-  --people-gold-highlight:#FFF8C7;
-  --people-gold-bright:#FFE88A;
-  --people-gold-mid:#FFD34F;
-  --people-gold-reflection:#F9C43A;
-  --people-gold-depth:#C98A12;
-  --people-gold-second-highlight:#FFE272;
-  --people-gold-warm-depth:#A96808;
-  --people-gold-final:#F7D55B;
-  --people-gold-ring:rgba(255,211,79,.94);
-  --people-gold-halo:rgba(255,210,79,.16);
+  --people-gold-highlight:#FFF9E8;
+  --people-gold-bright:#FFF0B8;
+  --people-gold-mid:#FFD04A;
+  --people-gold-reflection:#F6B82F;
+  --people-gold-depth:#A9670C;
+  --people-gold-second-highlight:#FFF4D2;
+  --people-gold-warm-depth:#86500A;
+  --people-gold-final:#FFD76D;
+  --people-gold-ring:#EAAF31;
+  --people-gold-halo:rgba(255,196,59,.28);
   --danger:#fb7185;
   --radius-sm:12px;
   --radius-md:18px;
@@ -1541,27 +1541,39 @@ main .person-choices strong { color: var(--flixyfy-ui-gold) !important; }
 /* FLIXYFY_PEOPLE_LEGENDS_NAV_LOGO_VISUAL_V1 */
 .flixyfy-metallic-gold,
 main :is(h1,h2,h3) {
-  background-image:linear-gradient(180deg,
-    var(--people-gold-highlight) 0%,
-    var(--people-gold-bright) 15%,
-    var(--people-gold-mid) 32%,
-    var(--people-gold-reflection) 47%,
-    var(--people-gold-depth) 51%,
-    var(--people-gold-second-highlight) 59%,
-    var(--people-gold-bright) 73%,
-    var(--people-gold-warm-depth) 77%,
-    var(--people-gold-final) 88%,
-    var(--people-gold-highlight) 100%);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='2' seed='9' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='.30'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(118deg,transparent 0 3px,rgba(255,252,231,.20) 3px 3.45px,transparent 3.45px 6px),
+    linear-gradient(180deg,
+      #FFF9E8 0%,
+      #FFE8A3 7%,
+      #FFD05B 15%,
+      #FFF4D1 23%,
+      #E9AE36 31%,
+      #F6C24A 39%,
+      #A9670C 44%,
+      #FFD978 48%,
+      #FFF6D7 51%,
+      #E7A72D 58%,
+      #9C5E0C 64%,
+      #FFD05B 69%,
+      #FFF1C0 76%,
+      #B87615 82%,
+      #F2B83B 89%,
+      #FFEAA0 95%,
+      #FFF9E8 100%);
+  background-size:128px 128px,100% 100%,100% 100%;
+  background-blend-mode:soft-light,overlay,normal;
   background-clip:text;
   -webkit-background-clip:text;
   color:transparent!important;
   -webkit-text-fill-color:transparent!important;
-  -webkit-text-stroke:.28px rgba(255,250,225,.36);
-  text-shadow:0 1px 1px rgba(70,43,4,.24),0 0 10px rgba(255,211,79,.12);
+  -webkit-text-stroke:.38px rgba(255,249,222,.58);
+  text-shadow:0 1px 0 rgba(74,39,3,.42),0 2px 2px rgba(0,0,0,.24),0 0 8px rgba(255,207,83,.16);
 }
-.people-display-gold { font-family:Cambria,Georgia,serif!important; font-weight:700; letter-spacing:.025em; }
+.people-display-gold { font-family:"Cooper Black","Rockwell Extra Bold","Bookman Old Style",Georgia,serif!important; font-weight:400; letter-spacing:.005em; }
 main .movie-card-title.flixyfy-metallic-gold {
-  background-image:linear-gradient(180deg,#FFF0A1 0%,var(--people-gold-bright) 32%,var(--people-gold-reflection) 66%,var(--people-gold-depth) 100%);
+  background-image:linear-gradient(180deg,#FFF4D1 0%,var(--people-gold-bright) 32%,var(--people-gold-reflection) 66%,var(--people-gold-depth) 100%);
 }
 
 .people-page { padding-top:30px; padding-bottom:110px; overflow-x:clip; }
@@ -1828,15 +1840,15 @@ main .movie-card-title.flixyfy-metallic-gold {
   height: 153px;
   max-width: 153px;
   flex: 0 0 153px;
-  filter: brightness(1.38) contrast(1.22) saturate(1.1)
-    drop-shadow(0 0 2px rgba(255, 248, 199, .42))
-    drop-shadow(0 0 10px rgba(255, 193, 54, .26));
+  filter: brightness(1.44) contrast(1.28) saturate(1.16)
+    drop-shadow(0 0 1px rgba(255, 249, 232, .62))
+    drop-shadow(0 0 7px rgba(255, 200, 69, .22));
 }
 
 .primary-nav a.active {
   color: var(--people-gold-highlight);
-  background: linear-gradient(180deg, rgba(255, 229, 138, .16), rgba(229, 165, 26, .1));
-  box-shadow: inset 0 0 0 1px rgba(255, 229, 138, .58), 0 0 16px rgba(255, 193, 54, .12);
+  background: linear-gradient(180deg, rgba(255, 240, 184, .2), rgba(246, 184, 47, .12));
+  box-shadow: inset 0 0 0 1px rgba(255, 244, 210, .72), 0 0 12px rgba(255, 196, 59, .16);
 }
 .primary-nav a.active span,
 .mobile-nav a.active span { color: var(--people-gold-highlight) !important; }
@@ -1876,7 +1888,7 @@ main .movie-card-title.flixyfy-metallic-gold {
 }
 .people-portrait {
   border:2px solid var(--people-gold-ring);
-  box-shadow:inset 0 1px rgba(255,255,255,.88),inset 0 0 0 1px rgba(201,138,18,.72),0 0 0 2px rgba(255,211,79,.16),0 0 11px rgba(255,211,79,.12),0 9px 21px rgba(0,0,0,.45);
+  box-shadow:inset 0 1px rgba(255,255,255,.96),inset 0 0 0 1px rgba(255,234,181,.92),inset 0 0 0 2px rgba(143,83,8,.72),0 0 0 1px rgba(83,48,5,.88),0 0 0 2px rgba(255,218,119,.5),0 0 9px rgba(255,188,42,.16),0 9px 21px rgba(0,0,0,.45);
 }
 .people-portrait-tone-1 { border-color: var(--people-gold-bright); }
 .people-portrait-tone-2 { border-color: var(--people-gold-mid); }
@@ -1888,7 +1900,7 @@ main .movie-card-title.flixyfy-metallic-gold {
 .people-person-card:hover .people-portrait,
 .people-person-card:focus-visible .people-portrait {
   border-color: var(--people-gold-highlight);
-  box-shadow:inset 0 1px rgba(255,255,255,.96),inset 0 0 0 1px rgba(201,138,18,.72),0 0 0 3px var(--people-gold-halo),0 0 17px rgba(255,211,79,.25),0 10px 24px rgba(0,0,0,.46);
+  box-shadow:inset 0 1px rgba(255,255,255,1),inset 0 0 0 1px rgba(255,244,210,.95),inset 0 0 0 2px rgba(143,83,8,.66),0 0 0 1px rgba(83,48,5,.95),0 0 0 3px rgba(255,226,145,.78),0 0 0 5px var(--people-gold-halo),0 0 16px rgba(255,193,44,.34),0 10px 24px rgba(0,0,0,.46);
 }
 .people-load-more {
   border-color: rgba(255, 223, 127, .76);
