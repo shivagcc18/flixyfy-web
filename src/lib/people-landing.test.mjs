@@ -15,8 +15,19 @@ const read = (relative) => readFile(path.resolve(here, relative), "utf8");
 
 test("primary navigation links People and omits Languages", async () => {
   const appShell = await read("../components/AppShell.tsx");
-  assert.match(appShell, /href: "\/people", label: "People"/);
-  assert.doesNotMatch(appShell, /label: "Languages"|from "lucide-react"[^\n]*Languages/);
+  const navigation = appShell.match(/const navigation = \[([\s\S]*?)\] as const/)?.[1] ?? "";
+  const links = Array.from(navigation.matchAll(/\{ href: "([^"]+)", label: "([^"]+)"/g), ([, href, label]) => ({ href, label }));
+  assert.deepEqual(links, [
+    { href: "/", label: "Home" },
+    { href: "/search", label: "Search" },
+    { href: "/people", label: "People" },
+    { href: "/providers", label: "Providers" },
+  ]);
+  assert.match(appShell, /return pathname === href \|\| pathname\.startsWith\(`\$\{href\}\/`\)/);
+
+  const peopleRoute = await read("../../app/people/page.tsx");
+  assert.match(peopleRoute, /import PeopleLandingClient from "@\/components\/PeopleLandingClient"/);
+  assert.match(peopleRoute, /return <PeopleLandingClient \/>/);
 });
 
 test("People landing is a full directory with All People fallback, data-backed filters, and backend-powered search", async () => {
