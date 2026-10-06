@@ -118,3 +118,10 @@ test("Person cards use only backend-provided slugs and retain exact-ID navigatio
   assert.equal(peopleFilmographyHref({ person_id: "42", name: "Any Person", person_slug: "accepted-person-slug" }), "/person/accepted-person-slug");
   assert.equal(peopleFilmographyHref({ person_id: "42", name: "Any Person" }), "/search?person_id=42&q=Any+Person");
 });
+
+test("Vercel configuration leaves the Next App Router Person detail route in control", async () => {
+  const vercel = JSON.parse(await read("../../vercel.json"));
+  assert.equal(vercel.rewrites.some(({ source }) => source === "/person/:path*"), false);
+  const route = await read("../../app/person/[slug]/page.tsx");
+  assert.match(route, /PersonDetailClient slug=\{slug\}/);
+});
