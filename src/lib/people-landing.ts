@@ -6,6 +6,8 @@ export type PeopleLanguage = {
 
 export type PeopleCatalogItem = {
   person_id: string | number;
+  person_slug?: string | null;
+  slug?: string | null;
   name?: string | null;
   display_name?: string | null;
   movie_count?: number | null;
@@ -34,6 +36,8 @@ export const PEOPLE_LANGUAGES: PeopleLanguage[] = [
 export const PEOPLE_PAGE_SIZE = 24;
 
 export function peopleFilmographyHref(person: PeopleCatalogItem): string {
+  const slug = (person.person_slug ?? person.slug ?? "").trim();
+  if (slug) return `/person/${encodeURIComponent(slug)}`;
   const personId = String(person.person_id ?? "").trim();
   const name = (person.display_name ?? person.name ?? "").trim();
   const params = new URLSearchParams({ person_id: personId, q: name });

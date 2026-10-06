@@ -1943,3 +1943,16 @@ main.people-page .people-person-card > strong { color: #FFF7E1 !important; }
   .people-portrait-rail { grid-auto-columns: 106px; gap: 8px; }
   .people-portrait { width: 98px; }
 }
+
+.person-detail-page { max-width: 1100px; margin: 0 auto; padding-top: 28px; }
+.person-detail-back { display: inline-flex; min-height: 44px; align-items: center; color: #FFF0B9; text-decoration: none; }
+.person-detail-panel { margin: 18px 0 40px; padding: clamp(22px, 5vw, 52px); border: 1px solid rgba(255, 208, 74, .38); border-radius: 22px; background: linear-gradient(145deg, rgba(38, 30, 15, .82), rgba(12, 15, 21, .96)); box-shadow: 0 18px 54px rgba(0, 0, 0, .28); }
+.person-detail-panel h1 { margin: 0 0 14px; color: #FFF0B9; font-size: clamp(30px, 5vw, 54px); line-height: 1.08; }
+.person-detail-panel p { max-width: 760px; color: #e3e0d7; line-height: 1.7; }
+.person-detail-eyebrow { margin: 0 0 10px; color: #FFD04A !important; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.person-detail-stats { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0; }
+.person-detail-stats div { min-width: 135px; padding: 14px 18px; border-radius: 14px; background: rgba(255, 255, 255, .06); }
+.person-detail-stats dt { color: #d6cba9; font-size: 12px; }
+.person-detail-stats dd { margin: 5px 0 0; color: #fff; font-size: 20px; font-weight: 750; }
+.person-detail-filmography-link, .person-detail-panel > a:last-child { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; padding: 0 20px; border-radius: 999px; background: linear-gradient(180deg, #FFF3C5, #E6A51B); color: #211602; font-weight: 800; text-decoration: none; }
+@media (max-width: 620px) { .person-detail-page { padding-top: 12px; } .person-detail-panel { margin-top: 8px; } .person-detail-stats div { flex: 1 1 120px; } }

@@ -113,3 +113,8 @@ test("four-item mobile navigation and metallic display gold keep white movie yea
   assert.match(css, /filter: brightness\(1\.44\) contrast\(1\.28\) saturate\(1\.16\)[^;]*drop-shadow/);
   assert.match(logo, /\(max-width: 620px\) 62px/);
 });
+
+test("Person cards use only backend-provided slugs and retain exact-ID navigation when none is available", () => {
+  assert.equal(peopleFilmographyHref({ person_id: "42", name: "Any Person", person_slug: "accepted-person-slug" }), "/person/accepted-person-slug");
+  assert.equal(peopleFilmographyHref({ person_id: "42", name: "Any Person" }), "/search?person_id=42&q=Any+Person");
+});
