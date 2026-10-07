@@ -11,7 +11,7 @@ const navigation = [
   { href: "/", label: "Home", icon: House },
   { href: "/search", label: "Search", icon: Search },
   { href: "/search?mode=people", label: "People", icon: Users },
-  { href: "/#language-title", label: "Languages", icon: Languages },
+  { href: "/#language-movies", label: "Languages", icon: Languages },
   { href: "/providers", label: "Providers", icon: Tv2 },
 ] as const;
 
