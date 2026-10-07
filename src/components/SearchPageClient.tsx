@@ -617,7 +617,7 @@ export default function SearchPageClient() {
               <div>
                 <small>RESULTS</small>
                 <h2>{data.total.toLocaleString()} movies</h2>
-                <p className="mt-1 text-sm text-neutral-400">Showing {Math.min(data.items.length, data.total).toLocaleString()} of {data.total.toLocaleString()}</p>
+                <p className="mt-1 text-sm text-[var(--flixyfy-gold-muted)]">Showing {Math.min(data.items.length, data.total).toLocaleString()} of {data.total.toLocaleString()}</p>
               </div>
             </div>
 
@@ -636,12 +636,12 @@ export default function SearchPageClient() {
             )}
             {data.items.length < data.total ? (
               <div className="mt-6 flex justify-center">
-                <button type="button" className="load-more-button rounded-md border border-amber-400 px-5 py-3 text-sm font-semibold text-amber-200 transition hover:bg-amber-300 hover:text-black disabled:opacity-60" onClick={() => void loadMore()} disabled={loadingMore}>
+                <button type="button" className="load-more-button rounded-md border border-[var(--flixyfy-gold-primary)] px-5 py-3 text-sm font-semibold text-[var(--flixyfy-gold-primary)] transition hover:bg-[var(--flixyfy-gold-highlight)] hover:text-black disabled:opacity-60" onClick={() => void loadMore()} disabled={loadingMore}>
                   {loadingMore ? "Loading…" : "Load more"}
                 </button>
               </div>
             ) : data.items.length > 0 ? (
-              <p className="mt-6 text-center text-sm text-neutral-400" role="status">You’ve reached the end of the results.</p>
+              <p className="mt-6 text-center text-sm text-[var(--flixyfy-gold-muted)]" role="status">You’ve reached the end of the results.</p>
             ) : null}
           </>
         ) : null}
