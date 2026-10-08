@@ -41,6 +41,8 @@ test("slug resolution uses current then historical endpoints and redirects to ex
   assert.match(client, /person_id: id/);
   assert.match(client, /Person not found/);
   assert.match(client, /Person details are unavailable/);
+  const vercel = JSON.parse(await source("../../vercel.json"));
+  assert.equal(vercel.rewrites.some(({ source }) => source === "/person/:path*"), false);
 });
 
 test("explicit Person ID is authoritative and filmography stays paged at 48", async () => {
