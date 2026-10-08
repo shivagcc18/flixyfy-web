@@ -11,10 +11,12 @@ const source = (relative) => readFile(path.resolve(here, relative), "utf8");
 test("People navigation opens a real route while retaining all five destinations", async () => {
   const shell = await source("../components/AppShell.tsx");
   const route = await source("../../app/people/page.tsx");
+  const searchRoute = await source("../../app/search/page.tsx");
   assert.match(shell, /\{ href: "\/people", label: "People"/);
   assert.match(shell, /label: "Languages"/);
   assert.match(shell, /label: "Providers"/);
   assert.match(route, /PeopleLandingClient/);
+  assert.match(searchRoute, /mode === "people"\) redirect\("\/people"\)/);
 });
 
 test("People discovery renders canonical people and uses exact-ID navigation", async () => {
