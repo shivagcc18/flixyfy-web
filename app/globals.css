@@ -1602,5 +1602,33 @@ main .person-choices strong { color: var(--flixyfy-ui-gold) !important; }
   .primary-nav a svg { width:18px; height:18px; }
 }
 @media (max-width:620px) {
-  .mobile-nav a { font-size:12.5px; font-weight:750; letter-spacing:-.055em; }
+.mobile-nav a { font-size:12.5px; font-weight:750; letter-spacing:-.055em; }
 }
+
+/* People discovery and canonical Person routes use the shared bright-gold system. */
+.people-page { max-width: 1220px; min-height: 62vh; padding-top: clamp(28px, 5vw, 64px); padding-bottom: 120px; }
+.people-page-heading { margin-bottom: 28px; }
+.people-page-heading small,.person-detail-panel > small { color: var(--flixyfy-gold-primary); font-size: 12px; font-weight: 800; letter-spacing: .16em; }
+.people-page-heading h1 { margin: 8px 0; background: linear-gradient(180deg,var(--flixyfy-gold-highlight),var(--flixyfy-gold-primary) 52%,var(--flixyfy-gold-deep)); background-clip: text; color: transparent; font-size: clamp(36px,5vw,58px); line-height: 1.05; }
+.people-page-heading p { color: var(--flixyfy-gold-muted); font-size: 16px; }
+.people-search-box { display: flex; min-height: 58px; max-width: 720px; align-items: center; gap: 12px; padding: 0 18px; border: 1px solid rgba(var(--flixyfy-gold-primary-rgb),.75); border-radius: 12px; background: rgba(18,17,14,.92); color: var(--flixyfy-gold-primary); }
+.people-search-box input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text-primary,#fff); font-size: 17px; }
+.people-search-box input::placeholder { color: var(--flixyfy-gold-muted); opacity: 1; }
+.people-language-filters { display: flex; flex-wrap: wrap; gap: 9px; margin: 22px 0 28px; }
+.people-language-filters button,.people-load-more { min-height: 40px; padding: 0 16px; border: 1px solid rgba(var(--flixyfy-gold-primary-rgb),.45); border-radius: 999px; background: rgba(255,255,255,.035); color: var(--flixyfy-gold-muted); font-weight: 650; }
+.people-language-filters button.is-selected,.people-language-filters button:hover { background: linear-gradient(180deg,var(--flixyfy-gold-highlight),var(--flixyfy-gold-primary)); color: #17120a; }
+.people-results-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; }
+.people-result-card { display: flex; min-width: 0; min-height: 112px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 8px; padding: 16px; border: 1px solid rgba(var(--flixyfy-gold-primary-rgb),.25); border-radius: 14px; background: linear-gradient(145deg,rgba(255,255,255,.055),rgba(12,12,12,.9)); color: var(--flixyfy-gold-highlight); text-decoration: none; }
+.people-result-card:hover,.people-result-card:focus-visible { border-color: var(--flixyfy-gold-primary); box-shadow: 0 0 22px rgba(var(--flixyfy-gold-primary-rgb),.12); }
+.people-result-card strong { overflow-wrap: anywhere; font-size: 16px; }
+.people-result-card small { color: var(--flixyfy-gold-muted); }
+.people-result-icon { color: var(--flixyfy-gold-primary); }
+.people-load-more { display: block; margin: 28px auto 0; }
+.person-detail-page { max-width: 1100px; min-height: 60vh; padding-top: 30px; }
+.person-detail-back { display: inline-flex; min-height: 44px; align-items: center; color: var(--flixyfy-gold-primary); text-decoration: none; }
+.person-detail-panel { margin: 18px 0 40px; padding: clamp(24px,5vw,54px); border: 1px solid rgba(var(--flixyfy-gold-primary-rgb),.38); border-radius: 20px; background: linear-gradient(145deg,rgba(38,30,15,.72),rgba(12,15,21,.96)); }
+.person-detail-panel h1 { margin: 10px 0; color: var(--flixyfy-gold-highlight); font-size: clamp(28px,5vw,48px); overflow-wrap: anywhere; }
+.person-detail-panel p { color: var(--flixyfy-gold-muted); }
+.person-detail-panel a { display: inline-flex; min-height: 44px; align-items: center; margin-top: 14px; color: var(--flixyfy-gold-primary); }
+@media (max-width: 900px) { .people-results-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width: 620px) { .people-page { padding-top: 24px; } .people-page-heading p { max-width: 32ch; font-size: 14px; } .people-search-box { min-height: 52px; padding-inline: 14px; } .people-search-box input { font-size: 15px; } .people-results-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; } .people-result-card { min-height: 96px; padding: 12px; } .people-result-card strong { font-size: 14px; } .people-language-filters { gap: 7px; } .people-language-filters button { min-height: 36px; padding-inline: 12px; font-size: 13px; } }

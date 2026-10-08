@@ -10,13 +10,13 @@ import FlixyfyLogo from "./FlixyfyLogo";
 const navigation = [
   { href: "/", label: "Home", icon: House },
   { href: "/search", label: "Search", icon: Search },
-  { href: "/search?mode=people", label: "People", icon: Users },
+  { href: "/people", label: "People", icon: Users },
   { href: "/#language-movies", label: "Languages", icon: Languages },
   { href: "/providers", label: "Providers", icon: Tv2 },
 ] as const;
 
 function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }
 
 function isFocusable(element: Element): element is HTMLElement {

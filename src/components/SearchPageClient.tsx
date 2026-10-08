@@ -230,16 +230,12 @@ export default function SearchPageClient() {
         let selectedPerson: PersonSearchEntity | null = null;
         let movieResponse: MovieListResponse | null = null;
         if (personId) {
-          try {
-            const entityResponse = await apiFetch<PersonEntityResponse>(
-              `/api/v1/search/entities?q=${encodeURIComponent(query.trim())}`,
-            );
-            if (!active) return;
-            const candidates = entityResponse.items ?? entityResponse.entities ?? [];
-            selectedPerson = candidates.find((person) => person.person_id === personId) ?? null;
-          } catch {
-            // Keep an explicit person route usable if its entity lookup is unavailable.
-          }
+          selectedPerson = {
+            entity_type: "person",
+            person_id: personId,
+            display_name: query.trim() || `Person ${personId}`,
+            aliases: [],
+          };
         } else {
           movieResponse = await apiFetch<MovieListResponse>(moviePath);
           if (!active) return;
@@ -312,6 +308,7 @@ export default function SearchPageClient() {
           return;
         }
 
+        if (personId) throw new Error("Person filmography could not be loaded");
         const response = movieResponse ?? await apiFetch<MovieListResponse>(moviePath);
         if (!active) return;
         const items = (response.items ?? response.results ?? []).map(normalizeSearchMovie);
@@ -479,9 +476,9 @@ export default function SearchPageClient() {
     <AppShell>
       <main className="page-content search-page">
         <section className="search-header">
-          <small>SEARCH</small>
-          <h1>Find exactly what you want to watch</h1>
-          <p className="page-lead">Search by movie, actor, director, language, genre, year or provider.</p>
+          <small>{personId ? "PERSON FILMOGRAPHY" : "SEARCH"}</small>
+          <h1>{personId ? query || `Person ${personId}` : "Find exactly what you want to watch"}</h1>
+          <p className="page-lead">{personId ? "Movies connected to this person, loaded from the exact Person ID." : "Search by movie, actor, director, language, genre, year or provider."}</p>
           <SearchInput initialValue={query} large key={query} />
         </section>
 
@@ -616,7 +613,7 @@ export default function SearchPageClient() {
             <div className="results-toolbar">
               <div>
                 <small>RESULTS</small>
-                <h2>{data.total.toLocaleString()} movies</h2>
+                <h2>{personId ? "Filmography" : `${data.total.toLocaleString()} movies`}</h2>
                 <p className="mt-1 text-sm text-[var(--flixyfy-gold-muted)]">Showing {Math.min(data.items.length, data.total).toLocaleString()} of {data.total.toLocaleString()}</p>
               </div>
             </div>
@@ -630,8 +627,8 @@ export default function SearchPageClient() {
             ) : (
               <section className="search-empty">
                 <SearchX size={36} aria-hidden="true" />
-                <h2>No matching movie found</h2>
-                <p>Remove one filter or try a shorter movie or person name.</p>
+                <h2>{personId ? "No filmography results returned" : "No matching movie found"}</h2>
+                <p>{personId ? "The exact Person ID returned no movie records." : "Remove one filter or try a shorter movie or person name."}</p>
               </section>
             )}
             {data.items.length < data.total ? (
