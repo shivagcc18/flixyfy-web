@@ -13,6 +13,11 @@ export function peopleFilmographyHref(person: PersonSearchEntity & { person_slug
   return `/search?${params.toString()}`;
 }
 
+export function exactPersonFilmographyHref(person: PersonSearchEntity): string {
+  const params = new URLSearchParams({ person_id: person.person_id, q: person.display_name });
+  return `/search?${params.toString()}`;
+}
+
 export function mergePeopleById(...groups: PersonSearchEntity[][]): PersonSearchEntity[] {
   const people = new Map<string, PersonSearchEntity>();
   for (const person of groups.flat()) {

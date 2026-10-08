@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { mergePeopleById, peopleFilmographyHref } from "./people-landing.ts";
+import { exactPersonFilmographyHref, mergePeopleById, peopleFilmographyHref } from "./people-landing.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const source = (relative) => readFile(path.resolve(here, relative), "utf8");
@@ -21,7 +21,8 @@ test("People discovery renders canonical people and uses exact-ID navigation", a
   const client = await source("../components/PeopleLandingClient.tsx");
   assert.match(client, /api\/v1\/search\/entities/);
   assert.match(client, /resolvePersonQuery/);
-  assert.match(client, /peopleFilmographyHref\(person\)/);
+  assert.match(client, /exactPersonFilmographyHref\(person\)/);
+  assert.match(client, /People search results/);
   assert.match(client, /role="alert"/);
   assert.match(client, /People directory could not be loaded/);
   assert.deepEqual(mergePeopleById(
@@ -29,6 +30,7 @@ test("People discovery renders canonical people and uses exact-ID navigation", a
     [{ person_id: "42", display_name: "Duplicate", entity_type: "person", aliases: [] }, { person_id: "43", display_name: "B Person", entity_type: "person", aliases: [] }],
   ).map((person) => person.person_id), ["42", "43"]);
   assert.equal(peopleFilmographyHref({ person_id: "1061913", display_name: "Indrans", entity_type: "person", aliases: [] }), "/search?person_id=1061913&q=Indrans");
+  assert.equal(exactPersonFilmographyHref({ person_id: "35742", display_name: "Shah Rukh Khan", entity_type: "person", aliases: [] }), "/search?person_id=35742&q=Shah+Rukh+Khan");
 });
 
 test("slug resolution uses current then historical endpoints and redirects to exact ID", async () => {
