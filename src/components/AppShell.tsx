@@ -3,7 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, Languages, Search, Tv2, Users } from "lucide-react";
+import { House, Search, Tv2, Users } from "lucide-react";
 import { useEffect } from "react";
 import FlixyfyLogo from "./FlixyfyLogo";
 
@@ -11,7 +11,6 @@ const navigation = [
   { href: "/", label: "Home", icon: House },
   { href: "/search", label: "Search", icon: Search },
   { href: "/people", label: "People", icon: Users },
-  { href: "/#language-movies", label: "Languages", icon: Languages },
   { href: "/providers", label: "Providers", icon: Tv2 },
 ] as const;
 

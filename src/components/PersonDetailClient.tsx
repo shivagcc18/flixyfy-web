@@ -2,34 +2,33 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import AppShell from "./AppShell";
+import { apiFetch, type Movie } from "@/lib/api";
 
-type PersonPayload = { person?: { person_id?: string | number; name?: string; display_name?: string }; detail?: { code?: string } };
-type Status = "loading" | "missing" | "ambiguous" | "error";
+type PersonPayload = {
+  person?: { person_id?: string | number; name?: string; display_name?: string; roles?: string[]; career_attached_movie_count?: number };
+  items?: Movie[];
+  total?: number;
+};
 
-export default function PersonDetailClient({ slug }: { slug: string }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<Status>("loading");
+export default function PersonDetailClient({ personId }: { personId: string }) {
+  const [payload, setPayload] = useState<PersonPayload | null>(null);
+  const [error, setError] = useState("");
   useEffect(() => {
     let active = true;
-    const resolve = async () => {
-      try {
-        let response = await fetch(`/api/v1/person/current/${encodeURIComponent(slug)}`, { cache: "no-store", headers: { accept: "application/json" } });
-        if (response.status === 404) response = await fetch(`/api/v1/person/historical/${encodeURIComponent(slug)}`, { cache: "no-store", headers: { accept: "application/json" } });
-        const payload = await response.json() as PersonPayload;
-        if (response.status === 409 || payload.detail?.code === "ambiguous_person_slug") { if (active) setStatus("ambiguous"); return; }
-        if (response.status === 404) { if (active) setStatus("missing"); return; }
-        if (!response.ok || !payload.person?.person_id) throw new Error("Person lookup failed");
-        const id = String(payload.person.person_id);
-        const name = payload.person.display_name?.trim() || payload.person.name?.trim() || `Person ${id}`;
-        if (active) router.replace(`/search?${new URLSearchParams({ person_id: id, q: name })}`);
-      } catch { if (active) setStatus("error"); }
-    };
-    void resolve();
+    if (!/^\d+$/.test(personId)) { setError("This Person URL needs a canonical numeric ID."); return () => { active = false; }; }
+    apiFetch<PersonPayload>(`/api/v4/people/${encodeURIComponent(personId)}?limit=100`)
+      .then((value) => { if (active) setPayload(value); })
+      .catch(() => { if (active) setError("Person details are unavailable right now."); });
     return () => { active = false; };
-  }, [router, slug]);
+  }, [personId]);
 
-  const message = status === "loading" ? "Resolving person…" : status === "missing" ? "Person not found" : status === "ambiguous" ? "This URL matches more than one person" : "Person details are unavailable right now";
-  return <AppShell><main className="page-content person-detail-page"><Link className="person-detail-back" href="/people">← People</Link><section className="person-detail-panel" role={status === "error" ? "alert" : "status"}><small>PERSON</small><h1>{message}</h1>{status === "ambiguous" ? <p>Search People and choose the intended result.</p> : null}{status !== "loading" ? <Link href="/people">Search People</Link> : <p>Loading canonical identity…</p>}</section></main></AppShell>;
+  const person = payload?.person;
+  return <AppShell><main className="page-content person-detail-page">
+    <Link className="person-detail-back" href="/people">← People</Link>
+    {error ? <section className="person-detail-panel" role="alert"><h1>{error}</h1></section> : !payload ? <section className="person-detail-panel" role="status"><h1>Loading person…</h1></section> : <>
+      <header className="person-detail-panel"><small>PERSON · ID {person?.person_id}</small><h1>{person?.display_name ?? person?.name ?? `Person ${personId}`}</h1><p>{(person?.roles ?? []).join(", ")}</p><p>{person?.career_attached_movie_count ?? payload.total ?? 0} mapped movies</p></header>
+      <section aria-label={`${person?.display_name ?? person?.name ?? "Person"} filmography`}><h2>Filmography</h2>{payload.items?.length ? <ul>{payload.items.map((movie) => <li key={movie.canonical_movie_id}><strong>{movie.title}</strong> · {movie.release_year ?? "Year unavailable"}</li>)}</ul> : <p>No serving filmography is available for this Person ID.</p>}</section>
+    </>}
+  </main></AppShell>;
 }

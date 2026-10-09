@@ -5,7 +5,7 @@ import { Search, Users } from "lucide-react";
 import AppShell from "./AppShell";
 import { apiFetch, type PersonEntityResponse, type PersonSearchEntity } from "@/lib/api";
 import { resolvePersonQuery } from "@/lib/person-search";
-import { exactPersonFilmographyHref, mergePeopleById, peopleFilmographyHref, type PeopleCatalogItem } from "@/lib/people-landing";
+import { mergePeopleById, peopleFilmographyHref, type PeopleCatalogItem } from "@/lib/people-landing";
 
 type CatalogResponse = { items?: PeopleCatalogItem[]; results?: PeopleCatalogItem[]; total?: number };
 const languages = [{ id: "te", label: "Telugu" }, { id: "hi", label: "Hindi" }, { id: "ta", label: "Tamil" }, { id: "ml", label: "Malayalam" }, { id: "kn", label: "Kannada" }];
@@ -91,7 +91,7 @@ export default function PeopleLandingClient() {
       {searching && searchState === "ready" && !searchResults.length ? <p role="status">No people matched that search.</p> : null}
       {!searching && state === "loading" && !directory.length ? <p role="status">Loading people…</p> : null}
       {!searching && state === "error" ? <p role="alert">The People directory could not be loaded right now.</p> : null}
-      {shown.length ? <div className="people-results-grid">{shown.map((person) => <a className="people-result-card" key={person.person_id} href={searching ? exactPersonFilmographyHref(person) : peopleFilmographyHref(person)}><span className="people-result-icon"><Users size={22} aria-hidden="true"/></span><strong>{person.display_name}</strong>{person.roles?.length ? <small>{person.roles.join(", ")}</small> : null}</a>)}</div> : null}
+      {shown.length ? <div className="people-results-grid">{shown.map((person) => <a className="people-result-card" key={person.person_id} href={peopleFilmographyHref(person)}><span className="people-result-portrait" aria-hidden="true"><Users size={30}/></span><strong>{person.display_name}</strong>{person.roles?.length ? <small>{person.roles.join(", ")}</small> : null}</a>)}</div> : null}
       {hasMore ? <button className="people-load-more" type="button" onClick={() => void loadMore()} disabled={state === "loading"}>{state === "loading" ? "Loading…" : "Load more people"}</button> : null}
     </section>
   </main></AppShell>;

@@ -7,10 +7,7 @@ export type PeopleCatalogItem = PersonSearchEntity & {
 };
 
 export function peopleFilmographyHref(person: PersonSearchEntity & { person_slug?: string | null; slug?: string | null }): string {
-  const slug = (person.person_slug ?? person.slug ?? "").trim();
-  if (slug) return `/person/${encodeURIComponent(slug)}`;
-  const params = new URLSearchParams({ person_id: person.person_id, q: person.display_name });
-  return `/search?${params.toString()}`;
+  return `/person/${encodeURIComponent(person.person_id)}`;
 }
 
 export function exactPersonFilmographyHref(person: PersonSearchEntity): string {
