@@ -39,11 +39,23 @@ type MovieListResponse = {
   } | null;
 };
 
-type ApiMovie = Movie & { poster?: string | null; backdrop?: string | null };
+type ApiMovie = Omit<Movie, "providers"> & {
+  providers?: Movie["providers"] | string;
+  provider_names?: string;
+  provider_keys?: string;
+  youtube_languages?: string;
+  poster?: string | null;
+  backdrop?: string | null;
+};
 
 function normalizeSearchMovie(movie: ApiMovie): Movie {
+  const providerNames = typeof movie.providers === "string"
+    ? movie.providers
+    : movie.provider_names ?? "";
   return {
     ...movie,
+    providers: Array.isArray(movie.providers) ? movie.providers : [],
+    provider_names: providerNames,
     poster_url: normalizePosterUrl(movie.poster ?? movie.poster_url) || null,
     backdrop_url: normalizeBackdropUrl(movie.backdrop ?? movie.backdrop_url) || null,
   };
@@ -621,7 +633,7 @@ export default function SearchPageClient() {
             {data.items.length ? (
               <div className="movie-grid search-results">
                 {data.items.map((movie) => (
-                  <MovieCard movie={movie} key={movie.canonical_movie_id} />
+                  <MovieCard movie={movie} showAvailabilitySummary key={movie.canonical_movie_id} />
                 ))}
               </div>
             ) : (

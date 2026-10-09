@@ -66,6 +66,9 @@ export type Movie = {
   imdb_rating?: number | null;
   provider_count: number;
   youtube_video_count?: number;
+  provider_names?: string;
+  provider_keys?: string;
+  youtube_languages?: string;
   availability_count?: number;
   providers: Provider[];
   availability?: AvailabilityOption[];

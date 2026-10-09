@@ -17,7 +17,10 @@ type BackendMovieDetail = MovieDetail & {
 
 function apiOrigins(): string[] {
   const configured = process.env.NEXT_PUBLIC_FLIXYFY_API_URL?.trim().replace(/\/+$/, "");
-  return [...new Set([configured, "https://flixyfy-api-free.vercel.app"].filter((value): value is string => Boolean(value)))];
+  const productionFallback = process.env.VERCEL_ENV === "preview"
+    ? null
+    : "https://flixyfy-api-free.vercel.app";
+  return [...new Set([configured, productionFallback].filter((value): value is string => Boolean(value)))];
 }
 
 async function fetchMovie(routeKey: string, domain: MovieDomain): Promise<MovieDetail | null> {
