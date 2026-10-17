@@ -1,0 +1,17 @@
+node_modules*
+.next
+out
+coverage
+playwright-report
+test-results
+.env.local
+*.tsbuildinfo
+work
+AGENTS.md
+README.md
+.env.example
+api.d.ts
+api.js
+index.html
+main.js
+styles.css
