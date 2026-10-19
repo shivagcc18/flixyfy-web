@@ -1,0 +1,19 @@
+{
+  "title": {
+    "default": "Flixyfy | Indian Movies and Cinema",
+    "template": "%s | Flixyfy"
+  },
+  "description": "Explore Indian movies, people, and accepted watch availability.",
+  "applicationName": "Flixyfy",
+  "openGraph": {
+    "type": "website",
+    "siteName": "Flixyfy",
+    "title": "Flixyfy | Indian Movies and Cinema",
+    "description": "Explore Indian movies, people, and accepted watch availability."
+  },
+  "twitter": {
+    "card": "summary",
+    "title": "Flixyfy | Indian Movies and Cinema",
+    "description": "Explore Indian movies, people, and accepted watch availability."
+  }
+}
