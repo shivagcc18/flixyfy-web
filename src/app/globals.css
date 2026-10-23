@@ -151,3 +151,6 @@
 .brand-image-frame img{width:74px;height:74px;object-fit:contain;}
 @media(max-width:760px){.brand-image-frame img{width:50px;height:50px;}}
 @media(max-width:390px){.brand-image-frame img{width:46px;height:46px;}}
+
+/* Keep the four mobile navigation targets readable at phone widths. */
+@media(max-width:760px){.mobile-nav .nav-item{font-size:clamp(15px,4.1vw,16px);}.mobile-nav .nav-icon{width:22px;height:22px;}}
