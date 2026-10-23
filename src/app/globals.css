@@ -146,3 +146,8 @@
   .detail-copy h1{font-size:clamp(1.8rem,7.8vw,2rem);}
   .detail-meta span{min-height:34px;padding:0 8px;font-size:.8rem;}
 }
+
+/* Keep the approved square emblem inside the header frame. */
+.brand-image-frame img{width:74px;height:74px;object-fit:contain;}
+@media(max-width:760px){.brand-image-frame img{width:50px;height:50px;}}
+@media(max-width:390px){.brand-image-frame img{width:46px;height:46px;}}
