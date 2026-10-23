@@ -154,3 +154,8 @@
 
 /* Keep the four mobile navigation targets readable at phone widths. */
 @media(max-width:760px){.mobile-nav .nav-item{font-size:clamp(15px,4.1vw,16px);}.mobile-nav .nav-icon{width:22px;height:22px;}}
+
+/* Keep movie card names and release years easy to scan across routes. */
+.movie-meta strong{font-size:clamp(.95rem,1.2vw,1rem);}
+.movie-meta small{font-size:clamp(.8rem,1.02vw,.875rem);}
+@media(max-width:760px){.movie-meta strong{font-size:clamp(.78rem,3.2vw,.95rem);}.movie-meta small{font-size:clamp(.72rem,2.8vw,.84rem);}}
